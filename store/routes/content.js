@@ -11,6 +11,7 @@ var hashStream = require('sha1-stream')
 
 var api = require('../../helpers/api')
 var cradle = require('../../helpers/couchdb')
+var logger = require('../../helpers/logger')
 var redis = require('../../helpers/redis')
 var hashFile = require('../../helpers/hashFile')
 
@@ -104,8 +105,10 @@ var verifyFile = function(fileDetail,force){
           })
           .catch(function(err){
             if(!err || !err.headers || 404 !== err.headers.status){
-              console.log('Failed to delete inventory record for missing file',
-                err.message,err.stack)
+              logger.log('error',
+                'Failed to delete inventory record for missing file ' +
+                err.message)
+              logger.log('error', err.stack)
             } else {
               throw new Error('File not found')
             }
@@ -234,15 +237,17 @@ exports.put = function(req,res){
       res.json({hash: sniff.hash})
     })
     .catch(function(err){
-      console.log('Failed to upload content',err.message,err.stack)
+      logger.log('error', 'Failed to upload content ' + err.message)
+      logger.log('error', err.stack)
       fs.unlinkSync(dest)
       cradle.inventory.getAsync(inventoryKey)
         .then(function(result){
           return cradle.inventory.removeAsync(result._id,result._rev)
         })
         .catch(function(err){
-          console.log('Failed to clean up broken inventory record',
-            err.message,err.stack)
+          logger.log('error', 'Failed to clean up broken inventory record ' +
+            err.message)
+          logger.log('error', err.stack)
         })
       redis.incr(redis.schema.counterError('store','content:put'))
       res.status(500)
@@ -436,7 +441,8 @@ exports.detail = function(req,res){
       } else{
         res.status(500)
         res.json({error: 'An uknown error occurred',message: err.message})
-        console.log(err.message,err.stack)
+        logger.log('error', err.message)
+        logger.log('error', err.stack)
       }
     })
 }
@@ -468,7 +474,8 @@ exports.verify = function(req,res){
           error: 'File not found'
         })
       } else {
-        console.log('File verification failed',err.message,err.stack)
+        logger.log('error', 'File verification failed  '+ err.message)
+        logger.log('error', err.stack)
         res.status(500)
         res.json({
           error: err.message,
@@ -531,7 +538,8 @@ exports.send = function(req,res){
       })
     })
     .catch(function(err){
-      console.log(err.message,err.stack)
+      logger.log('error', err.message)
+      logger.log('error', err.stack)
       res.json({
         error: 'Failed to send clone ' + err.message,
         err: err,

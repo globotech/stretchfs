@@ -4,6 +4,7 @@ var infant = require('infant')
 
 var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
@@ -16,7 +17,7 @@ if(require.main === module){
   infant.child(
     'oose:' + config.prism.name + ':master',
     function(done){
-      console.log('Beginning prism startup')
+      logger.log('info', 'Beginning prism startup')
       cluster = infant.cluster(
         './worker',
         {
@@ -57,24 +58,24 @@ if(require.main === module){
             return P.all([cluster.startAsync(),heartbeat.startAsync()])
           })
           .then(function(){
-            console.log('Prism startup complete')
+            logger.log('info', 'Prism startup complete')
             done()
         })
         .catch(function(err){
-          console.log(err.stack)
-          console.log(err)
+          logger.log('error',err.stack)
+          logger.log('error', err)
           done(err)
         })
       } else {
         cluster.startAsync()
          .then(function(){
-           console.log('Prism startup complete, in ghost mode')
+           logger.log('info','Prism startup complete, in ghost mode')
            done()
          })
       }
     },
     function(done){
-      console.log('Beginning prism shutdown')
+      logger.log('info','Beginning prism shutdown')
       if(!config.prism.ghost){
         //mark ourselves as down
         cradle.peer.getAsync(prismKey)
@@ -91,17 +92,17 @@ if(require.main === module){
           })
           .then(function(){
             heartbeat.cp.kill('SIGKILL')
-            console.log('Prism shutdown complete')
+            logger.log('info','Prism shutdown complete')
             done()
           })
           .catch(function(err){
-            console.log(err.stack)
-            console.log(err)
+            logger.log('error', err.stack)
+            logger.log('error',err)
             done(err)
           })
       } else {
         cluster.stopAsync().then(function(){
-          console.log('Prism shutdown complete, in ghost mode')
+          logger.log('info','Prism shutdown complete, in ghost mode')
           done()
         })
       }

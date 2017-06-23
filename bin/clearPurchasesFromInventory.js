@@ -4,6 +4,7 @@ var infant = require('infant')
 
 //var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 
 /**
@@ -11,7 +12,7 @@ var cradle = require('../helpers/couchdb')
  * @param {function} done
  */
 var runInterval = function(done){
-  console.log('Starting to clear purchases from inventory')
+  logger.log('info','Starting to clear purchases from inventory')
   //first lets get all the purchases
   var purchases = []
   debug('requesting purchases')
@@ -38,15 +39,15 @@ var runInterval = function(done){
       result.forEach(function(row){
         if(row.ok) deleted++
       })
-      console.log('Deletion complete, ' + deleted + ' records removed')
+      logger.log('info','Deletion complete, ' + deleted + ' records removed')
       done()
     })
     .catch(function(err){
-      console.log(err.stack)
+      logger.log('error',err.stack)
       done(err)
     })
     .finally(function(){
-      console.log('Purchase clearing complete')
+      logger.log('info','Purchase clearing complete')
       process.exit()
     })
 }

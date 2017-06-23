@@ -4,6 +4,7 @@ var numeral = require('numeral')
 var PromiseQueue = require('promiseq')
 
 var e2e = require('./helpers/e2e')
+var logger = require('../helpers/logger')
 
 
 /**
@@ -47,7 +48,7 @@ var repeatTest = function(prism,times,test){
     return queue.close()
       .then(function(){
         var rps = (times / (((+new Date()) - start) / 1000)).toFixed(2)
-        console.log('            ' + test + ' ' +rps + '/rps ')
+        logger.log('info', '            ' + test + ' ' +rps + '/rps ')
       })
   }
 }

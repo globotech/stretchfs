@@ -7,6 +7,7 @@ var random = require('random-js')()
 var api = require('../helpers/api')
 var cradle = require('../helpers/couchdb')
 var prismBalance = require('../helpers/prismBalance')
+var logger = require('../helpers/logger')
 
 var config = require('../config')
 
@@ -128,7 +129,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if('Ok, got it' === err.message){
         debug('Vote already cast',peer.name)
       } else {
-        console.log(err)
+        logger.log('error', err)
       }
     })
 }
@@ -174,7 +175,7 @@ var runHeartbeat = function(systemKey,systemType){
    * @return {P}
    */
   var restorePeer = function(peer){
-    console.log('Restoring peer',peer)
+    logger.log('info', 'Restoring peer ' + peer)
     return cradle.peer.getAsync(peer._id)
       .then(function(result){
         result.available = true
@@ -192,7 +193,7 @@ var runHeartbeat = function(systemKey,systemType){
         return cradle.heartbeat.removeAsync(vote._id,vote._rev)
       },{concurrency: config.heartbeat.concurrency})
       .catch(function(err){
-        console.log('Failed to restore peer',err)
+        logger.log('error', 'Failed to restore peer' + err)
       })
   }
   prismBalance.peerList()
@@ -246,12 +247,12 @@ var runHeartbeat = function(systemKey,systemType){
           }
         })
         .catch(function(err){
-          console.log('Ping Error ' + peer.name,err.message)
+          logger.log('error', 'Ping Error ' + peer.name,err.message)
           return handlePingFailure(err.message,peer)
         })
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
-      console.log(err)
+      logger.log('error', err)
     })
     .finally(function(){
       var duration = +(new Date()) - startTime
@@ -307,7 +308,7 @@ var runVotePrune = function(systemKey,systemType){
       return cradle.heartbeat.removeAsync(vote._id,vote._rev).reflect()
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
-      console.log('vote prune error: ',err)
+      logger.log('error', 'vote prune error: ' + err)
     })
     .finally(function(){
       debug('Vote prune complete')
@@ -364,7 +365,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
       done(null,result)
     })
     .catch(function(err){
-      console.log('markMeUp error: ',err)
+      logger.log('error', 'markMeUp error: '+ err)
     })
 }
 
@@ -377,7 +378,8 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
  * @param {function} done
  */
 exports.start = function(systemKey,systemPrism,systemType,done){
-  console.log('Setting up to start heartbeat',systemKey,systemType)
+  logger.log('info', 'Setting up to start heartbeat' + ' ' + systemKey +
+    ' ' + systemType)
   if(!systemKey)
     throw new Error('System key has not been set, heartbeat not started')
   if(!systemType)
@@ -395,10 +397,10 @@ exports.start = function(systemKey,systemPrism,systemType,done){
  * @param {function} done
  */
 exports.stop = function(done){
-  console.log('Stopping heartbeat')
+  logger.log('info','Stopping heartbeat')
   if(heartbeatTimeout) clearTimeout(heartbeatTimeout)
   if(pruneTimeout) clearTimeout(pruneTimeout)
-  console.log('Heartbeat stopped')
+  logger.log('info','Heartbeat stopped')
   done()
 }
 

@@ -10,6 +10,7 @@ var request = require('request')
 
 var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 
 /**
@@ -47,7 +48,7 @@ var counter = {
  * @return {P}
  */
 var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
-  console.log('Starting to migrate ' + name + ' records')
+  logger.log('info','Starting to migrate ' + name + ' records')
   var progress
   debug('requesting ' + name,itemKey)
   var result = []
@@ -125,7 +126,7 @@ var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
           )
           .catch(function(err){
             if('skipped' !== err.message){
-              console.log(err.stack)
+              logger.log('error', err.stack)
               counter.error++
             }
           })
@@ -180,7 +181,7 @@ var runInterval = function(done){
       )
     })
     .then(function(){
-      console.log(
+      logger.log('info',
         'Migration complete, ' +
         counter.moved + ' moved ' +
         counter.exists + ' already exist ' +
@@ -191,11 +192,11 @@ var runInterval = function(done){
       done()
     })
     .catch(function(err){
-      console.log(err.stack)
+      logger.log('error', err.stack)
       done(err)
     })
     .finally(function(){
-      console.log('CouchDB Migration complete')
+      logger.log('info','CouchDB Migration complete')
       process.exit()
     })
 }

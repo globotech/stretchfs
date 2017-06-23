@@ -4,6 +4,7 @@ var oose = require('oose-sdk')
 var request = require('request-promise')
 
 var redis = require('../../helpers/redis')
+var logger = require('../../helpers/logger')
 
 var config = require('../../config')
 var couchLoginUrl =
@@ -96,7 +97,8 @@ exports.login = function(req,res){
         } else {
           res.status(500)
           res.json({error: 'Login failed with an error'})
-          console.log(err,err.stack)
+          logger.log('error', err)
+          logger.log('error', err.stack)
         }
       })
   }

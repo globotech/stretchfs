@@ -4,6 +4,7 @@ var infant = require('infant')
 
 //var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 
 /**
@@ -11,7 +12,7 @@ var cradle = require('../helpers/couchdb')
  * @param {function} done
  */
 var runInterval = function(done){
-  console.log('Starting to clear heartbeat')
+  logger.log('info','Starting to clear heartbeat')
   //first lets get all the purchases
   var hbKey = cradle.schema.downVote()
   var votes = []
@@ -42,15 +43,15 @@ var runInterval = function(done){
       result.forEach(function(row){
         if(row.ok) deleted++
       })
-      console.log('Deletion complete, ' + deleted + ' records removed')
+      logger.log('info','Deletion complete, ' + deleted + ' records removed')
       done()
     })
     .catch(function(err){
-      console.log(err.stack)
+      logger.log('error',err.stack)
       done(err)
     })
     .finally(function(){
-      console.log('Heartbeat clearing complete')
+      logger.log('info','Heartbeat clearing complete')
       process.exit()
     })
 }

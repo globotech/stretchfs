@@ -5,6 +5,7 @@ var debug = require('debug')('oose:prismBalance')
 var config = require('../config')
 var cradle = require('../helpers/couchdb')
 var redis = require('../helpers/redis')
+var logger = require('./logger')
 
 var peerGetRows = function(rows){
   var ids = []
@@ -263,8 +264,9 @@ exports.contentExists = function(hash,cacheEnable){
             return existsRecord
           })
           .catch(function(err){
-            console.log(err,err.stack)
-            console.log('EXISTS ERROR: ' + err.message,hash)
+            logger.log('error',err)
+            logger.log('error', err.stack)
+            logger.log('error', 'EXISTS ERROR: ' + err.message + '  ' + hash)
             return deadRecord
           })
       }

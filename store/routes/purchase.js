@@ -2,6 +2,7 @@
 var cradle = require('../../helpers/couchdb')
 var purchasedb = require('../../helpers/purchasedb')
 var redis = require('../../helpers/redis.js')
+var logger = require('../../helpers/logger')
 
 var config = require('../../config')
 
@@ -53,7 +54,8 @@ exports.uri = function(req,res){
         }
       })
       .catch(function(err){
-        console.log(err,err.stack)
+        logger.log('error', err)
+        logger.log('error', err.stack)
         return '/500'
       })
   }

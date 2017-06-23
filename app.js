@@ -9,19 +9,20 @@ var prism = child('./prism')
 var store = child('./store')
 
 var config = require('./config')
+var logger = require('./helpers/logger')
 
 //setup lifecycle logging
 lifecycle.on('start',function(item){
-  console.log('Starting ' + item.title)
+  logger.log('info', 'Starting ' + item.title)
 })
 lifecycle.on('stop',function(item){
-  console.log('Stopping ' + item.title)
+  logger.log('info','Stopping ' + item.title)
 })
 lifecycle.on('online',function(){
-  console.log('Startup complete')
+  logger.log('info','Startup complete')
 })
 lifecycle.on('offline',function(){
-  console.log('Shutdown complete')
+  logger.log('info','Shutdown complete')
 })
 
 
@@ -78,7 +79,7 @@ if(config.store.enabled){
  * @param {function} done
  */
 exports.start = function(done){
-  console.log('Beginning startup')
+  logger.log('info','Beginning startup')
   lifecycle.start(
     function(err){
       if(err) throw err
@@ -94,7 +95,7 @@ exports.start = function(done){
  */
 exports.stop = function(done){
   //start the shutdown process
-  console.log('Beginning shutdown')
+  logger.log('info','Beginning shutdown')
   lifecycle.stop(function(err){
     if(err) throw err
     done()

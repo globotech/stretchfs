@@ -22,6 +22,7 @@ var hasher = require('../helpers/hasher')
 var prismBalance = require('../helpers/prismBalance')
 var redis = require('../helpers/redis')
 var dns = require('../helpers/dns')
+var logger = require('../helpers/logger')
 
 var config = require('../config')
 
@@ -189,7 +190,7 @@ var addClones = function(file){
     })
     //make sure there is a possibility of a winner
     if(!storeToList.length){
-      console.error(file.hash,
+      logger.log('error', file.hash +
         'Sorry! No more available stores to send this to :(')
     } else {
       //figure out a dest winner
@@ -198,7 +199,7 @@ var addClones = function(file){
       storeWinnerList.push(storeToWinner.store)
       prismToWinner = storeToWinner.prism
       //inform of our decision
-      console.log(file.hash,
+      logger.log('info',file.hash +
         'Sending from ' + storeFromWinner.store +
         ' on prism ' + prismFromWinner +
         ' to ' + storeToWinner.store + ' on prism ' + prismToWinner)
@@ -226,14 +227,14 @@ var addClones = function(file){
             }
             var duration = (endStamp - startStamp) / 1000
             var rate = (((fileSize) / duration) / 1024).toFixed(2)
-            console.log(file.hash,
+            logger.log('info', file.hash +
               'Sent ' + prettyBytes(fileSize) + ' to ' + storeToWinner.store +
               ' taking ' + duration +
               ' seconds averaging ' + rate + '/KBs, success!')
           }
         })
         .catch(function(err){
-          console.error(file.hash,
+          logger.log('error', file.hash +
             'Failed to send clone to ' + storeToWinner.store,err.message)
         })
         .finally(function(){
@@ -273,7 +274,7 @@ var removeClones = function(file){
     })
     //make sure there is a possibility of a winner
     if(!storeRemoveList.length){
-      console.error(file.hash,
+      logger.log('error', file.hash +
         'Sorry! No more available stores to remove this from, it is gone. :(')
     } else {
       // now we know possible source stores, randomly select one
@@ -281,7 +282,7 @@ var removeClones = function(file){
         random.integer(0,(storeRemoveList.length - 1))]
       storeWinnerList.push(storeRemoveWinner.store)
       //inform of our decision
-      console.log(file.hash,
+      logger.log('info',file.hash +
         'Removing from ' + storeRemoveWinner.store +
         ' on prism ' + storeRemoveWinner.prism)
       var selectedStoreInfo = selectPeer('store',storeRemoveWinner.store)
@@ -294,7 +295,7 @@ var removeClones = function(file){
       })
         .spread(storeClient.validateResponse())
         .catch(function(err){
-          console.error(file.hash,'Failed to remove clone',err.message)
+          logger.log('error', file.hash + 'Failed to remove clone' +err.message)
         })
         .finally(function(){
           var existsKey = couchdb.schema.inventory(file.hash)
@@ -311,7 +312,7 @@ var removeClones = function(file){
 var verifyFile = function(file){
   //first grab a store to ask for info
   if(!file.count || !file.exists || !(file.map instanceof Array)){
-    console.error(file.hash,'Doesnt exist, cant verify')
+    logger.log('error', file.hash + 'Doesnt exist, cant verify')
     return
   }
   return P.try(function(){
@@ -329,20 +330,21 @@ var verifyFile = function(file){
       })
         .spread(function(res,body){
           if(body && body.error){
-            console.error(file.hash,'Verify failed ' + body.error +
+            logger.log('error', file.hash + 'Verify failed ' + body.error +
               ' on ' + keyParts[1] + ' inventory purged')
           } else if(body && 'ok' === body.status){
-            console.log(file.hash,
+            logger.log('info', file.hash +
               'Inventory verification complete on ' + keyParts[1])
           } else if(body && 'fail' === body.status){
-            console.error(file.hash,
+            logger.log('error', file.hash +
               'Invalid content on ' + keyParts[1] + ' clone removed')
           } else {
-            console.error(file.hash,'Unknown issue',body)
+            logger.log('error', file.hash + 'Unknown issue' +body)
           }
         })
         .catch(function(err){
-          console.error(file.hash,'Failed to verify inventory',err.message)
+          logger.log('error', file.hash +
+            'Failed to verify inventory' + err.message)
         })
         .finally(function(){
           var existsKey = couchdb.schema.inventory(file.hash)
@@ -352,18 +354,18 @@ var verifyFile = function(file){
 }
 
 var printHeader = function(file){
-  console.log('--------------------')
-  console.log(file.hash + ' starting to process changes')
+  logger.log('info','--------------------')
+  logger.log('info', file.hash + ' starting to process changes')
 }
 
 var printFooter = function(file){
-  console.log(file.hash,'Processing complete')
+  logger.log('info', file.hash + 'Processing complete')
 }
 
 var cloneFile = function(file){
   //first grab a store to ask for info
   if(!file.count || !file.exists || !(file.map instanceof Array)){
-    console.error(file.hash,'Doesnt exist, cannot clone')
+    logger.log('error', file.hash + 'Doesnt exist, cannot clone')
     return
   }
   return P.try(function(){
@@ -388,13 +390,13 @@ var cloneFile = function(file){
             err.stack = body.stack
             throw err
           } else {
-            console.log(file.hash,
+            logger.log('info', file.hash +
               'Send from ' + storeFromInfo.name +
               ' to ' + storeToInfo.name + ' complete')
           }
         })
         .catch(function(err){
-          console.error(file.hash,
+          logger.log('error', file.hash +
             'Failed to send clone to ' + storeToInfo.store,err.message)
         })
         .finally(function(){
@@ -407,7 +409,7 @@ var cloneFile = function(file){
 var removeFile = function(file){
   //first grab a store to ask for info
   if(!file.count || !file.exists || !(file.map instanceof Array)){
-    console.error(file.hash,'Doesnt exist, cannot remove')
+    logger.log('error', file.hash + 'Doesnt exist, cannot remove')
     return
   }
   return P.try(function(){
@@ -425,12 +427,13 @@ var removeFile = function(file){
           err.stack = body.stack
           throw err
         } else {
-          console.log(file.hash,'Remove from ' + storeInfo.name + ' complete')
+          logger.log('info', file.hash + 'Remove from ' +
+            storeInfo.name + ' complete')
         }
       })
       .catch(function(err){
-        console.error(file.hash,
-          'Failed to remove clone from ' + storeInfo.store,err.message)
+        logger.log('error', file.hash +
+          'Failed to remove clone from ' + storeInfo.store + err.message)
       })
       .finally(function(){
         var existsKey = couchdb.schema.inventory(file.hash)
@@ -493,16 +496,18 @@ var contentDetail = function(hash){
         {Exists: result.exists ? clc.green('Yes') : clc.red('No')},
         {'Clone Count': clc.green(result.count)}
       )
-      console.log(table.toString())
-      console.log('Storage Map')
-      console.log('--------------------')
+      logger.log('info', table.toString())
+      logger.log('info','Storage Map')
+      logger.log('info','--------------------')
       result.map.forEach(function(entry){
         var parts = entry.split(':')
         var prismName = parts[0]
         var storeName = parts[1]
-        console.log('    ' + clc.cyan(prismName) + ':' + clc.green(storeName))
+        logger.log('info', '    ' + clc.cyan(prismName) +
+          ':' + clc.green(storeName))
       })
-      console.log('\n Total: ' + clc.yellow(result.count) + ' clone(s)\n')
+      logger.log('info', '\n Total: ' +
+        clc.yellow(result.count) + ' clone(s)\n')
       process.exit()
     })
 }
@@ -568,7 +573,7 @@ var folderScan = function(folderPath,fileStream){
             return path.resolve(val)
           })
         fileCount = lines.length
-        console.log('Parsed find result into ' + fileCount + ' files')
+        logger.log('info','Parsed find result into ' + fileCount + ' files')
         progress = new ProgressBar(
           '  scanning [:bar] :current/:total :percent :rate/fps :etas',
           {
@@ -615,7 +620,7 @@ var folderScan = function(folderPath,fileStream){
           resolve(counter,hashList)
         })
         .catch(function(err){
-          console.error('file process error',err)
+          logger.log('error', 'file process error' +err)
           reject(err)
         })
     })
@@ -667,7 +672,7 @@ var keyScan = function(type,key,fileStream){
   var cacheKeyDownload = function(){
     return new P(function(resolve,reject){
       if(!fs.existsSync(cacheKeyTempFile)){
-        console.log('Starting to download a fresh copy ' +
+        logger.log('info','Starting to download a fresh copy ' +
           'of inventory keys, stand by.')
         progress.update(0)
         return inventoryKeyDownload()
@@ -676,7 +681,7 @@ var keyScan = function(type,key,fileStream){
             resolve(result)
           })
       } else {
-        console.log('Reading inventory keys from cache')
+        logger.log('info','Reading inventory keys from cache')
         var result = fs.readFileSync(cacheKeyTempFile)
         try {
           result = JSON.parse(result)
@@ -703,8 +708,8 @@ var fileList = []
 var fileCount = 0
 P.try(function(){
   var welcomeMessage = 'Welcome to the OOSE v' + config.version + ' clonetool!'
-  console.log(welcomeMessage)
-  console.log('--------------------')
+  logger.log('info', welcomeMessage)
+  logger.log('info','--------------------')
   if(program.detail){
     return contentDetail(program.detail)
   }
@@ -742,18 +747,18 @@ P.try(function(){
   if(validBelow()) changeVerb = 'below'
   if(validAbove()) changeVerb = 'above'
   if(validAt())    changeVerb = 'at'
-  console.log('You have asked for ' + program.desired +
+  logger.log('info', 'You have asked for ' + program.desired +
     ' clone(s) of each file ' + changeVerb +
     ' ' + program[changeVerb] + ' clone(s)')
-  console.log('--------------------')
+  logger.log('info','--------------------')
   //obtain peer list
-  console.log('Obtaining peer list')
+  logger.log('info','Obtaining peer list')
   return prismBalance.peerList()
 })
   .then(function(result){
     peerList = result
     //post-process peerList
-    console.log('Resolving location information from DNS')
+    logger.log('info','Resolving location information from DNS')
     var promises = []
     var progress = new ProgressBar(
       '  resolving [:bar] :current/:total :percent :rate/s :etas',
@@ -786,7 +791,8 @@ P.try(function(){
           }
         })
         .catch(function(err){
-          console.error('Failed to lookup reverse DNS for ' + peerList[i].host,err)
+          logger.log('error', 'Failed to lookup reverse DNS for ' +
+            peerList[i].host,err)
         })
       }
       promises.push(dnsReverse(peerList,i))
@@ -794,7 +800,7 @@ P.try(function(){
     return P.all(promises)
   })
   .then(function(){
-    console.log('Peer list obtained!')
+    logger.log('info','Peer list obtained!')
     //get file list together
     if(program.hash){
       fileStream.write(program.hash)
@@ -822,7 +828,7 @@ P.try(function(){
     if(!program.force){
       fileList.forEach(function(file,i){
         if(config.clonetool.hashWhitelist.indexOf(file) >= 0){
-          console.log(file,
+          logger.log('info', file +
             'Is whitelisted and will not be analyzed, use -f to force')
           fileList.splice(i,1)
         }
@@ -830,7 +836,7 @@ P.try(function(){
     }
     fileCount = fileList.length
     if(0 === fileCount){
-      console.log('No files left to analyze, bye')
+      logger.log('info','No files left to analyze, bye')
       process.exit()
     }
     var progress = new ProgressBar(
@@ -843,7 +849,7 @@ P.try(function(){
         incomplete: ' '
       }
     )
-    console.log('Found ' + fileCount + ' file(s) to be analyzed')
+    logger.log('info', 'Found ' + fileCount + ' file(s) to be analyzed')
     //console.log(fileList)
     return analyzeFiles(program,progress,fileList)
   })
@@ -864,7 +870,7 @@ P.try(function(){
         addTotal = addTotal + (+file.add)
         add++
         if(program.verbose){
-          console.log(file.hash + ' has ' + file.count +
+          logger.log('info', file.hash + ' has ' + file.count +
             ' clones and needs ' + file.add + ' more')
         }
       }
@@ -872,24 +878,24 @@ P.try(function(){
         removeTotal = removeTotal + (+file.remove)
         remove++
         if(program.verbose){
-          console.log(file.hash + ' has ' + file.count +
+          logger.log('info', file.hash + ' has ' + file.count +
             ' clones and needs ' + file.remove + ' less')
         }
       }
       else unchanged++
     })
-    console.log('Analysis complete...')
-    console.log('--------------------')
-    console.log(fileCount + ' total file(s)')
-    console.log(add + ' file(s) want clones totalling ' +
+    logger.log('info','Analysis complete...')
+    logger.log('info','--------------------')
+    logger.log('info', fileCount + ' total file(s)')
+    logger.log('info', add + ' file(s) want clones totalling ' +
       addTotal + ' new clone(s)')
-    console.log(remove + ' file(s) dont need as many clones totalling ' +
+    logger.log('info', remove + ' file(s) dont need as many clones totalling ' +
       removeTotal + ' fewer clones')
-    console.log(unchanged + ' file(s) will not be changed')
-    console.log(doesntExist + ' file(s) dont exist')
-    console.log('--------------------')
+    logger.log('info', unchanged + ' file(s) will not be changed')
+    logger.log('info', doesntExist + ' file(s) dont exist')
+    logger.log('info', '--------------------')
     if(program.pretend){
-      console.log('Pretend mode selected, taking no action, bye!')
+      logger.log('info', 'Pretend mode selected, taking no action, bye!')
       process.exit()
     }
     return Object.keys(files)
@@ -899,11 +905,11 @@ P.try(function(){
     return processFile(file)
   })
   .then(function(){
-    console.log('Operations complete, bye!')
+    logger.log('info','Operations complete, bye!')
     process.exit()
   })
   .catch(UserError,function(err){
-    console.error('Oh no! An error has occurred :(')
-    console.error(err.message)
+    logger.log('error','Oh no! An error has occurred :(')
+    logger.log('error', err.message)
     process.exit()
   })

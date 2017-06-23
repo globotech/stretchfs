@@ -12,6 +12,7 @@ var UserError = oose.UserError
 
 var redis = require('../helpers/redis')
 var lsof = require('../helpers/lsof')
+var logger = require('../helpers/logger')
 
 var config = require('../config')
 
@@ -40,8 +41,8 @@ var statUpdate = function(store,section,data){
 var procDisk = {}
 var procFD   = {}
 P.try(function(){
-  console.log('Welcome to the OOSE v' + config.version + ' statTrack!')
-  console.log('--------------------')
+  logger.log('info', 'Welcome to the OOSE v' + config.version + ' statTrack!')
+  logger.log('info','--------------------')
   if(!procfs.works) { throw new UserError('procfs does not exist?') }
   var ndt = require('/etc/ndt/ndt.json')
   return ndt.apps
@@ -49,7 +50,7 @@ P.try(function(){
 .then(function(result){
   var sL = Object.keys(result)
   var resultCount = +(sL.length)
-  console.log('Loaded '+resultCount+' apps from NDT database')
+  logger.log('info', 'Loaded '+resultCount+' apps from NDT database')
   var loadConfigs = []
   for(var x=0;x<resultCount;x++){
     loadConfigs.push(new Promise(function(resolve){resolve(require(result[sL[x]].env.OOSE_CONFIG))}))
@@ -57,7 +58,7 @@ P.try(function(){
   return P.all(loadConfigs)
 })
 .then(function(result){
-  console.log('Loaded instance config files')
+  logger.log('info','Loaded instance config files')
   for(var x=0;x<result.length;x++){
     var r = result[x]
     if(r.store && r.store.name) statUpdate(r.store.name,'cfg',r)
@@ -66,7 +67,7 @@ P.try(function(){
   return new Promise(function(resolve){procfs.disk(function(a,b,c){resolve(b)})})
 })
 .then(function(result){
-  console.log('FS: procfs disk data obtained!')
+  logger.log('info','FS: procfs disk data obtained!')
   for(var x=0;x<result.length;x++){
     var r = result[x]
     if(r.device){
@@ -88,7 +89,7 @@ P.try(function(){
   return si.fsSize()
 })
 .then(function(result){
-  console.log('FS: sizes obtained!')
+  logger.log('info', 'FS: sizes obtained!')
   var statByMount = {}
   for(var x=0;x<result.length;x++){
     statByMount[result[x].mount] = result[x]
@@ -122,7 +123,7 @@ P.try(function(){
   return P.all(lsofTargets)
 })
 .then(function(result){
-  console.log('FS: lsof data obtained!')
+  logger.log('info', 'FS: lsof data obtained!')
   var storeCount = +(storeList.length)
   for(var x=0;x<storeCount;x++){
     var s = storeList[x]
@@ -141,14 +142,14 @@ P.try(function(){
   return null
 })
 .then(function(){
-  console.log('Operations complete, bye!')
-  console.log(stats)
+  logger.log('info', 'Operations complete, bye!')
+  logger.log('info', stats)
   //jam shit in redis here
   process.exit()
 })
 .catch(UserError,function(err){
-  console.error('Oh no! An error has occurred :(')
-  console.error(err.message)
-  console.log(stats)
+  logger.log('error', 'Oh no! An error has occurred :(')
+  logger.log('error', err.message)
+  logger.log('error', stats)
   process.exit()
 })

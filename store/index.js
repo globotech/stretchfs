@@ -7,6 +7,7 @@ var path = require('path')
 
 var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
@@ -19,7 +20,7 @@ if(require.main === module){
   infant.child(
     'oose:' + config.store.name + ':master',
     function(done){
-      console.log('Beginning store startup')
+      logger.log('info','Beginning store startup')
       //bootstrap to start
       cluster = infant.cluster(
         './worker',
@@ -78,17 +79,17 @@ if(require.main === module){
           ])
         })
         .then(function(){
-          console.log('Store startup complete')
+          logger.log('info', 'Store startup complete')
           done()
         })
         .catch(function(err){
-          console.log(err.stack)
-          console.log(err)
+          logger.log('error', err.stack)
+          logger.log('error',err)
           done(err)
         })
     },
     function(done){
-      console.log('Beginning store shutdown')
+      logger.log('info','Beginning store shutdown')
       //mark ourselves as down
       cradle.peer.getAsync(storeKey)
         .then(function(doc){
@@ -104,12 +105,12 @@ if(require.main === module){
         })
         .then(function(){
           heartbeat.cp.kill('SIGKILL')
-          console.log('Store shutdown complete')
+          logger.log('info','Store shutdown complete')
           done()
         })
         .catch(function(err){
-          console.log(err.stack)
-          console.log(err)
+          logger.log('error',err.stack)
+          logger.log('error', err)
           done(err)
         })
     }
