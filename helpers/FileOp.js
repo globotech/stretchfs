@@ -238,13 +238,13 @@ FileOp.prototype.removeClones = function(){
           (-1 === storeWinnerList.indexOf(storeName))
         ){
           storeRemoveList.push({prism: prismName,store: storeName})
-        }
-      }
+        } else console.log(file.hash,'Unavailable on ' + storeName)
+      } else console.log(file.hash,'Protected on ' + storeName)
     })
     //make sure there is a possibility of a winner
     if(!storeRemoveList.length){
       console.error(file.hash,
-        'Sorry! No more available stores to remove this from, it is gone. :(')
+        'Sorry! No available/unprotected stores to remove this from.')
     } else {
       // now we know possible source stores, randomly select one
       storeRemoveWinner = storeRemoveList[

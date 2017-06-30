@@ -37,7 +37,8 @@ CouchSchema.prototype.PEER_TYPES = {
  * existingDownVote:boolean,
  * active:boolean,
  * available:boolean,
- * writable:boolean
+ * writable:boolean,
+ * protected:boolean
  * }}
  */
 

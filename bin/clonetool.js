@@ -30,27 +30,41 @@ var cacheKeyTempFile = '/tmp/oosectkeycache'
 var peerList = {}
 
 //setup cli parsing
+var optDefs = [
+  //'short:full:arg:desc'
+  'F:folder    :folder:Folder to scan',
+  'X:allfiles  :      :Use all files',
+  'P:prism     :prism :Use file list from this prism',
+  'S:store     :store :Use file list from this store',
+  'H:hash      :hash  :Hash of file to check',
+  'i:input     :s     :List of Hashes to analyze, use - for stdin',
+  'a:above     :n     :Files above this count will be analyzed',
+  'A:at        :n     :Files at this count will be analyzed',
+  'b:below     :n     :Files below this count will be analyzed',
+  'd:desired   :n     :Desired clone count',
+  'D:detail    :hash  :Hash of file to get details about',
+  'f:force     :      :Force the operation even on this hash',
+  'u:verify    :      :Verify file(s), by having stores verify integrity',
+  'p:pretend   :      :Don\'t actually make any clones just analyze',
+  'v:verbose   :      :Be verbose and show hash list before processing',
+  'B:block-size:n     :Number of files to analyze at once',
+  ' :clone     :s     :Name of direct store for clones to be sent',
+  ' :drop      :s     :Name of direct store to remove clones from'
+]
+program.version(config.version)
+optDefs.forEach(function(v){
+  var optDef = v.split(':').map(
+    Function.prototype.call.bind(String.prototype.trim)
+  )
+  var optArg = [
+    (optDef[0]?'-'+optDef[0]:'') +
+    (optDef[1]?(optDef[0]?', ':'')+'--'+optDef[1]:'') +
+    (optDef[2]?' <'+optDef[2]+'>':''),
+    (optDef[3]?optDef[3]:undefined)
+  ]
+  program.option(optArg[0],optArg[1])
+})
 program
-  .version(config.version)
-  .option('-a, --above <n>','Files above this count will be analyzed')
-  .option('-A, --at <n>','Files at this count will be analyzed')
-  .option('-b, --below <n>','Files below this count will be analyzed')
-  .option('-B, --block-size <n>','Number of files to analyze at once')
-  .option('-d, --desired <n>','Desired clone count')
-  .option('-D, --detail <s>','Hash of file to get details about')
-  .option('-f, --force','Force the operation even on this hash')
-  .option('-i, --input <s>','List of Hashes line separated ' +
-    'to analyze, use - for stdin')
-  .option('-p, --pretend','Don\'t actually make any clones just analyze')
-  .option('-H, --hash <hash>','Hash of file to check')
-  .option('-F, --folder <folder>','Folder to scan')
-  .option('-S, --store <store>','Use file list from this store')
-  .option('-P, --prism <prism>','Use file list from this prism')
-  .option('-u, --verify','Verify file(s) by having stores verify integrity')
-  .option('-v, --verbose','Be verbose and show hash list before processing')
-  .option('-X, --allfiles','Use all files')
-  .option('--clone <s>','Name of direct store for clones to be sent')
-  .option('--drop <s>','Name of direct store to remove clones from')
   .parse(process.argv)
 
 var printHeader = function(op){
@@ -225,6 +239,9 @@ var relativePath = function(hash,ext){
 var contentDetail = function(hash){
   return prismBalance.contentExists(hash,false)
     .then(function(result){
+      var _conlog = function(str){
+        console.log(process.stdout.isTTY ? str : clc.strip(str))
+      }
       var table = new Table()
       table.push(
         {HASH: clc.yellow(result.hash)},
@@ -235,16 +252,16 @@ var contentDetail = function(hash){
         {Exists: result.exists ? clc.green('Yes') : clc.red('No')},
         {'Clone Count': clc.green(result.count)}
       )
-      console.log(table.toString())
-      console.log('Storage Map')
-      console.log('--------------------')
+      _conlog(table.toString())
+      _conlog('Storage Map')
+      _conlog('--------------------')
       result.map.forEach(function(entry){
         var parts = entry.split(':')
         var prismName = parts[0]
         var storeName = parts[1]
-        console.log('    ' + clc.cyan(prismName) + ':' + clc.green(storeName))
+        _conlog('    ' + clc.cyan(prismName) + ':' + clc.green(storeName))
       })
-      console.log('\n Total: ' +
+      _conlog('\n Total: ' +
         pluralize(clc.yellow,result.count,' clone') + '\n'
       )
       process.exit()
