@@ -108,6 +108,16 @@ CouchSchema.prototype.supervisor = function(name){
 
 
 /**
+ * Supervisor Key
+ * @param {string} name
+ * @return {string}
+ */
+CouchSchema.prototype.supervisor = function(name){
+  return this.applyPrefix('supervisor:' + (name || ''))
+}
+
+
+/**
  * DownVote Key
  * @param {string} castee
  * @param {string} caster
