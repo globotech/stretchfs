@@ -12,6 +12,7 @@ var url = require('url')
 
 var api = require('../../helpers/api')
 var cradle = require('../../helpers/couchdb')
+var logger = require('../../helpers/logger')
 var content = oose.mock.content
 //var purchasedb = require('../../helpers/purchasedb')
 var redis = require('../../helpers/redis')()
@@ -154,7 +155,7 @@ exports.server = {
  */
 exports.before = function(that){
   that.timeout(80000)
-  console.log('Starting mock cluster....')
+  logger.log('info','Starting mock cluster....')
   return P.try(function(){
     return rmfr(__dirname + '/../assets/data')
   })
@@ -203,7 +204,7 @@ exports.before = function(that){
       ])
     })
     .then(function(){
-      console.log('Mock cluster started!')
+      logger.log('info','Mock cluster started!')
     })
 }
 
@@ -215,7 +216,7 @@ exports.before = function(that){
  */
 exports.after = function(that){
   that.timeout(80000)
-  console.log('Stopping mock cluster...')
+  logger.log('info','Stopping mock cluster...')
   return P.all([
     exports.server.store4.stopAsync(),
     exports.server.store3.stopAsync(),
@@ -225,7 +226,7 @@ exports.after = function(that){
     exports.server.prism1.stopAsync()
   ])
     .then(function(){
-      console.log('Mock cluster stopped!')
+      logger.log('info','Mock cluster stopped!')
     })
 }
 
@@ -291,7 +292,7 @@ exports.checkPublic = function(prism){
       })
       .spread(client.validateResponse())
       .spread(function(res,body){
-        console.log(body)
+        logger.log('info',body)
         throw new Error('Should have thrown an error for no username')
       })
       .catch(UserError,function(err){
@@ -443,7 +444,7 @@ exports.contentRetrieve = function(prism){
         expect(body.extension).to.equal(content.ext)
       })
       .catch(function(err){
-        console.log('Failed to setup retrieve',err.message,err.stack)
+        logger.log('error','Failed to setup retrieve' + err.message,err.stack)
         throw err
       })
       .finally(function(){

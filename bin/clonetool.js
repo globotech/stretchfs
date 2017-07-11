@@ -8,17 +8,21 @@ var Table = require('cli-table')
 var program = require('commander')
 var fs = require('graceful-fs')
 var MemoryStream = require('memory-stream')
+var ObjectManage = require('object-manage')
 var oose = require('oose-sdk')
 var path = require('path')
 var prettyBytes = require('pretty-bytes')
 var ProgressBar = require('progress')
 var promisePipe = require('promisepipe')
+var random = require('random-js')()
 
 var UserError = oose.UserError
 
 var couchdb = require('../helpers/couchdb')
 var hasher = require('../helpers/hasher')
 var prismBalance = require('../helpers/prismBalance')
+var dns = require('../helpers/dns')
+var logger = require('../helpers/logger')
 var redis = require('../helpers/redis')()
 var FileOp = require('../helpers/FileOp')
 
@@ -186,7 +190,303 @@ var analyzeFiles = function(program,progress,fileList){
     })
 }
 
+var addClones = function(file){
+  var promises = []
+  var storeWinnerList = []
+  var addClone = function(file){
+    // so to create a clone we need to figure out a source store
+    var startStamp = +new Date()
+    var prismFromWinner
+    var storeFromWinner
+    var prismToWinner
+    var storeToWinner
+    var storeFromList =[]
+    var storeToList = []
+    //iteration vars
+    var prismNameList = []
+    var storeNameList = []
+    file.map.forEach(function(entry){
+      var parts = entry.split(':')
+      var prismName = parts[0]
+      var storeName = parts[1]
+      prismNameList.push(prismName)
+      storeNameList.push(storeName)
+      storeFromList.push({prism: prismName, store: storeName})
+    })
+    // randomly select one source store
+    storeFromWinner = storeFromList[
+      random.integer(0,(storeFromList.length - 1))]
+    prismFromWinner = storeFromWinner.prism
+    // figure out a destination store
+    peerList.forEach(function(peer){
+      //skip prisms and whatever else
+      if('store' !== peer.type) return
+      if(
+        peer.prism !== prismFromWinner &&
+        -1 === storeWinnerList.indexOf(peer.name) &&
+        -1 === file.map.indexOf(peer.prism + ':' + peer.name) &&
+        true === peer.available &&
+        true === peer.writable
+      ){
+        storeToList.push({prism: peer.prism, store: peer.name})
+      }
+    })
+    //make sure there is a possibility of a winner
+    if(!storeToList.length){
+      logger.log('error', file.hash +
+        'Sorry! No more available stores to send this to :(')
+    } else {
+      //figure out a dest winner
+      storeToWinner = storeToList[
+        random.integer(0,(storeToList.length - 1))]
+      storeWinnerList.push(storeToWinner.store)
+      prismToWinner = storeToWinner.prism
+      //inform of our decision
+      logger.log('info',file.hash +
+        'Sending from ' + storeFromWinner.store +
+        ' on prism ' + prismFromWinner +
+        ' to ' + storeToWinner.store + ' on prism ' + prismToWinner)
+      var storeFromInfo = selectPeer('store',storeFromWinner.store)
+      var sendClient = setupStore(storeFromInfo)
+      var sendOptions = {
+        file: file.hash + '.' + file.mimeExtension.replace('.',''),
+        store: storeToWinner.prism + ':' + storeToWinner.store
+      }
+      return sendClient.postAsync({
+        url: sendClient.url('/content/send'),
+        json: sendOptions
+      })
+        .spread(function(res,body){
+          if(body.error){
+            var err = new Error(body.error)
+            err.stack = body.stack
+            throw err
+          } else {
+            var endStamp = +new Date()
+            var fileSize = 1024
+            if(body && body.fileDetail &&
+              body.fileDetail.stat && body.fileDetail.stat.size){
+              fileSize = body.fileDetail.stat.size
+            }
+            var duration = (endStamp - startStamp) / 1000
+            var rate = (((fileSize) / duration) / 1024).toFixed(2)
+            logger.log('info', file.hash +
+              'Sent ' + prettyBytes(fileSize) + ' to ' + storeToWinner.store +
+              ' taking ' + duration +
+              ' seconds averaging ' + rate + '/KBs, success!')
+          }
+        })
+        .catch(function(err){
+          logger.log('error', file.hash +
+            'Failed to send clone to ' + storeToWinner.store,err.message)
+        })
+        .finally(function(){
+          var existsKey = couchdb.schema.inventory(file.hash)
+          redis.del(existsKey)
+        })
+    }
+  }
+  for(var i = 0; i < file.add; i++){
+    promises.push(addClone(file))
+  }
+  return P.all(promises)
+}
+
+var removeClones = function(file){
+  var promises = []
+  var storeWinnerList = []
+  var removeClone = function(file){
+    // so to create a clone we need to figure out a source store
+    var storeRemoveWinner
+    var storeRemoveList = []
+    //iteration vars
+    var prismNameList = []
+    var storeNameList = []
+    file.map.forEach(function(entry){
+      var parts = entry.split(':')
+      var prismName = parts[0]
+      var storeName = parts[1]
+      if(-1 === config.clonetool.storeProtected.indexOf(storeName)){
+        var peer = selectPeer('store',storeName)
+        prismNameList.push(prismName)
+        storeNameList.push(storeName)
+        if(-1 === storeWinnerList.indexOf(storeName) && true === peer.available){
+          storeRemoveList.push({prism: prismName,store: storeName})
+        }
+      }
+    })
+    //make sure there is a possibility of a winner
+    if(!storeRemoveList.length){
+      logger.log('error', file.hash +
+        'Sorry! No more available stores to remove this from, it is gone. :(')
+    } else {
+      // now we know possible source stores, randomly select one
+      storeRemoveWinner = storeRemoveList[
+        random.integer(0,(storeRemoveList.length - 1))]
+      storeWinnerList.push(storeRemoveWinner.store)
+      //inform of our decision
+      logger.log('info',file.hash +
+        'Removing from ' + storeRemoveWinner.store +
+        ' on prism ' + storeRemoveWinner.prism)
+      var selectedStoreInfo = selectPeer('store',storeRemoveWinner.store)
+      var storeClient = setupStore(selectedStoreInfo)
+      return storeClient.postAsync({
+        url: storeClient.url('/content/remove'),
+        json: {
+          hash: file.hash
+        }
+      })
+        .spread(storeClient.validateResponse())
+        .catch(function(err){
+          logger.log('error', file.hash + 'Failed to remove clone' +err.message)
+        })
+        .finally(function(){
+          var existsKey = couchdb.schema.inventory(file.hash)
+          redis.del(existsKey)
+        })
+    }
+  }
+  for(var i = 0; i < file.remove; i++){
+    promises.push(removeClone(file))
+  }
+  return P.all(promises)
+}
+
+var verifyFile = function(file){
+  //first grab a store to ask for info
+  if(!file.count || !file.exists || !(file.map instanceof Array)){
+    logger.log('error', file.hash + 'Doesnt exist, cant verify')
+    return
+  }
 var processOp = function(op){
+  return P.try(function(){
+    return file.map
+  })
+    .map(function(storeKey){
+      var keyParts = storeKey.split(':')
+      var storeInfo = selectPeer('store',keyParts[1])
+      var storeClient = setupStore(storeInfo)
+      return storeClient.postAsync({
+        url: storeClient.url('/content/verify'),
+        json: {
+          file: file.hash + '.' + ('' + file.mimeExtension).replace('.','')
+        }
+      })
+        .spread(function(res,body){
+          if(body && body.error){
+            logger.log('error', file.hash + 'Verify failed ' + body.error +
+              ' on ' + keyParts[1] + ' inventory purged')
+          } else if(body && 'ok' === body.status){
+            logger.log('info', file.hash +
+              'Inventory verification complete on ' + keyParts[1])
+          } else if(body && 'fail' === body.status){
+            logger.log('error', file.hash +
+              'Invalid content on ' + keyParts[1] + ' clone removed')
+          } else {
+            logger.log('error', file.hash + 'Unknown issue' +body)
+          }
+        })
+        .catch(function(err){
+          logger.log('error', file.hash +
+            'Failed to verify inventory' + err.message)
+        })
+        .finally(function(){
+          var existsKey = couchdb.schema.inventory(file.hash)
+          redis.del(existsKey)
+        })
+    })
+}
+
+var printHeader = function(file){
+  logger.log('info','--------------------')
+  logger.log('info', file.hash + ' starting to process changes')
+}
+
+var printFooter = function(file){
+  logger.log('info', file.hash + 'Processing complete')
+}
+
+var cloneFile = function(file){
+  //first grab a store to ask for info
+  if(!file.count || !file.exists || !(file.map instanceof Array)){
+    logger.log('error', file.hash + 'Doesnt exist, cannot clone')
+    return
+  }
+  return P.try(function(){
+    return file.map[random.integer(0,file.map.length - 1)]
+  })
+    .then(function(storeKey){
+      var keyParts = storeKey.split(':')
+      var storeFromInfo = selectPeer('store',keyParts[1])
+      var storeToInfo = selectPeer('store',program.clone)
+      var storeFromClient = setupStore(storeFromInfo)
+      var sendOptions = {
+        file: file.hash + '.' + file.mimeExtension.replace('.',''),
+        store: storeToInfo.prism + ':' + storeToInfo.name
+      }
+      return storeFromClient.postAsync({
+        url: storeFromClient.url('/content/send'),
+        json: sendOptions
+      })
+        .spread(function(res,body){
+          if(body.error){
+            var err = new Error(body.error)
+            err.stack = body.stack
+            throw err
+          } else {
+            logger.log('info', file.hash +
+              'Send from ' + storeFromInfo.name +
+              ' to ' + storeToInfo.name + ' complete')
+          }
+        })
+        .catch(function(err){
+          logger.log('error', file.hash +
+            'Failed to send clone to ' + storeToInfo.store,err.message)
+        })
+        .finally(function(){
+          var existsKey = couchdb.schema.inventory(file.hash)
+          redis.del(existsKey)
+        })
+    })
+}
+
+var removeFile = function(file){
+  //first grab a store to ask for info
+  if(!file.count || !file.exists || !(file.map instanceof Array)){
+    logger.log('error', file.hash + 'Doesnt exist, cannot remove')
+    return
+  }
+  return P.try(function(){
+    var storeInfo = selectPeer('store',program.drop)
+    var storeClient = setupStore(storeInfo)
+    return storeClient.postAsync({
+      url: storeClient.url('/content/remove'),
+      json: {
+        hash: file.hash
+      }
+    })
+      .spread(function(res,body){
+        if(body.error){
+          var err = new Error(body.error)
+          err.stack = body.stack
+          throw err
+        } else {
+          logger.log('info', file.hash + 'Remove from ' +
+            storeInfo.name + ' complete')
+        }
+      })
+      .catch(function(err){
+        logger.log('error', file.hash +
+          'Failed to remove clone from ' + storeInfo.store + err.message)
+      })
+      .finally(function(){
+        var existsKey = couchdb.schema.inventory(file.hash)
+        redis.del(existsKey)
+      })
+  })
+}
+
+var processFile = function(file){
   return P.try(function(){
     if(program.clone || program.drop || op.FILE_ACTIONS.nop < op.action)
       printHeader(op)
@@ -252,6 +552,9 @@ var contentDetail = function(hash){
         {Exists: result.exists ? clc.green('Yes') : clc.red('No')},
         {'Clone Count': clc.green(result.count)}
       )
+      logger.log('info', table.toString())
+      logger.log('info','Storage Map')
+      logger.log('info','--------------------')
       _conlog(table.toString())
       _conlog('Storage Map')
       _conlog('--------------------')
@@ -259,8 +562,12 @@ var contentDetail = function(hash){
         var parts = entry.split(':')
         var prismName = parts[0]
         var storeName = parts[1]
+        logger.log('info', '    ' + clc.cyan(prismName) +
+          ':' + clc.green(storeName))
         _conlog('    ' + clc.cyan(prismName) + ':' + clc.green(storeName))
       })
+      logger.log('info', '\n Total: ' +
+        clc.yellow(result.count) + ' clone(s)\n')
       _conlog('\n Total: ' +
         pluralize(clc.yellow,result.count,' clone') + '\n'
       )
@@ -329,7 +636,7 @@ var folderScan = function(folderPath,fileStream){
             return path.resolve(val)
           })
         fileCount = lines.length
-        console.log('Parsed find result into ' + fileCount + ' files')
+        logger.log('info','Parsed find result into ' + fileCount + ' files')
         progress = new ProgressBar(
           '  scanning [:bar] :current/:total :percent :rate/fps :etas',
           {
@@ -376,7 +683,7 @@ var folderScan = function(folderPath,fileStream){
           resolve(counter,hashList)
         })
         .catch(function(err){
-          console.error('file process error',err)
+          logger.log('error', 'file process error' +err)
           reject(err)
         })
     })
@@ -420,7 +727,7 @@ var keyScan = function(type,key,fileStream){
   var cacheKeyDownload = function(){
     return new P(function(resolve,reject){
       if(!fs.existsSync(cacheKeyTempFile)){
-        console.log('Starting to download a fresh copy ' +
+        logger.log('info','Starting to download a fresh copy ' +
           'of inventory keys, stand by.')
         var progress = new ProgressBar(
           ' downloading [:bar] :current/:total :percent :rate/ks :etas',
@@ -440,10 +747,12 @@ var keyScan = function(type,key,fileStream){
             resolve(result)
           })
       } else {
+        logger.log('info','Reading inventory keys from cache')
+        var result = fs.readFileSync(cacheKeyTempFile)
         console.log('Reading inventory keys from cache')
         try {
-          var result = JSON.parse(fs.readFileSync(cacheKeyTempFile))
-          resolve(result.sort())
+          result = JSON.parse(result)
+          resolve(result)
         } catch(e){
           reject(e)
         }
@@ -469,8 +778,8 @@ var fileList = []
 var fileCount = 0
 P.try(function(){
   var welcomeMessage = 'Welcome to the OOSE v' + config.version + ' clonetool!'
-  console.log(welcomeMessage)
-  console.log('--------------------')
+  logger.log('info', welcomeMessage)
+  logger.log('info','--------------------')
   if(program.detail){
     return contentDetail(program.detail)
   }
@@ -513,6 +822,80 @@ P.try(function(){
   var changeVerb = 'somewhat near'
   if(validBelow()) changeVerb = 'below'
   if(validAbove()) changeVerb = 'above'
+  if(validAt())    changeVerb = 'at'
+  logger.log('info', 'You have asked for ' + program.desired +
+    ' clone(s) of each file ' + changeVerb +
+    ' ' + program[changeVerb] + ' clone(s)')
+  logger.log('info','--------------------')
+  //obtain peer list
+  logger.log('info','Obtaining peer list')
+  return prismBalance.peerList()
+})
+  .then(function(result){
+    peerList = result
+    //post-process peerList
+    logger.log('info','Resolving location information from DNS')
+    var promises = []
+    var progress = new ProgressBar(
+      '  resolving [:bar] :current/:total :percent :rate/s :etas',
+      {
+        total: peerList.length,
+        width: 20,
+        complete: '=',
+        incomplete: ' '
+      }
+    )
+    progress.update(0)
+    for(var i=0; i<peerList.length; i++){
+      var peer = peerList[i]
+      //overlay any tagged 'protected' into config list
+      if(true === peerList[i].protected && -1 === config.clonetool.storeProtected.indexOf(peerList[i].name)){
+        config.clonetool.storeProtected.push(peerList[i].name)
+      }
+      //load location info from DNS PTRs
+      var dnsReverse = function(peerList,i){
+        return dns.reverseAsync(peerList[i].host)
+        .spread(function(res,err){
+          progress.tick()
+          if(err){ throw err } else {
+            var parts = res.split('-')
+            if(peerList[i].name === parts[0]){
+              peerList[i].machine = parts[1]
+              peerList[i].zone    = parts[2]
+              peerList[i].domain  = parts[3]
+            }
+          }
+        })
+        .catch(function(err){
+          logger.log('error', 'Failed to lookup reverse DNS for ' +
+            peerList[i].host,err)
+        })
+      }
+      promises.push(dnsReverse(peerList,i))
+    }
+    return P.all(promises)
+  })
+  .then(function(){
+    logger.log('info','Peer list obtained!')
+    //get file list together
+    if(program.hash){
+      fileStream.write(program.hash)
+    } else if(program.force){
+      fileStream.write(program.force)
+    } else if(program.store){
+      return keyScan('store',program.store,fileStream)
+    } else if(program.prism){
+      return keyScan('prism',program.prism,fileStream)
+    } else if(program.allfiles){
+      return keyScan('allfiles',null,fileStream)
+    } else if(program.folder){
+      return folderScan(program.folder,fileStream)
+    } else if('-' === program.input){
+      return promisePipe(process.stdin,fileStream)
+    } else {
+      return promisePipe(fs.createReadStream(program.input),fileStream)
+    }
+  })
   if(validAt()) changeVerb = 'at'
   console.log('You have asked for ' + program.desired +
     pluralize(program.desired,' clone') +
@@ -548,6 +931,17 @@ P.try(function(){
     )
     var pruned = {}
     fileList = fileList.filter(function(a){
+      return a.match(hasher.hashExpressions[hasher.identify(a)])
+    })
+    if(!program.force){
+      fileList.forEach(function(file,i){
+        if(config.clonetool.hashWhitelist.indexOf(file) >= 0){
+          logger.log('info', file +
+            'Is whitelisted and will not be analyzed, use -f to force')
+          fileList.splice(i,1)
+        }
+      })
+    }
       var rv = !!(a.match(hasher.hashExpressions[hasher.identify(a)]))
       if(rv && (!program.force) &&
         (-1 !== config.clonetool.hashWhitelist.indexOf(a))
@@ -562,7 +956,7 @@ P.try(function(){
     })
     fileCount = fileList.length
     if(0 === fileCount){
-      console.log('No files left to analyze, bye')
+      logger.log('info','No files left to analyze, bye')
       process.exit()
     }
     console.log('Found ' + fileCount +
@@ -581,6 +975,8 @@ P.try(function(){
         incomplete: ' '
       }
     )
+    logger.log('info', 'Found ' + fileCount + ' file(s) to be analyzed')
+    //console.log(fileList)
     return analyzeFiles(program,progress,fileList)
   })
   .then(function(result){
@@ -606,6 +1002,8 @@ P.try(function(){
         addTotal = addTotal + (+op.repeat)
         add++
         if(program.verbose){
+          logger.log('info', file.hash + ' has ' + file.count +
+            ' clones and needs ' + file.add + ' more')
           console.log(op.file.hash + ' has ' + op.file.count +
             ' clones and needs ' + op.repeat + ' more')
         }
@@ -614,6 +1012,8 @@ P.try(function(){
         removeTotal = removeTotal + (+op.repeat)
         remove++
         if(program.verbose){
+          logger.log('info', file.hash + ' has ' + file.count +
+            ' clones and needs ' + file.remove + ' less')
           console.log(op.file.hash + ' has ' + op.file.count +
             ' clones and needs ' + op.repeat + ' less')
         }
@@ -627,6 +1027,16 @@ P.try(function(){
       }
       else unchanged++
     })
+    logger.log('info','Analysis complete...')
+    logger.log('info','--------------------')
+    logger.log('info', fileCount + ' total file(s)')
+    logger.log('info', add + ' file(s) want clones totalling ' +
+      addTotal + ' new clone(s)')
+    logger.log('info', remove + ' file(s) dont need as many clones totalling ' +
+      removeTotal + ' fewer clones')
+    logger.log('info', unchanged + ' file(s) will not be changed')
+    logger.log('info', doesntExist + ' file(s) dont exist')
+    logger.log('info', '--------------------')
     console.log('Analysis complete...')
     console.log('--------------------')
     console.log(fileCount + ' total ' + pluralize(fileCount,'file'))
@@ -649,7 +1059,7 @@ P.try(function(){
     )
     console.log('--------------------')
     if(program.pretend){
-      console.log('Pretend mode selected, taking no action, bye!')
+      logger.log('info', 'Pretend mode selected, taking no action, bye!')
       process.exit()
     }
 
@@ -668,11 +1078,11 @@ P.try(function(){
     return processOp(ops[hash])
   })
   .then(function(){
-    console.log('Operations complete, bye!')
+    logger.log('info','Operations complete, bye!')
     process.exit()
   })
   .catch(UserError,function(err){
-    console.error('Oh no! An error has occurred :(')
-    console.error(err.message)
+    logger.log('error','Oh no! An error has occurred :(')
+    logger.log('error', err.message)
     process.exit()
   })

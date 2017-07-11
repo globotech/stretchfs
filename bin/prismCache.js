@@ -4,6 +4,7 @@ var program = require('commander')
 var Table = require('cli-table')
 
 var api = require('../helpers/api')
+var logger = require('../helpers/logger')
 
 var config = require('../config')
 
@@ -26,16 +27,15 @@ program
   .parse(process.argv)
 
 if(program.list){
-  console.log('Command list')
+  logger.log('info','Command list')
   commandList.forEach(function(command){
-    console.log('  ' + command)
+    logger.log('info', '  ' + command)
   })
-  console.log()
   process.exit()
 }
 
 if(!program.command){
-  console.log('No command provided')
+  logger.log('info','No command provided')
   process.exit()
 }
 
@@ -56,8 +56,8 @@ if(program.detail){
         value = body[key]
         table.push({key: value})
       }
-      console.log(table.toString())
-      console.log('  ' + clc.cyan(keys.length) + ' Total records')
+      logger.log('info', table.toString())
+      logger.log('info', '  ' + clc.cyan(keys.length) + ' Total records')
       process.exit()
     })
 }
@@ -71,7 +71,8 @@ if(program.flush){
   })
     .spread(prism.validateResponse())
     .spread(function(res,body){
-      console.log('  Success! ' + clc.cyan(body.count) + ' records flushed.')
+      logger.log('info', '  Success! ' +
+        clc.cyan(body.count) + ' records flushed.')
       process.exit()
     })
 }

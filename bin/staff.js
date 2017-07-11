@@ -4,6 +4,7 @@ var Table = require('cli-table')
 var program = require('commander')
 
 var sequelize = require('../helpers/sequelize')()
+var logger = require('../helpers/logger')
 
 var Staff = sequelize.models.Staff
 
@@ -20,7 +21,7 @@ sequelize.doConnect()
       .description('Create new staff member')
       .action(function(opts){
         P.try(function(){
-          console.log('Creating staff member')
+          logger.log('info','Creating staff member')
           if(!opts.email || !opts.password)
             throw new Error('Email and password are required')
           var doc = Staff.build({
@@ -32,12 +33,11 @@ sequelize.doConnect()
           return doc.save()
         })
           .then(function(){
-            console.log('Staff member created!')
+            logger.log('info','Staff member created!')
             process.exit()
           })
           .catch(function(err){
-            console.trace(err)
-            console.log('Error: Failed to create staff member: ' + err)
+            logger.log('error', 'Error: Failed to create staff member: ' + err)
             process.exit()
           })
       })
@@ -59,7 +59,7 @@ sequelize.doConnect()
             return doc.save()
           })
           .then(function(){
-            console.log('Staff member updated successfully!')
+            logger.log('info','Staff member updated successfully!')
             process.exit()
           })
           .catch(function(err){
@@ -79,11 +79,11 @@ sequelize.doConnect()
             return doc.destroy()
           })
           .then(function(){
-            console.log('Staff member removed successfully!')
+            logger.log('info','Staff member removed successfully!')
             process.exit()
           })
           .catch(function(err){
-            console.log('Error: Could not remove staff member: ' + err)
+            logger.log('error', 'Error: Could not remove staff member: ' + err)
           })
       })
     //list
@@ -99,12 +99,12 @@ sequelize.doConnect()
             results.forEach(function(row){
               table.push([row.email,row.name,row.active ? 'Yes' : 'No'])
             })
-            console.log(table.toString())
+            logger.log('info',table.toString())
             process.exit()
           })
           .catch(function(err){
-            console.trace(err)
-            console.log('Error: Could not list staff members ' + err)
+            logger.log('error', 'Error: Could not list staff members ' +
+              err.stack)
             process.exit()
           })
       })

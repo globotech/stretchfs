@@ -8,6 +8,7 @@ var ProgressBar = require('progress')
 
 var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 //make some promises
 P.promisifyAll(fs)
@@ -79,7 +80,7 @@ var verifyInventoryAsync = function(){
  * @param {function} done
  */
 var runInterval = function(done){
-  console.log('Starting to verify store inventory with remote')
+  logger.log('info', 'Starting to verify store inventory with remote')
   var scanStart = +new Date()
   var scanEnd = scanStart + 1000
   var duration = 0
@@ -87,8 +88,9 @@ var runInterval = function(done){
     .then(function(counter){
       scanEnd = +new Date()
       duration = ((scanEnd - scanStart) / 1000).toFixed(2)
-      console.log('Inventory verification complete in ' + duration + ' seconds')
-      console.log('  ' +
+      logger.log('info', 'Inventory verification complete in ' +
+        duration + ' seconds')
+      logger.log('info', '  ' +
         counter.valid + ' valid ' +
         counter.invalid + ' invalid ' +
         counter.warning + ' warnings ' +
@@ -96,8 +98,8 @@ var runInterval = function(done){
       )
     })
     .catch(function(err){
-      console.log(err.stack)
-      console.log('Inventory Verification Error: ' + err.message)
+      logger.log('error', err.stack)
+      logger.log('error', 'Inventory Verification Error: ' + err.message)
     })
     .finally(function(){
       //register the next run semi randomly to try and percolate the inventory

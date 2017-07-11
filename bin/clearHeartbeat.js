@@ -1,5 +1,5 @@
 'use strict';
-var debug = require('debug')('oose:clearPurchases')
+var debug = require('debug')('oose:clearHeartbeat')
 var infant = require('infant')
 
 //var config = require('../config')
@@ -12,31 +12,31 @@ var logger = require('../helpers/logger')
  * @param {function} done
  */
 var runInterval = function(done){
-  logger.log('info','Starting to clear purchases')
+  logger.log('info','Starting to clear heartbeat')
   //first lets get all the purchases
-  var purchaseKey = cradle.schema.purchase()
-  var purchases = []
-  debug('requesting purchases',purchaseKey)
-  cradle.purchase.allAsync({
-    startkey: purchaseKey,
-    endkey: purchaseKey + '\uffff'
+  var hbKey = cradle.schema.downVote()
+  var votes = []
+  debug('requesting votes',hbKey)
+  cradle.heartbeat.allAsync({
+    startkey: hbKey,
+    endkey: hbKey + '\uffff'
   })
     .then(function(result){
-      debug('purchase result; purchases: ',result.length)
+      debug('vote result; votes: ',result.length)
       //this gives us the purchase keys and to my understanding we just have
       //to update these to deleted now
-      var purchase = {}
+      var vote = {}
       for(var i = 0; i < result.length; i++){
-        purchase = result[i]
-        purchases.push({
-          _id: purchase.id,
-          _rev: purchase.value.rev,
+        vote = result[i]
+        votes.push({
+          _id: vote.id,
+          _rev: vote.value.rev,
           _deleted: true
         })
       }
-      debug('saving deletion of purchases',purchases.length,purchases[0])
+      debug('saving deletion of vote',votes.length,votes[0])
       //now we just use cradle to save the purchases
-      return cradle.purchase.saveAsync(purchases)
+      return cradle.heartbeat.saveAsync(votes)
     })
     .then(function(result){
       var deleted = 0
@@ -51,14 +51,14 @@ var runInterval = function(done){
       done(err)
     })
     .finally(function(){
-      logger.log('info','Purchase clearing complete')
+      logger.log('info','Heartbeat clearing complete')
       process.exit()
     })
 }
 
 if(require.main === module){
   infant.child(
-    'oose:clearPurchases',
+    'oose:clearHeartbeat',
     function(done){
       //setup the interval for collection from master
       runInterval(done)

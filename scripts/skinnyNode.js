@@ -6,6 +6,7 @@ var bodyParser = require('body-parser')
 var debug = require('debug')('oose:skinnyNode')
 var crypto = require('crypto')
 
+var logger = require('../helpers/logger')
 
 
 app.use(bodyParser.json())       // to support JSON-encoded bodies
@@ -19,7 +20,8 @@ var config = require('./../config.js')
 var myHost = 'localhost'
 
 if(process.argv.length < 3){
-  console.log('Usage : node ' + process.argv[1] + ' <name> <port> <peer_port>')
+  logger.log('info',
+    'Usage : node ' + process.argv[1] + ' <name> <port> <peer_port>')
   process.exit(1)
 }
 

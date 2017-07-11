@@ -7,6 +7,7 @@ var path = require('path')
 var readdirp = require('readdirp')
 
 var cradle = require('../couchdb')
+var logger = require('../logger')
 
 var config = require('../../config')
 
@@ -113,9 +114,8 @@ module.exports = function(done){
           return miniSleep(config.store.inventoryThrottle)
         })
         .catch(function(err){
-          console.log(err.stack)
-          console.log(err)
-          console.log(hash,'insertion FAILED',err.message)
+          logger.log('error', hash + ' insertion FAILED ' + err.message)
+          logger.log('error', err.stack)
         })
         .finally(function(){
           debug(hash,'record scan complete, resuming stream')
@@ -127,8 +127,8 @@ module.exports = function(done){
     done(err)
   })
   stream.on('warn',function(err){
-    console.log(err.stack)
-    console.log('readdirp warning: ' + err.message)
+    logger.log('error', 'readdirp warning: ' + err.message)
+    logger.log('error', err.stack)
   })
   stream.on('end',function(){
     done(null,counter)

@@ -5,6 +5,7 @@ var infant = require('infant')
 
 var config = require('../config')
 var cradle = require('../helpers/couchdb')
+var logger = require('../helpers/logger')
 
 //make some promises
 P.promisifyAll(fs)
@@ -21,7 +22,7 @@ var emit = function(){}
  * @param {function} done
  */
 var runInterval = function(done){
-  console.log('Starting create couch designs')
+  logger.log('info','Starting create couch designs')
   cradle.inventory.saveAsync('_design/inventory',{
     byStore: {
       map: function(doc){

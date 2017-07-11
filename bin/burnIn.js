@@ -8,6 +8,7 @@ var ProgressBar = require('progress')
 var UserError = oose.UserError
 
 var config = require('../config')
+var logger = require('../helpers/logger')
 
 var disks = []
 var progress = {}
@@ -32,21 +33,23 @@ program
 P.promisifyAll(cp)
 
 P.try(function(){
-  console.log('Welcome to OOSE Burn In')
-  console.log('-----------------------')
+  logger.log('info','Welcome to OOSE Burn In')
+  logger.log('info','-----------------------')
   if(disks.length > 0)
-    console.log('Disk testing enabled...')
+    logger.log('info','Disk testing enabled...')
   if(program.cpu)
-    console.log('CPU testing enabled...')
+    logger.log('info','CPU testing enabled...')
   if(program.memory)
-    console.log('Memory testing enabled...')
+    logger.log('info','Memory testing enabled...')
   if(program.network)
-    console.log('Network testing enabled...')
+    logger.log('info','Network testing enabled...')
   if(program.network && !program.iperf)
     throw new UserError('Network testing enabled without iperf server')
   var rounds = +(program.rounds || 1)
-  console.log('About to start ' + rounds + ' rounds of concurrent testing')
-  console.log('WARNING! System will become very unresponsive during tests.')
+  logger.log('info','About to start ' + rounds +
+    ' rounds of concurrent testing')
+  logger.log('info',
+    'WARNING! System will become very unresponsive during tests.')
   progress = new ProgressBar(
     '  burn-in [:bar] :current/:total :percent :etas',
     {
@@ -64,7 +67,7 @@ P.try(function(){
 })
   .each(function(iteration){
     var start = +(new Date())
-    console.log('Starting round #' + iteration + ' @ ' + (new Date()))
+    logger.log('info','Starting round #' + iteration + ' @ ' + (new Date()))
     var cpuCores = +(program.cpuCores || 1)
     var promises = []
     var i = 0
@@ -103,12 +106,12 @@ P.try(function(){
       .finally(function(){
         var end = +(new Date())
         var duration = ((end - start) / 1000).toFixed(2)
-        console.log(
+        logger.log('info',
           'Round #' + iteration + ' has finished in' + duration + ' seconds')
         progress.tick()
       })
   })
   .then(function(){
-    console.log('Burn in tests complete. Looks good :)  Bye!')
+    logger.log('info','Burn in tests complete. Looks good :)  Bye!')
     process.exit()
   })

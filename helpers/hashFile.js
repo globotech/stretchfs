@@ -6,6 +6,7 @@ var path = require('path')
 
 var config = require('../config')
 var hasher = require('./hasher')
+var logger = require('./logger')
 
 var basePath = path.resolve(config.root + '/content')
 
@@ -205,7 +206,7 @@ exports.details = function(hash){
           err: err
         }
       } else {
-        console.log(err,err.stack)
+        logger.log('error', err.stack)
         return false
       }
     })

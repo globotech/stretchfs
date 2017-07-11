@@ -2,6 +2,7 @@
 var P = require('bluebird')
 
 var e2e = require('./helpers/e2e')
+var logger = require('../helpers/logger')
 
 describe('outage',function(){
   describe('outage:prism',function(){
@@ -96,7 +97,8 @@ describe('outage',function(){
         it('should still download content',function(){
           return e2e.contentDownload(e2e.clconf.prism2)()
             .catch(function(e){
-              console.log(e.message,e.stack)
+              logger.log('error', e.message)
+              logger.log('error', e.stack)
               process.exit()
             })
         })

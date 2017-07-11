@@ -7,6 +7,7 @@ var os = require('os')
 var prettyBytes = require('pretty-bytes')
 
 var config = require('../config')
+var logger = require('../helpers/logger')
 
 var interval
 
@@ -33,7 +34,7 @@ var scanInventoryAsync = P.promisify(scanInventory)
  * @param {function} done
  */
 var runInterval = function(done){
-  console.log('Starting to examine store inventory')
+  logger.log('info', 'Starting to examine store inventory')
   var scanStart = +new Date()
   var scanEnd = scanStart + 1000
   var duration = 0
@@ -41,8 +42,8 @@ var runInterval = function(done){
     .then(function(counter){
       scanEnd = +new Date()
       duration = ((scanEnd - scanStart) / 1000).toFixed(2)
-      console.log('Inventory scan complete in ' + duration + ' seconds')
-      console.log('  ' +
+      logger.log('info', 'Inventory scan complete in ' + duration + ' seconds')
+      logger.log('info', '  ' +
         counter.valid + ' valid ' +
         prettyBytes(counter.bytes) + ' ' +
         counter.created + ' created ' +
@@ -54,8 +55,8 @@ var runInterval = function(done){
       )
     })
     .catch(function(err){
-      console.log(err.stack)
-      console.log('Inventory Scan Error: ' + err.message)
+      logger.log('error',err.stack)
+      logger.log('error', 'Inventory Scan Error: ' + err.message)
     })
     .finally(function(){
       //register the next run semi randomly to try and percolate the inventory

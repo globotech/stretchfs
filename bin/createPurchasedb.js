@@ -4,6 +4,7 @@ var moment = require('moment')
 var Password = require('node-password').Password
 
 var purchasedb = require('../helpers/purchasedb')
+var logger = require('../helpers/logger')
 
 var config = require('../config')
 
@@ -37,6 +38,6 @@ token = token + new Password({length: 11, special: false}).toString()
 //next create the database
 purchasedb.createDatabase(token,!!program.replicate)
   .then(function(){
-    console.log('Database created')
+    logger.log('info','Database created')
     process.exit()
   })

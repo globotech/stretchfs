@@ -3,6 +3,7 @@ var P = require('bluebird')
 var oose = require('oose-sdk')
 var request = require('request-promise')
 
+var logger = require('../../helpers/logger')
 var redis = require('../../helpers/redis')()
 
 var config = require('../../config')
@@ -96,7 +97,8 @@ exports.login = function(req,res){
         } else {
           res.status(500)
           res.json({error: 'Login failed with an error'})
-          console.log(err,err.stack)
+          logger.log('error', err)
+          logger.log('error', err.stack)
         }
       })
   }

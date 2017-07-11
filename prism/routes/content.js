@@ -21,6 +21,7 @@ var redis = require('../../helpers/redis')()
 var hasher = require('../../helpers/hasher')
 var hashFile = require('../../helpers/hashFile')
 var storeBalance = require('../../helpers/storeBalance')
+var logger = require('../../helpers/logger')
 var UserError = oose.UserError
 
 var config = require('../../config')
@@ -224,7 +225,8 @@ exports.retrieve = function(req,res){
       res.json(response)
     })
     .catch(UserError,NetworkError,function(err){
-      console.log(err,err.stack)
+      logger.log('error', err)
+      logger.log('error', err.stack)
       redis.incr(redis.schema.counterError('prism','content:retrieve'))
       res.status(500)
       res.set({
@@ -244,8 +246,9 @@ exports.retrieve = function(req,res){
         'OOSE-Message': err.message
       })
       res.json({error: err.message})
-      console.log(err,err.stack)
-      console.log('Unhandled error on content retrieve ' + err.message)
+      logger.log('error', 'Unhandled error on content retrieve ' + err.message)
+      logger.log('error', err)
+      logger.log('error', err.stack)
     })
     .finally(function(){
       return fs.unlinkAsync(tmpfile)
@@ -312,7 +315,7 @@ exports.put = function(req,res){
         'OOSE-Message': err.message
       })
       res.json({error: err.message})
-      console.log('Unhandled error on content put ' + err.message)
+      logger.log('error', 'Unhandled error on content put ' + err.message)
     })
 }
 
@@ -365,7 +368,7 @@ exports.detail = function(req,res){
         'OOSE-Message': err.message
       })
       res.json({error: err.message})
-      console.log('Unhandled error on content detail ' + err.message)
+      logger.log('error', 'Unhandled error on content detail ' + err.message)
     })
 }
 
@@ -464,7 +467,7 @@ exports.download = function(req,res){
         'OOSE-Message': err.message
       })
       res.json({error: err.message})
-      console.log('Unhandled error on content download ' + err.message)
+      logger.log('error', 'Unhandled error on content download  ' + err.message)
     })
 }
 
@@ -566,8 +569,9 @@ exports.purchase = function(req,res){
         'OOSE-Message': err.message
       })
       res.json({error: err.message})
-      console.log(
-        'Unhandled error on content purchase ' + err.message,err.stack)
+      logger.log('error',
+        'Unhandled error on content purchase  ' + err.message)
+      logger.log('error', err.stack)
     })
 }
 
@@ -738,8 +742,8 @@ exports.deliver = function(req,res){
         'OOSE-Reason': 'Unknown error',
         'OOSE-Message': err.message
       })
-      console.log(err.stack)
-      console.log('Unhandled error on content deliver ' + err.message)
+      logger.log('error', 'Unhandled error on content deliver  ' + err.message)
+      logger.log('error', err.stack)
     })
 }
 
