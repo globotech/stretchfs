@@ -64,6 +64,10 @@ From there follow the debug filtering rules defined
 
 ## Changelog
 
+### 2.5.0
+
+* Merge patches of various 2.4 scripts.
+
 ### 2.4.0
 
 * Removal of the idea of keeping symlinks for reverse lookups, uses globby
