@@ -53,6 +53,14 @@ client.heartbeat = P.promisifyAll(
 
 
 /**
+ * Setup the Supervisor DB
+ * @type {object}
+ */
+client.supervisor = P.promisifyAll(
+  client.database(config.couchdb.database + '-supervisor'))
+
+
+/**
  * Add schema to helper
  * @type {CouchSchema}
  */

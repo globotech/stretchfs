@@ -169,6 +169,19 @@ config.$load({
     purchasePruneConcurrency: 512,
     verifyExpiration: 15552000000//ms  (180 days = 7776000000)
   },
+  //supervisor system
+  supervisor: {
+    enabled: false,
+    name: 'supervisor1',
+    port: 5972,
+    host: null,
+    username: 'oose',
+    password: 'oose',
+    workers: {
+      count: 1,
+      maxConnections: 10000
+    }
+  },
   //clonetool utility
   clonetool: {
     //desired is the default desired number of copies
@@ -189,7 +202,7 @@ config.$load({
       prefix: 'oose',
       options: {}
     },
-    life:       86400, //1 day
+    life: 86400, //1 day
     afterlife: 604800  //1 week
   }
 })
