@@ -1,6 +1,9 @@
 language: node_js
 sudo: false
 node_js:
+  - "0.10"
+  - "0.12"
+  - "4"
   - "6"
   - "8"
 addons:
@@ -15,7 +18,6 @@ services:
   - redis
 env:
   - TRAVIS=travis CC=gcc-4.9 CXX=g++-4.9
-before_install: npm i -g npm@5.3.0
 before_script:
   - curl -X PUT http://localhost:5984/_config/admins/root -d '"blah1234"'
   - curl -X PUT http://root:blah1234@localhost:5984/oose-peer
