@@ -68,6 +68,17 @@ From there follow the debug filtering rules defined
 
 * Merge patches of various 2.4 scripts.
 
+### 2.4.x
+* Clonetool enriched with more upgrades/features/fixes
+* bin/createPurchasedb.js now maintains expiry of old databases
+  with option `-K <days>` (keep `n` days, default `10`) 
+* Added configuration option `clonetool.storeProtected` which is an Array of
+  store names that will not be subject to automatic deletions (such as reducing
+  counts with clonetool).  Default is an empty Array.
+* Added boolean `protected` to Peer record which when existing and `true` will
+  concatenate that store onto the list (if any) provided in the above
+  `clonetool.storeProtected` Array at runtime.
+
 ### 2.4.0
 
 * Removal of the idea of keeping symlinks for reverse lookups, uses globby

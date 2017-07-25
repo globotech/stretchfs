@@ -177,20 +177,33 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
     .then(function(){
       var replicator = couchdbconn.database('_replicator')
       debug('saving replicator from couch to repl',couchConfig,replConfig)
+      var replControl = {
+        source: 'oose-purchase-' + databaseName,
+        target: 'http://' + replConfig.host +
+          ':' + replConfig.port + '/' +
+          'oose-purchase-' + databaseName,
+        continuous: true,
+        use_checkpoints: true,
+        checkpoint_interval: '30',
+        owner: 'root'
+      }
+      if(replConfig.authRepl && replConfig.authRepl.username){
+        replControl.target = 'http://' +
+          replConfig.authRepl.username + ':' + replConfig.authRepl.password + '@' +
+          replConfig.host +
+          ':' + replConfig.port + '/' +
+          'oose-purchase-' + databaseName
+        replControl.owner = replConfig.authRepl.username
+        replControl.user_ctx = {
+          name: replConfig.authRepl.username,
+          roles: ['member','admin']
+        }
+      }
       return replicator.saveAsync(
         'oose-purchase-' + databaseName + '-' +
         couchConfig.host + '->' +
         replConfig.host,
-        {
-          source: 'oose-purchase-' + databaseName,
-          target: 'http://' + replConfig.host +
-          ':' + replConfig.port + '/' +
-          'oose-purchase-' + databaseName,
-          continuous: true,
-          use_checkpoints: true,
-          checkpoint_interval: '30',
-          owner: 'root'
-        }
+        replControl
       )
         .catch(suppressDocumentConflict)
         .catch(suppressForbidden)
@@ -198,20 +211,33 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
     .then(function(){
       var replicator = repldbconn.database('_replicator')
       debug('saving replicator from repl to couch',replConfig,couchConfig)
+      var couchControl = {
+        source: 'oose-purchase-' + databaseName,
+        target: 'http://' + couchConfig.host + ':' +
+        couchConfig.port + '/' +
+        'oose-purchase-' + databaseName,
+        continuous: true,
+        use_checkpoints: true,
+        checkpoint_interval: '30',
+        owner: 'root'
+      }
+      if(couchConfig.authRepl && couchConfig.authRepl.username){
+        couchControl.target = 'http://' +
+          couchConfig.authRepl.username + ':' + couchConfig.authRepl.password + '@' +
+          couchConfig.host +
+          ':' + couchConfig.port + '/' +
+          'oose-purchase-' + databaseName
+        couchControl.owner = couchConfig.authRepl.username
+        couchControl.user_ctx = {
+          name: couchConfig.authRepl.username,
+          roles: ['member','admin']
+        }
+      }
       return replicator.saveAsync(
         'oose-purchase-' + databaseName + '-' +
         replConfig.host + '->' +
         couchConfig.host,
-        {
-          source: 'oose-purchase-' + databaseName,
-          target: 'http://' + couchConfig.host + ':' +
-          couchConfig.port + '/' +
-          'oose-purchase-' + databaseName,
-          continuous: true,
-          use_checkpoints: true,
-          checkpoint_interval: '30',
-          owner: 'root'
-        }
+        couchControl
       )
         .catch(suppressDocumentConflict)
         .catch(suppressForbidden)
@@ -234,6 +260,64 @@ var setupWithoutReplication = function(databaseName,couchConfig){
   P.promisifyAll(couchdb)
   couchdb = couchdb.database('oose-purchase-' + databaseName)
   return couchdb.createAsync()
+}
+
+
+/**
+ * Prune purchase databases
+ * @param {integer} days number of days to keep
+ * @return {P}
+ */
+var pruneDatabase = function(days){
+  var floorToken = +moment().subtract(days,'days').format('YYYYMMDD')
+  debug('foorToken',floorToken)
+  var pruneServer = function(couchConfig,zone){
+    var couchdbconn = new (cradle.Connection)(
+      couchConfig.host,
+      couchConfig.port,
+      couchConfig.options
+    )
+    P.promisifyAll(couchdbconn)
+    return couchdbconn.databasesAsync()
+      .map(function(database){
+        //THESE LINES ARE SUPER IMPORTANT
+        if(database[0] === '_') return
+        if(database.indexOf('oose-purchase-'+ zone) !== 0) return
+        if(!database.match(/^oose-purchase-[a-z]{1}[0-9]{8}/)) return
+        database = database.replace('oose-purchase-' + zone,'')
+        var databaseName = 'oose-purchase-' + zone + database
+        if((+database) > floorToken){
+          debug('keeping',databaseName)
+        } else {
+          debug('removing',databaseName)
+          var db = couchdbconn.database(databaseName)
+          return db.destroyAsync()
+          //return P.try(function(){console.log('WOULD DESTROY',databaseName)})
+            .then(function(){
+              var db = couchdbconn.database('_replicator')
+              return db.allAsync({
+                startkey: databaseName + '-',
+                endkey: databaseName + '-\uffff'
+              })
+                .map(function(key){
+                  //console.log('WOULD REMOVE _replicator',key.key)
+                  return db.removeAsync(key.key)
+                })
+            })
+        }
+      })
+  }
+  var promises = []
+  if(couchConfigs && Object.keys(couchConfigs)){
+    for(var index in couchConfigs){
+      couchConfigs[index].forEach(function(couchConfig){
+        promises.push(pruneServer(couchConfig,index))
+      })
+    }
+  } else {
+    promises.push(pruneServer(config.couchdb))
+  }
+  return P.all(promises)
 }
 
 
@@ -322,6 +406,16 @@ PurchaseDb.prototype.createDatabase = function(token,setupReplication){
   if(undefined === setupReplication) setupReplication = false
   if(!token) throw new Error('token must be defined to create purchase db')
   return createDatabase(token,setupReplication)
+}
+
+
+/**
+ * Prune databases
+ * @param {integer} days number of days to keep from today
+ * @return {P}
+ */
+PurchaseDb.prototype.pruneDatabase = function(days){
+  return pruneDatabase(days)
 }
 
 

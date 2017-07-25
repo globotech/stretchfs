@@ -16,6 +16,7 @@ program
   .option('-T, --tomorrow','Setup tomorrows database $ -T')
   .option('-z, --zone <s>','Supply zone $ -z a')
   .option('-d, --date <n>','Supply date, example $ -z a -d 20161202')
+  .option('-K, --keep <n>','Only keep N most recent databases, destructive')
   .parse(process.argv)
 
 var zone = program.zone || 'a'
@@ -39,5 +40,14 @@ token = token + new Password({length: 11, special: false}).toString()
 purchasedb.createDatabase(token,!!program.replicate)
   .then(function(){
     logger.log('info','Database created')
-    process.exit()
+    if(program.keep && program.keep > 0){
+      logger.log('info','Pruning database(s)')
+      return purchasedb.pruneDatabase((+program.keep || 10))
+        .then(function(){
+          logger.log('info','Database(s) pruned')
+          process.exit()
+        })
+    } else {
+      process.exit()
+    }
   })
