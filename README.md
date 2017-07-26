@@ -67,6 +67,7 @@ From there follow the debug filtering rules defined
 ### 2.5.0
 
 * Merge patches of various 2.4 scripts.
+* Add logger helper to enable syslog formatting for logs.
 
 ### 2.4.x
 * Clonetool enriched with more upgrades/features/fixes
