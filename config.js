@@ -37,6 +37,13 @@ config.$load({
     voteLife: 60000, //ms vote hold down time (no pings during this window)
     pingResponseTimeout: 2000 //ms
   },
+  //statsPush
+  statsPush: {
+    systemKey: null,
+    systemType: null,
+    startDelay: 0, //ms default: 0/false which autodelays to next round minute
+    frequency: (156000/11) //ms static reporting frequency
+  },
   //databases
   redis: {
     host: '127.0.0.1',

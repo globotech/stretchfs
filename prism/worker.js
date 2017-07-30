@@ -44,8 +44,10 @@ app.get('/ping',routes.ping)
 app.post('/ping',routes.ping)
 
 //stats
-app.get('/stats',routes.stats)
-app.post('/stats',routes.stats)
+app.get('/stats',routes.stats.sendJSON)
+app.post('/stats',routes.stats.sendJSON)
+app.get('/statsPush',routes.stats.receiveJSON)
+app.post('/statsPush',routes.stats.receiveJSON)
 
 app.get('/crossdomain.xml',function(req,res){
   redis.incr(redis.schema.counter('prism','crossdomain'))

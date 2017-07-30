@@ -178,25 +178,44 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
       var replicator = couchdbconn.database('_replicator')
       debug('saving replicator from couch to repl',couchConfig,replConfig)
       var replControl = {
-        source: 'oose-purchase-' + databaseName,
-        target: 'http://' + replConfig.host +
-          ':' + replConfig.port + '/' +
-          'oose-purchase-' + databaseName,
+        source: {
+          url: 'http://' + couchConfig.host +
+               ':' + couchConfig.port + '/' +
+               'oose-purchase-' + databaseName
+        },
+        target: {
+          url: 'http://' + replConfig.host +
+            ':' + replConfig.port + '/' +
+            'oose-purchase-' + databaseName
+        },
         continuous: true,
-        use_checkpoints: true,
-        checkpoint_interval: '30',
+        create_target: true,
         owner: 'root'
       }
+      if(couchConfig.authRepl && couchConfig.authRepl.username){
+        replControl.target.url = 'http://' +
+          couchConfig.authRepl.username + ':' +
+          couchConfig.authRepl.password + '@' +
+          couchConfig.host +
+          ':' + couchConfig.port + '/' +
+          'oose-purchase-' + databaseName
+        replControl.owner = couchConfig.authRepl.username
+        replControl.user_ctx = {
+          name: couchConfig.authRepl.username,
+          roles: ['_admin','_reader','_writer']
+        }
+      }
       if(replConfig.authRepl && replConfig.authRepl.username){
-        replControl.target = 'http://' +
-          replConfig.authRepl.username + ':' + replConfig.authRepl.password + '@' +
+        replControl.target.url = 'http://' +
+          replConfig.authRepl.username + ':' +
+          replConfig.authRepl.password + '@' +
           replConfig.host +
           ':' + replConfig.port + '/' +
           'oose-purchase-' + databaseName
         replControl.owner = replConfig.authRepl.username
         replControl.user_ctx = {
           name: replConfig.authRepl.username,
-          roles: ['member','admin']
+          roles: ['_admin','_reader','_writer']
         }
       }
       return replicator.saveAsync(
@@ -212,25 +231,44 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
       var replicator = repldbconn.database('_replicator')
       debug('saving replicator from repl to couch',replConfig,couchConfig)
       var couchControl = {
-        source: 'oose-purchase-' + databaseName,
-        target: 'http://' + couchConfig.host + ':' +
-        couchConfig.port + '/' +
-        'oose-purchase-' + databaseName,
+        source: {
+          url: 'http://' + replConfig.host +
+            ':' + replConfig.port + '/' +
+            'oose-purchase-' + databaseName
+        },
+        target: {
+          url: 'http://' + couchConfig.host +
+               ':' + couchConfig.port + '/' +
+               'oose-purchase-' + databaseName
+        },
         continuous: true,
-        use_checkpoints: true,
-        checkpoint_interval: '30',
+        create_target: true,
         owner: 'root'
       }
+      if(replConfig.authRepl && replConfig.authRepl.username){
+        couchControl.target.url = 'http://' +
+          replConfig.authRepl.username + ':' +
+          replConfig.authRepl.password + '@' +
+          replConfig.host +
+          ':' + replConfig.port + '/' +
+          'oose-purchase-' + databaseName
+        couchControl.owner = replConfig.authRepl.username
+        couchControl.user_ctx = {
+          name: replConfig.authRepl.username,
+          roles: ['_admin','_reader','_writer']
+        }
+      }
       if(couchConfig.authRepl && couchConfig.authRepl.username){
-        couchControl.target = 'http://' +
-          couchConfig.authRepl.username + ':' + couchConfig.authRepl.password + '@' +
+        couchControl.target.url = 'http://' +
+          couchConfig.authRepl.username + ':' +
+          couchConfig.authRepl.password + '@' +
           couchConfig.host +
           ':' + couchConfig.port + '/' +
           'oose-purchase-' + databaseName
         couchControl.owner = couchConfig.authRepl.username
         couchControl.user_ctx = {
           name: couchConfig.authRepl.username,
-          roles: ['member','admin']
+          roles: ['_admin','_reader','_writer']
         }
       }
       return replicator.saveAsync(
@@ -308,11 +346,13 @@ var pruneDatabase = function(days){
       })
   }
   var promises = []
+  var index = 0
+  var _pruneServer = function(couchConfig){
+    promises.push(pruneServer(couchConfig,index))
+  }
   if(couchConfigs && Object.keys(couchConfigs)){
-    for(var index in couchConfigs){
-      couchConfigs[index].forEach(function(couchConfig){
-        promises.push(pruneServer(couchConfig,index))
-      })
+    for(index in couchConfigs){
+      couchConfigs[index].forEach(_pruneServer)
     }
   } else {
     promises.push(pruneServer(config.couchdb))

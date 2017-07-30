@@ -1,9 +1,16 @@
 'use strict';
 var P = require('bluebird')
 var debug = require('debug')('helper:stat')
+var oose = require('oose-sdk')
+var path = require('path')
+var procfs = require('procfs-stats')
+var si = require('systeminformation')
+
+var UserError = oose.UserError
 
 var config = require('../config')
 
+var lsof = require('../helpers/lsof')
 var redisHelper = require('../helpers/redis')
 var redis = {
   'local': redisHelper(config.redis),
@@ -17,6 +24,7 @@ var redis = {
  * @return {function} constructor
  */
 module.exports = function(options){
+  if(!procfs.works) { throw new UserError('procfs does not exist?') }
   var s = {}
   s.config = ('object' === typeof options) ? options : config.stats
   /*jshint bitwise: false*/
@@ -192,6 +200,115 @@ module.exports = function(options){
         })
         return redisIn
       })
+  }
+
+  var procDisk = {}
+  P.promisifyAll(procfs)
+  s.fsProc = function(){
+    return procfs.diskAsync().then(function(result){
+      result.forEach(function(r){
+        if(r.device){
+          procDisk[r.device] = {
+            reads_completed: +r.reads_completed,
+            reads_merged: +r.reads_merged,
+            sectors_read: +r.sectors_read,
+            ms_reading: +r.ms_reading,
+            writes_completed: +r.writes_completed,
+            writes_merged: +r.writes_merged,
+            sectors_written: +r.sectors_written,
+            ms_writing: +r.ms_writing,
+            ios_pending: +r.ios_pending,
+            ms_io: +r.ms_io,
+            ms_weighted_io: +r.ms_weighted_io
+          }
+        }
+      })
+      return procDisk
+    })
+  }
+
+  s.fsSizes = function(){
+    return P.try(function(){
+      return si.fsSize()
+    }).then(function(result){
+      var statByMount = {}
+      result.forEach(function(r){
+        statByMount[r.mount] = r
+      })
+      var _sortR = function(a,b){
+        if(a > b)return -1;
+        if(a < b)return 1;
+        return 0
+      }
+      var mounts = Object.keys(statByMount).sort(_sortR)
+      mounts.forEach(function(m){
+        s.refList.forEach(function(st){
+          var pathHit = path.dirname(s.get(st,'cfg').root).match('^' + m)
+          if(pathHit && (!s.get(st,'fs'))){
+            var r = statByMount[m]
+            var devName = r.fs.match(/^\/dev\/(.+)$/)
+            var data = procDisk[devName[1]]
+            data.dev = devName[1]
+            data.mount = m
+            data.size = r.size
+            data.used = r.used
+            s.set(st,'fs',data)
+          }
+        })
+      })
+    })
+  }
+
+  s.fsOpenFiles = function(){
+    return P.try(function(){
+      var lsofTargets = []
+      s.refList.forEach(function(ref){
+        debug('Executing lsof -anc nginx ' + s.get(ref,'fs').mount)
+        lsofTargets.push(
+          lsof.exec('-anc nginx ' + s.get(ref,'fs').mount)
+        )
+      })
+      return P.all(lsofTargets)
+    }).then(function(result){
+      var i = 0
+      s.refList.forEach(function(st){
+        var contentDir = s.get(st,'cfg').root + '/content/'
+        var hashUsage = {}
+        result[i++].forEach(function(r){
+          var pathHit = r.name.match('^' + contentDir)
+          if(pathHit){
+            var hash = pathHit.input
+              .replace(pathHit[0],'')
+              .replace(/\//g,'')
+              .replace(/\..*$/,'')
+            hashUsage[hash] = (hashUsage[hash]) ? hashUsage[hash] + 1 : 1
+          }
+        })
+        s.set(st,'hashUsage',hashUsage)
+      })
+    })
+  }
+
+  var counterKeys = []
+  s.ooseCounters = function(){
+    return P.try(function(){
+      return redis.local.keysAsync('oose:counter:*')
+    }).then(function(result){
+      debug(result)
+      var batch = []
+      result.forEach(function(i){
+        counterKeys.push(i)
+        batch.push(redis.local.getAsync(i))
+      })
+      return P.all(batch)
+    }).then(function(result){
+      var ooseData = {}
+      var i = 0
+      counterKeys.forEach(function(k){
+        ooseData[k]=result[i++]
+      })
+      s.set('API','ooseData',ooseData)
+    })
   }
 
   return s
