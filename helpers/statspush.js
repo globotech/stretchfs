@@ -1,11 +1,12 @@
 'use strict';
-var program = require('commander')
 var debug = require('debug')('oose:sp')
 var infant = require('infant')
+var program = require('commander')
 
 var api = require('../helpers/api')
-var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
+var prismBalance = require('../helpers/prismBalance')
+var stats = require('../helpers/stats')
 
 var config = require('../config')
 
@@ -63,7 +64,7 @@ var runStatsPush = function(systemKey,systemType){
       //make the ping request
       return peerRequest.postAsync({
         url: peerRequest.url('/statsPush') + '',
-        timeout: config.heartbeat.pingResponseTimeout || 1000
+        timeout: 3333
       })
         .spread(function(res,body){
           debug('Stats response',peer.name,body)

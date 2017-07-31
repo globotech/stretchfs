@@ -9,7 +9,7 @@ var UserError = oose.UserError
 
 var config = require('../config')
 
-var stats = require('../helpers/stats')()
+var stats = new (require('../helpers/stats'))()
 
 //setup cli parsing
 program
@@ -70,12 +70,12 @@ P.try(function(){
   .then(function(result){
     console.log('API: Polled local OOSE counters')
     debug(result)
-    return stats.push()
+    return stats.shove()
   })
   .then(function(result){
     debug(result)
     console.log('Redis content sent to remote')
-    return stats.pull()
+    return stats.yank()
   })
   .then(function(result){
     console.log('Redis content read back from remote:')
