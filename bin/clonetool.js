@@ -259,7 +259,15 @@ var contentDetail = function(hash){
         var parts = entry.split(':')
         var prismName = parts[0]
         var storeName = parts[1]
-        _conlog('    ' + clc.cyan(prismName) + ':' + clc.green(storeName))
+        var avail = parts[2] || '--'
+        _conlog('    ' +
+          (('-'===avail.substr(0)) ?
+            clc.magenta(prismName) : clc.cyan(prismName)) +
+          ':' +
+          (('-'===avail.substr(1)) ?
+            clc.red(storeName) : clc.green(storeName)) +
+          (process.stdout.isTTY ? '': ' ' + avail)
+        )
       })
       _conlog('\n Total: ' +
         pluralize(clc.yellow,result.count,' clone') + '\n'

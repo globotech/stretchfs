@@ -167,7 +167,7 @@ exports.winner = function(token,prismList,skip,allowFull){
  */
 exports.contentExists = function(hash,cacheEnable){
   if('undefined' === typeof cacheEnable) cacheEnable = true
-  else cacheEnable = (cacheEnable)
+  else cacheEnable = !!(cacheEnable)
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
   var existsKey = cradle.schema.inventory(hash)
   var existsRecord = {}
@@ -221,18 +221,25 @@ exports.contentExists = function(hash,cacheEnable){
                   debug(existsKey,'got inventory list record',row)
                   return P.all([
                     cradle.peer.getAsync(cradle.schema.prism(row.prism))
-                      .catch(function(){return {available: false}}),
+                      .catch(function(){
+                        return {name:row.prism,available:false}
+                      }),
                     cradle.peer.getAsync(
                       cradle.schema.store(row.prism,row.store))
-                      .catch(function(){return {available: false}})
+                      .catch(function(){
+                        return {name:row.store,available:false}
+                      })
                   ])
                 })
                 .filter(function(row){
-                  return row[0].available && row[1].available
+                  return (!cacheEnable)||(row[0].available && row[1].available)
                 })
                 .then(function(result){
                   var map = result.map(function(val){
-                    return val[0].name + ':' + val[1].name
+                    var avail = cacheEnable ? '' : ':' +
+                      ((val[0].available) ? '+' : '-') +
+                      ((val[1].available) ? '+' : '-')
+                    return val[0].name + ':' + val[1].name + avail
                   })
                   var record = {
                     hash: inventoryList[0].hash,
