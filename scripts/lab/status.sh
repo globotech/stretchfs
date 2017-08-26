@@ -35,7 +35,12 @@ function ping_url {
 function check_url {
   echo -n "Checking $2... "
   res="`curl -s -S -k $1`"
-  echo -n $res
+  rv=$?
+  if [ $rv -gt 0 ]; then
+    echo -n $res
+  else
+    echo "OK"
+  fi
 }
 
 echo "This section will check systems in general"
