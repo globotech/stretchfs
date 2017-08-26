@@ -1,7 +1,7 @@
 #!/bin/bash
 
 script_name="OOSE"
-domain=".lab.oose.io"
+domain="lab.oose.io"
 http_proto="https://"
 dc="ESITED-LAX1"
 hv_name="h220"
@@ -41,7 +41,7 @@ function check_url {
 echo "This section will check systems in general"
 
 check_url $http_proto$domain/ "OOSE Entry Point (Load Balancer)"
-check_url ${http_proto}shredder$domain/ "Shredder Entry Point (Load Blancer)"
+check_url ${http_proto}shredder.$domain/ "Shredder Entry Point (Load Blancer)"
 
 echo "Checking OOSE systems individually"
 
