@@ -24,7 +24,7 @@ date
 
 function ping_url {
   echo -n "Checking $2... "
-  res="`curl -s -S -k $http_proto$1$domain/ping`"
+  res="`curl -s -S -k $http_proto$1.$domain/ping`"
   if [[ $res == *"pong"* ]]; then
     echo "OK"
   else
