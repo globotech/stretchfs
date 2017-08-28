@@ -44,7 +44,7 @@ function check_url {
 echo
 echo "Check Public Access Points"
 
-check_url $http_proto$domain/ "OOSE Entry Point (Load Balancer)"
+check_url $http_proto$domain/ "$script_name Entry Point (Load Balancer)"
 
 echo
 echo "Check $script_name systems individually"
