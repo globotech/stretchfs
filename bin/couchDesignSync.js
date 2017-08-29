@@ -4,7 +4,7 @@ var fs = require('graceful-fs')
 var infant = require('infant')
 
 var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 //make some promises
@@ -23,7 +23,7 @@ var emit = function(){}
  */
 var runInterval = function(done){
   logger.log('info','Starting create couch designs')
-  cradle.inventory.saveAsync('_design/inventory',{
+  couchdb.inventory.saveAsync('_design/inventory',{
     byStore: {
       map: function(doc){
         emit([doc.store],doc)

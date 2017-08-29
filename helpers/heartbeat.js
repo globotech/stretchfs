@@ -5,7 +5,7 @@ var infant = require('infant')
 var random = require('random-js')()
 
 var api = require('../helpers/api')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
 
@@ -63,8 +63,8 @@ setupProgram()
  * @return {string}
  */
 var getPeerKey = function(peer){
-  var prismKey = cradle.schema.prism(peer.name)
-  var storeKey = cradle.schema.store(peer.prism,peer.name)
+  var prismKey = couchdb.schema.prism(peer.name)
+  var storeKey = couchdb.schema.store(peer.prism,peer.name)
   return (peer.type === 'prism') ? prismKey : storeKey
 }
 
@@ -81,12 +81,12 @@ var getPeerKey = function(peer){
 var downVote = function(peer,reason,systemKey,systemType,peerCount){
   //setup keys
   var key = getPeerKey(peer)
-  var downKey = cradle.schema.downVote(peer.name)
-  var myDownKey = cradle.schema.downVote(peer.name, systemKey)
+  var downKey = couchdb.schema.downVote(peer.name)
+  var myDownKey = couchdb.schema.downVote(peer.name, systemKey)
   var currentVoteLog = null
   debug('DOWN VOTE: ' + key)
   var createDownVote = function(){
-    return cradle.heartbeat.saveAsync(myDownKey,{
+    return couchdb.heartbeat.saveAsync(myDownKey,{
       peer: peer,
       systemKey: systemKey,
       systemType: systemType,
@@ -95,7 +95,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
     })
   }
   //get down votes that have already been set for this host
-  return cradle.heartbeat.allAsync(
+  return couchdb.heartbeat.allAsync(
     {startkey: downKey, endkey: downKey + '\uffff'})
     .then(
       function(log){
@@ -123,7 +123,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if(count === 0 || votes < (count / 2))
         throw new Error('Ok, got it')
       peer.available = false
-      return cradle.peer.saveAsync(key,peer._rev,peer)
+      return couchdb.peer.saveAsync(key,peer._rev,peer)
     })
     .catch(function(err){
       if('Ok, got it' === err.message){
@@ -176,21 +176,21 @@ var runHeartbeat = function(systemKey,systemType){
    */
   var restorePeer = function(peer){
     logger.log('info', 'Restoring peer ' + peer)
-    return cradle.peer.getAsync(peer._id)
+    return couchdb.peer.getAsync(peer._id)
       .then(function(result){
         result.available = true
-        return cradle.peer.saveAsync(result._id,result._rev,result)
+        return couchdb.peer.saveAsync(result._id,result._rev,result)
       })
       .then(function(){
         //remove down votes
-        var downKey = cradle.schema.downVote(peer.name)
-        return cradle.heartbeat.allAsync({
+        var downKey = couchdb.schema.downVote(peer.name)
+        return couchdb.heartbeat.allAsync({
           startkey: downKey,
           endkey: downKey + '\uffff'
         })
       })
       .map(function(vote){
-        return cradle.heartbeat.removeAsync(vote._id,vote._rev)
+        return couchdb.heartbeat.removeAsync(vote._id,vote._rev)
       },{concurrency: config.heartbeat.concurrency})
       .catch(function(err){
         logger.log('error', 'Failed to restore peer' + err)
@@ -204,8 +204,8 @@ var runHeartbeat = function(systemKey,systemType){
     })
     .map(function(peer){
       //check for down votes for this peer from us
-      var downKey = cradle.schema.downVote(peer.name,systemKey)
-      return cradle.heartbeat.getAsync(downKey)
+      var downKey = couchdb.schema.downVote(peer.name,systemKey)
+      return couchdb.heartbeat.getAsync(downKey)
         .then(
           function(result){
             peer.existingDownVote = result
@@ -275,7 +275,7 @@ var runHeartbeat = function(systemKey,systemType){
  */
 var runVotePrune = function(systemKey,systemType){
   //get votes we cast
-  var downVoteKey = cradle.schema.downVote()
+  var downVoteKey = couchdb.schema.downVote()
   var currentTimestamp = +(new Date())
   debug('Starting vote prune',downVoteKey,currentTimestamp)
 
@@ -291,12 +291,12 @@ var runVotePrune = function(systemKey,systemType){
     if(vote.systemType && vote.systemType !== systemType) return false
     return (voteExpiresAfter <= currentTimestamp)
   }
-  return cradle.heartbeat.allAsync({
+  return couchdb.heartbeat.allAsync({
     startkey: downVoteKey,
     endkey: downVoteKey + '\uffff'
   })
     .map(function(vote){
-      return cradle.heartbeat.getAsync(vote.id).reflect()
+      return couchdb.heartbeat.getAsync(vote.id).reflect()
     },{concurrency: config.heartbeat.concurrency})
     .filter(function(vote){
       if(!vote) return false
@@ -305,7 +305,7 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       debug('Pruning vote',vote._id)
-      return cradle.heartbeat.removeAsync(vote._id,vote._rev).reflect()
+      return couchdb.heartbeat.removeAsync(vote._id,vote._rev).reflect()
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
       logger.log('error', 'vote prune error: ' + err)
@@ -335,15 +335,15 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     prism: systemPrism,
     type: systemType
   })
-  var downKey = cradle.schema.downVote(systemKey)
+  var downKey = couchdb.schema.downVote(systemKey)
   debug('Getting peer information',key)
-  return cradle.peer.getAsync(key)
+  return couchdb.peer.getAsync(key)
     .then(
       function(peer){
         debug('Got peer information back',peer)
         peer.available = true
         peer.active = true
-        return cradle.peer.saveAsync(key,peer._rev,peer)
+        return couchdb.peer.saveAsync(key,peer._rev,peer)
       },
       function(err){
         debug('Got an error getting peer information',err)
@@ -353,12 +353,12 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     .then(function(){
       //Time to delete the downvote log
       debug('About to get down votes',downKey)
-      return cradle.heartbeat.allAsync(
+      return couchdb.heartbeat.allAsync(
         {startkey: downKey, endkey: downKey + '\uffff'})
     })
     .map(function(log){
       debug('Removing downvote',log)
-      return cradle.heartbeat.removeAsync(log.key,log._rev).reflect()
+      return couchdb.heartbeat.removeAsync(log.key,log._rev).reflect()
     },{concurrency: config.heartbeat.concurrency})
     .then(function(result){
       debug('finished marking myself up',result)

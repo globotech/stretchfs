@@ -1,20 +1,27 @@
 'use strict';
 var P = require('bluebird')
-var cradle = require('cradle')
+var nano = require('nano')
 
 var CouchSchema = require('./CouchSchema')
 
 var config = require('../config')
 
 //make some promises
-P.promisifyAll(cradle)
+P.promisifyAll(nano)
 
 //setup our client
-var client = new (cradle.Connection)(
-  config.couchdb.host,
-  config.couchdb.port,
-  config.couchdb.options
-)
+var dsn = config.couchdb.protocol
+if(config.couchdb.options.auth.username){
+  dsn = dsn + config.couchdb.options.auth.username
+  var couchPassword= 'password'
+  if(config.couchdb.options.auth.password !== '')
+    couchPassword = config.couchdb.options.auth.password
+  dsn = dsn + ':' + couchPassword
+  dsn = dsn + '@'
+}
+dsn = dsn + config.couchdb.host
+dsn = dsn + ':' + config.couchdb.port
+var client = nano(dsn)
 
 //make some promises
 P.promisifyAll(client)
@@ -25,7 +32,7 @@ P.promisifyAll(client)
  * @type {object}
  */
 client.peer = P.promisifyAll(
-  client.database(config.couchdb.database + '-peer'))
+  client.db.use(config.couchdb.database + '-peer'))
 
 
 /**
@@ -33,7 +40,7 @@ client.peer = P.promisifyAll(
  * @type {object}
  */
 client.inventory = P.promisifyAll(
-  client.database(config.couchdb.database + '-inventory'))
+  client.db.use(config.couchdb.database + '-inventory'))
 
 
 /**
@@ -41,7 +48,7 @@ client.inventory = P.promisifyAll(
  * @type {object}
  */
 client.oose = P.promisifyAll(
-  client.database(config.couchdb.database))
+  client.db.use(config.couchdb.database))
 
 
 /**
@@ -49,7 +56,7 @@ client.oose = P.promisifyAll(
  * @type {object}
  */
 client.heartbeat = P.promisifyAll(
-  client.database(config.couchdb.database + '-heartbeat'))
+  client.db.use(config.couchdb.database + '-heartbeat'))
 
 
 /**
@@ -57,7 +64,7 @@ client.heartbeat = P.promisifyAll(
  * @type {object}
  */
 client.supervisor = P.promisifyAll(
-  client.database(config.couchdb.database + '-supervisor'))
+  client.db.use(config.couchdb.database + '-supervisor'))
 
 
 /**

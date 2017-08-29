@@ -3,7 +3,7 @@ var debug = require('debug')('oose:clearPurchases')
 var infant = require('infant')
 
 //var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 
@@ -16,7 +16,7 @@ var runInterval = function(done){
   //first lets get all the purchases
   var purchases = []
   debug('requesting purchases')
-  cradle.inventory.viewAsync('purchase/purchase')
+  couchdb.inventory.viewAsync('purchase/purchase')
     .then(function(result){
       debug('purchase result; purchases: ',result.length)
       //this gives us the purchase keys and to my understanding we just have
@@ -31,8 +31,8 @@ var runInterval = function(done){
         })
       }
       debug('saving deletion of purchases',purchases.length,purchases[0])
-      //now we just use cradle to save the purchases
-      return cradle.inventory.saveAsync(purchases)
+      //now we just use couchdb to save the purchases
+      return couchdb.inventory.saveAsync(purchases)
     })
     .then(function(result){
       var deleted = 0

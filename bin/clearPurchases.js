@@ -3,7 +3,7 @@ var debug = require('debug')('oose:clearPurchases')
 var infant = require('infant')
 
 //var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 
@@ -14,10 +14,10 @@ var logger = require('../helpers/logger')
 var runInterval = function(done){
   logger.log('info','Starting to clear purchases')
   //first lets get all the purchases
-  var purchaseKey = cradle.schema.purchase()
+  var purchaseKey = couchdb.schema.purchase()
   var purchases = []
   debug('requesting purchases',purchaseKey)
-  cradle.purchase.allAsync({
+  couchdb.purchase.allAsync({
     startkey: purchaseKey,
     endkey: purchaseKey + '\uffff'
   })
@@ -35,8 +35,8 @@ var runInterval = function(done){
         })
       }
       debug('saving deletion of purchases',purchases.length,purchases[0])
-      //now we just use cradle to save the purchases
-      return cradle.purchase.saveAsync(purchases)
+      //now we just use couchdb to save the purchases
+      return couchdb.purchase.saveAsync(purchases)
     })
     .then(function(result){
       var deleted = 0

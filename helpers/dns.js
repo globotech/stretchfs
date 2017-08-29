@@ -8,6 +8,7 @@ var dns = require('dnscache')({
 //make some promises
 P.promisifyAll(dns)
 
+
 /**
  * Export client
  * @return {object} client

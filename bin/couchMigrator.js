@@ -9,7 +9,7 @@ var promisePipe = require('promisepipe')
 var request = require('request')
 
 var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 
@@ -97,21 +97,21 @@ var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
         if('function' === typeof filterFunc && false === filterFunc(row)){
           throw new Error('skipped')
         }
-        return cradle.oose.getAsync(row)
+        return couchdb.oose.getAsync(row)
           .then(function(record){
             //we need the new row
             var newKey = keyFunc(record)
             record._id = newKey
             delete record._rev
             return new P(function(resolve){
-              cradle[dbName].head(newKey,function(err,res,code){
+              couchdb[dbName].head(newKey,function(err,res,code){
                 if(200 === code){
                   counter.exists++
                   resolve(true)
                 }
                 else{
                   counter.moved++
-                  resolve(cradle[dbName].saveAsync(newKey,record))
+                  resolve(couchdb[dbName].saveAsync(newKey,record))
                 }
               })
             })
@@ -148,14 +148,14 @@ var runInterval = function(done){
     'store',
     'oose:store:',
     'peer',
-    function(record){return cradle.schema.store(record.prism,record.name)}
+    function(record){return couchdb.schema.store(record.prism,record.name)}
   )
     .then(function(){
       return migrateItems(
         'prism',
         'oose:prism:',
         'peer',
-        function(record){return cradle.schema.prism(record.name)}
+        function(record){return couchdb.schema.prism(record.name)}
       )
     })
     .then(function(){
@@ -164,7 +164,7 @@ var runInterval = function(done){
         'oose:inventory:',
         'inventory',
         function(record){
-          return cradle.schema.inventory(record.hash,record.prism,record.store)
+          return couchdb.schema.inventory(record.hash,record.prism,record.store)
         },
         function(record){return (record.length > 0)}
       )
@@ -175,7 +175,7 @@ var runInterval = function(done){
         'oose:purchase:',
         'purchase',
         function(record){
-          return cradle.schema.purchase(record.token)
+          return couchdb.schema.purchase(record.token)
         },
         function(record){return (record.length > 0)}
       )

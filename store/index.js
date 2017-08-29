@@ -6,13 +6,13 @@ var mkdirp = require('mkdirp-then')
 var path = require('path')
 
 var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
 var statspush
-var storeKey = cradle.schema.store(config.store.prism,config.store.name)
+var storeKey = couchdb.schema.store(config.store.prism,config.store.name)
 
 //make some promises
 P.promisifyAll(infant)
@@ -34,7 +34,7 @@ if(require.main === module){
       heartbeat = infant.parent('../helpers/heartbeat')
       statspush = infant.parent('../helpers/statspush')
       //check if our needed folders exist
-      cradle.peer.getAsync(storeKey)
+      couchdb.peer.getAsync(storeKey)
         .then(
           //if we exist lets mark ourselves available
           function(doc){
@@ -44,13 +44,13 @@ if(require.main === module){
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return cradle.peer.saveAsync(storeKey,doc)
+            return couchdb.peer.saveAsync(storeKey,doc)
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err.headers || 404 !== err.headers.status) throw err
             //now register ourselves or mark ourselves available
-            return cradle.peer.saveAsync(storeKey,{
+            return couchdb.peer.saveAsync(storeKey,{
               prism: config.store.prism,
               name: config.store.name,
               host: config.store.host,
@@ -94,10 +94,10 @@ if(require.main === module){
     function(done){
       logger.log('info','Beginning store shutdown')
       //mark ourselves as down
-      cradle.peer.getAsync(storeKey)
+      couchdb.peer.getAsync(storeKey)
         .then(function(doc){
           doc.available = false
-          return cradle.peer.saveAsync(storeKey,doc)
+          return couchdb.peer.saveAsync(storeKey,doc)
         })
         .then(function(){
           if(!cluster) return

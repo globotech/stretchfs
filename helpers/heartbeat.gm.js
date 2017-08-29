@@ -6,7 +6,7 @@ var oose = require('oose-sdk')
 var NetworkError = oose.NetworkError
 
 var api = require('../helpers/api')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var prismBalance = require('../helpers/prismBalance')
 var redis = require('../helpers/redis')()
 var storeBalance = require('../helpers/storeBalance')
@@ -23,10 +23,9 @@ var voteLog = {}
  * Heartbeat for Cluster Consistency
  * @param {string} type
  * @param {string} name
- * @param {number} port
  * @constructor
  */
-var Heartbeat = function(type,name,port){
+var Heartbeat = function(type,name){
   //var that = this
   //var myDesc = type+':'+name+':'+port
   var checkCounter = 0
@@ -111,34 +110,36 @@ var Heartbeat = function(type,name,port){
   var downVote = function(host){
     //var downHost = extend({},host)
     var key = (host.type === 'prism') ?
-      cradle.schema.prism(host.name) : cradle.schema.store(host.prism,host.name)
+      couchdb.schema.prism(host.name) :
+      couchdb.schema.store(host.prism,host.name)
 
-    var downKey = cradle.schema.downVote(host.name)
-    var myDownKey = cradle.schema.downVote(host.name, name)
-    debug('DOWNVOTING: '+key )
+    var downKey = couchdb.schema.downVote(host.name)
+    var myDownKey = couchdb.schema.downVote(host.name, name)
+    debug('DOWNVOTING: '+key)
     var currentVoteLog = null
     var hostInfo = null
     //if(downHost.request) delete(downHost.request)
-    return cradle.heartbeat.getAsync(key)
+    return couchdb.heartbeat.getAsync(key)
       .then(function(node){
         //got the node
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
-        return cradle.heartbeat.allAsync({startkey: downKey, endkey: downKey + '\uffff'})
+        return couchdb.heartbeat.allAsync(
+          {startkey: downKey, endkey: downKey + '\uffff'})
       }).then(function(vL){
         currentVoteLog = vL
-        for(var i=0; i< vL.length ; i++) {
-          if(vL[i].key == myDownKey) {
+        for(var i=0; i< vL.length; i++){
+          if(vL[i].key === myDownKey) {
             debug('Already recorded')
             return false
           }
         }
-        return cradle.heartbeat.saveAsync(myDownKey,{date:Date.now()})
+        return couchdb.heartbeat.saveAsync(myDownKey,{date:Date.now()})
       },function(err){
         if(!err.headers)throw err
         if(404 !== err.headers.status) throw err
         currentVoteLog = []
-        return cradle.heartbeat.saveAsync(myDownKey,{date:Date.now()})
+        return couchdb.heartbeat.saveAsync(myDownKey,{date:Date.now()})
       }).then(function(myVote){
         if(myVote !== false)
           currentVoteLog.push(myVote)
@@ -146,13 +147,14 @@ var Heartbeat = function(type,name,port){
         var votes = currentVoteLog.length
         if(count === 0 || votes < (count/2))throw new Error('Ok, got it')
         hostInfo.available = false
-        return cradle.heartbeat.saveAsync(key,hostInfo._rev,hostInfo)
+        return couchdb.heartbeat.saveAsync(key,hostInfo._rev,hostInfo)
       }).then(function(){
         //Delete the vote log, it has served its purpose
         var promises = []
         //Added reflect() to avoid a race condition.
-        for(var i = 0 ; i<currentVoteLog.length ; i++)
-          promises.push(cradle.heartbeat.removeAsync(currentVoteLog[i].key,currentVoteLog[i]._rev).reflect())
+        for(var i = 0; i<currentVoteLog.length; i++)
+          promises.push(couchdb.heartbeat.removeAsync(
+            currentVoteLog[i].key,currentVoteLog[i]._rev).reflect())
         return P.all(promises)
       }).catch(function(err){
         debug(err.message)
@@ -167,14 +169,18 @@ var Heartbeat = function(type,name,port){
           voteLog[host.name] = 0
           return true
         }else{
-          voteLog[host.name] = (voteLog[host.name] !== undefined) ? voteLog[host.name] + 1 : 1
-          return (voteLog[host.name] > config.heartbeat.retries)? downVote(host) : true
+          voteLog[host.name] = (voteLog[host.name] !== undefined) ?
+            voteLog[host.name] + 1 : 1
+          return (voteLog[host.name] > config.heartbeat.retries) ?
+            downVote(host) : true
         }
       })
       .catch(function(err){
         debug(err)
-        voteLog[host.name] = (voteLog[host.name] !== undefined) ? voteLog[host.name] + 1 : 1
-        return (voteLog[host.name] > config.heartbeat.retries)? downVote(host) : true
+        voteLog[host.name] = (voteLog[host.name] !== undefined) ?
+          voteLog[host.name] + 1 : 1
+        return (voteLog[host.name] > config.heartbeat.retries) ?
+          downVote(host) : true
       })
   }
 
@@ -196,22 +202,25 @@ var Heartbeat = function(type,name,port){
   var markMeUp = function(){
     debug('Marking myself up')
     var key = (type === 'prism') ?
-      cradle.schema.prism(prismName) : cradle.schema.store(prismName,name)
-    var downKey = cradle.schema.downVote(name)    //The key used to track downvotes against me :(
-    return cradle.heartbeat.getAsync(key)
+      couchdb.schema.prism(prismName) : couchdb.schema.store(prismName,name)
+    //The key used to track downvotes against me :(
+    var downKey = couchdb.schema.downVote(name)
+    return couchdb.heartbeat.getAsync(key)
       .then(function(node){
         node.available = true
         node.active = true
-        return cradle.heartbeat.saveAsync(key,node._rev,node)
+        return couchdb.heartbeat.saveAsync(key,node._rev,node)
       }).then(function(){
         //Time to delete the downvote log
-        return cradle.heartbeat.allAsync({startkey: downKey, endkey: downKey + '\uffff'})
+        return couchdb.heartbeat.allAsync(
+          {startkey: downKey, endkey: downKey + '\uffff'})
       }).then(function(votelog){
         //Delete the vote log, it has served its purpose
         var promises = []
         //Added reflect() to avoid a race condition.
         for(var i = 0; i < votelog.length; i++)
-          promises.push(cradle.heartbeat.removeAsync(votelog[i].key,votelog[i]._rev).reflect())
+          promises.push(couchdb.heartbeat.removeAsync(
+            votelog[i].key,votelog[i]._rev).reflect())
         return P.all(promises)
       }).catch(function(err){
         debug(err.mesage)

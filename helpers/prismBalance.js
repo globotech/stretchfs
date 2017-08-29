@@ -3,14 +3,14 @@ var P = require('bluebird')
 var debug = require('debug')('oose:prismBalance')
 
 var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var redis = require('../helpers/redis')()
 var logger = require('./logger')
 
 var peerGetRows = function(rows){
   var ids = []
   for(var i=0; i < rows.length; i++) ids.push(rows[i].id)
-  return cradle.peer.getAsync(ids)
+  return couchdb.peer.getAsync(ids)
 }
 
 
@@ -20,12 +20,12 @@ var peerGetRows = function(rows){
  */
 exports.peerList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:peerList'))
-  var prismKey = cradle.schema.prism()
-  var storeKey = cradle.schema.store()
+  var prismKey = couchdb.schema.prism()
+  var storeKey = couchdb.schema.store()
   debug('Querying for peer list')
   return P.all([
     (function(){
-      return cradle.peer.allAsync({
+      return couchdb.peer.allAsync({
           startkey: prismKey,
           endkey: prismKey + '\uffff'
         })
@@ -33,12 +33,12 @@ exports.peerList = function(){
           return peerGetRows(rows)
         })
         .map(function(row){
-          row.doc.type = cradle.schema.PEER_TYPES.prism
+          row.doc.type = couchdb.schema.PEER_TYPES.prism
           return row.doc
         })
     }()),
     (function(){
-      return cradle.peer.allAsync({
+      return couchdb.peer.allAsync({
         startkey: storeKey,
         endkey: storeKey + '\uffff'
       })
@@ -46,7 +46,7 @@ exports.peerList = function(){
           return peerGetRows(rows)
         })
         .map(function(row){
-          row.doc.type = cradle.schema.PEER_TYPES.store
+          row.doc.type = couchdb.schema.PEER_TYPES.store
           return row.doc
         })
     }())
@@ -68,8 +68,9 @@ exports.peerList = function(){
  */
 exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
-  var prismKey = cradle.schema.prism()
-  return cradle.peer.allAsync({startkey: prismKey, endkey: prismKey + '\uffff'})
+  var prismKey = couchdb.schema.prism()
+  return couchdb.peer.allAsync(
+    {startkey: prismKey, endkey: prismKey + '\uffff'})
     .then(function(rows){
       return peerGetRows(rows)
     })
@@ -89,10 +90,10 @@ exports.prismList = function(){
  */
 exports.storeListByPrism = function(prism){
   redis.incr(redis.schema.counter('prism','prismBalance:storeListByPrism'))
-  var storeKey = cradle.schema.store(prism)
-  return cradle.peer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
+  var storeKey = couchdb.schema.store(prism)
+  return couchdb.peer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
     .map(function(row){
-      return cradle.peer.getAsync(row.key)
+      return couchdb.peer.getAsync(row.key)
     })
     .filter(function(row){
       return row.available && row.active
@@ -167,9 +168,9 @@ exports.winner = function(token,prismList,skip,allowFull){
  */
 exports.contentExists = function(hash,cacheEnable){
   if('undefined' === typeof cacheEnable) cacheEnable = true
-  else cacheEnable = !!(cacheEnable)
+  else cacheEnable = (cacheEnable)
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
-  var existsKey = cradle.schema.inventory(hash)
+  var existsKey = couchdb.schema.inventory(hash)
   var existsRecord = {}
   var count = 0
   var cacheValid = false
@@ -197,14 +198,14 @@ exports.contentExists = function(hash,cacheEnable){
       if(cacheEnable && cacheValid){
         return result
       } else {
-        return cradle.inventory.allAsync({
+        return couchdb.inventory.allAsync({
           startkey: existsKey,
           endkey: existsKey + '\uffff'
         })
           .map(function(row){
             debug(existsKey,'got record',row)
             count++
-            return cradle.inventory.getAsync(row.key)
+            return couchdb.inventory.getAsync(row.key)
               .catch(function(err){
                 if(404 !== err.headers.status) throw err
               })
@@ -220,12 +221,12 @@ exports.contentExists = function(hash,cacheEnable){
                 .map(function(row){
                   debug(existsKey,'got inventory list record',row)
                   return P.all([
-                    cradle.peer.getAsync(cradle.schema.prism(row.prism))
+                    couchdb.peer.getAsync(couchdb.schema.prism(row.prism))
                       .catch(function(){
                         return {name:row.prism,available:false}
                       }),
-                    cradle.peer.getAsync(
-                      cradle.schema.store(row.prism,row.store))
+                    couchdb.peer.getAsync(
+                      couchdb.schema.store(row.prism,row.store))
                       .catch(function(){
                         return {name:row.store,available:false}
                       })

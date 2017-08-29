@@ -6,7 +6,7 @@ var mime = require('mime')
 var path = require('path')
 var readdirp = require('readdirp')
 
-var cradle = require('../couchdb')
+var couchdb = require('../couchdb')
 var logger = require('../logger')
 
 var config = require('../../config')
@@ -85,9 +85,9 @@ module.exports = function(done){
       counter.valid++
       debug(hash,'inventory scan found',ext,relativePath,linkPath)
       //since nodes
-      var inventoryKey = cradle.schema.inventory(
+      var inventoryKey = couchdb.schema.inventory(
         hash,config.store.prism,config.store.name)
-      cradle.inventory.getAsync(inventoryKey)
+      couchdb.inventory.getAsync(inventoryKey)
         .then(
           function(doc){
             debug(hash,'inventory record exists',doc)
@@ -105,7 +105,7 @@ module.exports = function(done){
             }
             debug(hash,'creating inventory record',doc)
             counter.created++
-            return cradle.inventory.saveAsync(inventoryKey,doc)
+            return couchdb.inventory.saveAsync(inventoryKey,doc)
           }
         )
         .then(function(){

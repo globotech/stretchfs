@@ -3,7 +3,7 @@ var debug = require('debug')('oose:clearHeartbeat')
 var infant = require('infant')
 
 //var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 
@@ -14,10 +14,10 @@ var logger = require('../helpers/logger')
 var runInterval = function(done){
   logger.log('info','Starting to clear heartbeat')
   //first lets get all the purchases
-  var hbKey = cradle.schema.downVote()
+  var hbKey = couchdb.schema.downVote()
   var votes = []
   debug('requesting votes',hbKey)
-  cradle.heartbeat.allAsync({
+  couchdb.heartbeat.allAsync({
     startkey: hbKey,
     endkey: hbKey + '\uffff'
   })
@@ -35,8 +35,8 @@ var runInterval = function(done){
         })
       }
       debug('saving deletion of vote',votes.length,votes[0])
-      //now we just use cradle to save the purchases
-      return cradle.heartbeat.saveAsync(votes)
+      //now we just use couchdb to save the purchases
+      return couchdb.heartbeat.saveAsync(votes)
     })
     .then(function(result){
       var deleted = 0

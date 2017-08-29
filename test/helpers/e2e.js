@@ -11,7 +11,7 @@ var rmfr = require('rmfr')
 var url = require('url')
 
 var api = require('../../helpers/api')
-var cradle = require('../../helpers/couchdb')
+var couchdb = require('../../helpers/couchdb')
 var logger = require('../../helpers/logger')
 var content = oose.mock.content
 //var purchasedb = require('../../helpers/purchasedb')
@@ -163,35 +163,35 @@ exports.before = function(that){
       return redis.removeKeysPattern(redis.schema.flushKeys())
     })
     .then(function(){
-      var key = cradle.schema.inventory()
-      return cradle.inventory.allAsync({startkey: key, endkey: key + '\uffff'})
+      var key = couchdb.schema.inventory()
+      return couchdb.inventory.allAsync({startkey: key, endkey: key + '\uffff'})
     })
     .map(function(row){
-      return cradle.inventory.removeAsync(row.key)
+      return couchdb.inventory.removeAsync(row.key)
     })
     .then(function(){
       //return purchasedb.flushallAsync();
     })
     .then(function(){
-      var key = cradle.schema.prism()
-      return cradle.peer.allAsync({startkey: key, endkey: key + '\uffff'})
+      var key = couchdb.schema.prism()
+      return couchdb.peer.allAsync({startkey: key, endkey: key + '\uffff'})
     })
     .map(function(row){
-      return cradle.peer.removeAsync(row.key)
+      return couchdb.peer.removeAsync(row.key)
     })
     .then(function(){
-      var key = cradle.schema.store()
-      return cradle.peer.allAsync({startkey: key, endkey: key + '\uffff'})
+      var key = couchdb.schema.store()
+      return couchdb.peer.allAsync({startkey: key, endkey: key + '\uffff'})
     })
     .map(function(row){
-      return cradle.peer.removeAsync(row.key)
+      return couchdb.peer.removeAsync(row.key)
     })
     .then(function(){
-      var key = cradle.schema.downVote()
-      return cradle.heartbeat.allAsync({startkey: key, endkey: key + '\uffff'})
+      var key = couchdb.schema.downVote()
+      return couchdb.heartbeat.allAsync({startkey: key, endkey: key + '\uffff'})
     })
     .map(function(row){
-      return cradle.heartbeat.removeAsync(row.key)
+      return couchdb.heartbeat.removeAsync(row.key)
     })
     .then(function(){
       return P.all([

@@ -1,6 +1,6 @@
 'use strict';
 var P = require('bluebird')
-var cradle = require('cradle')
+var nano = require('nano')
 var debug = require('debug')('oose:purchasedb')
 var moment = require('moment')
 var oose = require('oose-sdk')
@@ -12,14 +12,24 @@ var UserError = oose.UserError
 var config = require('../config')
 
 //make some promises
-P.promisifyAll(cradle)
+P.promisifyAll(nano)
 
-//setup our client for couchdb
-var couchdb = new (cradle.Connection)(
-  config.couchdb.host,
-  config.couchdb.port,
-  config.couchdb.options
-)
+//setup our client
+var dsn = config.couchdb.protocol
+if(config.couchdb.options.auth.username){
+  dsn = dsn + config.couchdb.options.auth.username
+  var couchPassword= 'password'
+  if(config.couchdb.options.auth.password !== '')
+    couchPassword = config.couchdb.options.auth.password
+  dsn = dsn + ':' + couchPassword
+  dsn = dsn + '@'
+}
+dsn = dsn + config.couchdb.host
+dsn = dsn + ':' + config.couchdb.port
+var couchdb = nano(dsn)
+
+//make some promises
+P.promisifyAll(couchdb)
 
 //keep an object of couchdb connections based on the sharding configuration
 var couchPool = {}

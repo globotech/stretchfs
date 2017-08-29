@@ -4,7 +4,7 @@ var debug = require('debug')('oose:storeBalance')
 var oose = require('oose-sdk')
 
 var NotFoundError = oose.NotFoundError
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var redis = require('../helpers/redis')()
 
 
@@ -15,13 +15,14 @@ var redis = require('../helpers/redis')()
  */
 exports.storeList = function(prism){
   redis.incr(redis.schema.counter('prism','storeBalance:storeList'))
-  var storeKey = cradle.schema.store(prism)
+  var storeKey = couchdb.schema.store(prism)
   debug(storeKey,'getting store list')
-  return cradle.peer.allAsync({startkey: storeKey, endkey: storeKey + '\uffff'})
+  return couchdb.peer.allAsync(
+    {startkey: storeKey, endkey: storeKey + '\uffff'})
     .then(function(rows){
       var ids = []
       for (var i=0; i < rows.length; i++) ids.push(rows[i].id)
-      return cradle.peer.getAsync(ids)
+      return couchdb.peer.getAsync(ids)
     })
     .map(function(row){
       return row.doc
@@ -60,7 +61,7 @@ exports.populateStores = function(stores){
     return stores
   })
     .map(function(store){
-      return cradle.peer.getAsync(cradle.schema.store(store))
+      return couchdb.peer.getAsync(couchdb.schema.store(store))
     })
     .then(function(results){
       return results

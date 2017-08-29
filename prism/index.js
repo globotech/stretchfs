@@ -3,12 +3,12 @@ var P = require('bluebird')
 var infant = require('infant')
 
 var config = require('../config')
-var cradle = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
-var prismKey = cradle.schema.prism(config.prism.name)
+var prismKey = couchdb.schema.prism(config.prism.name)
 
 //make some promises
 P.promisifyAll(infant)
@@ -28,7 +28,7 @@ if(require.main === module){
       )
       heartbeat = infant.parent('../helpers/heartbeat')
       if(!config.prism.ghost){
-        cradle.peer.getAsync(prismKey)
+        couchdb.peer.getAsync(prismKey)
           .then(
             //if we exist lets mark ourselves available
             function(doc){
@@ -37,13 +37,13 @@ if(require.main === module){
               doc.port = config.prism.port
               doc.available = true
               doc.active = true
-              return cradle.peer.saveAsync(prismKey,doc)
+              return couchdb.peer.saveAsync(prismKey,doc)
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
               if(404 !== err.headers.status) throw err
               //now register ourselves or mark ourselves available
-              return cradle.peer.saveAsync(prismKey,{
+              return couchdb.peer.saveAsync(prismKey,{
                 name: config.prism.name,
                 host: config.prism.host,
                 port: config.prism.port,
@@ -78,10 +78,10 @@ if(require.main === module){
       logger.log('info','Beginning prism shutdown')
       if(!config.prism.ghost){
         //mark ourselves as down
-        cradle.peer.getAsync(prismKey)
+        couchdb.peer.getAsync(prismKey)
           .then(function(doc){
             doc.available = false
-            return cradle.peer.saveAsync(prismKey,doc)
+            return couchdb.peer.saveAsync(prismKey,doc)
           })
           .then(function(){
             if(!cluster) return

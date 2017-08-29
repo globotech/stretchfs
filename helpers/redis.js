@@ -50,7 +50,7 @@ module.exports = function(options){
    * Get keys by a pattern
    * @param {string} pattern
    * @return {P}
-   * @this {cradle}
+   * @this {couchdb}
    */
   client.getKeysPattern = function(pattern){
     var that = this
@@ -80,7 +80,7 @@ module.exports = function(options){
    * Remove keys by a pattern
    * @param {string} pattern
    * @return {P}
-   * @this {cradle}
+   * @this {couchdb}
    */
   client.removeKeysPattern = function(pattern){
     var that = this
