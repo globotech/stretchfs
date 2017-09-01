@@ -76,8 +76,7 @@ exports.prismList = function(){
   return couchdb.peer.listAsync(
     {startkey: prismKey, endkey: prismKey + '\uffff', include_docs: true})
     .then(function(rows){
-      rows = rows.rows
-      return peerGetRows(rows)
+      return rows.rows
     })
     .map(function(row){
       return row.doc
@@ -221,12 +220,12 @@ exports.contentExists = function(hash,cacheEnable){
           })
           .then(function(inventoryList){
             //debug(existsKey,'records',result)
-            if(!count){
+            if(!count || !inventoryList){
               return deadRecord
             } else {
               return P.try(function(){
-                  return inventoryList
-                })
+                return inventoryList
+              })
                 .map(function(row){
                   debug(existsKey,'got inventory list record',row)
                   return P.all([

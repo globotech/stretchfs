@@ -20,10 +20,7 @@ exports.storeList = function(prism){
   return couchdb.peer.listAsync(
     {startkey: storeKey, endkey: storeKey + '\uffff', include_docs: true})
     .then(function(rows){
-      rows = rows.rows
-      var ids = []
-      for (var i=0; i < rows.length; i++) ids.push(rows[i].id)
-      return couchdb.peer.getAsync(ids)
+      return rows.rows
     })
     .map(function(row){
       return row.doc

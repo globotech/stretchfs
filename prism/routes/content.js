@@ -504,7 +504,7 @@ exports.purchase = function(req,res){
         function(){
           token = purchasedb.generate()
           return purchasedb.exists(token)
-            .then(function(result){tokenExists = !!result})
+            .then(function(result){tokenExists = (result)})
         }
       )
     })

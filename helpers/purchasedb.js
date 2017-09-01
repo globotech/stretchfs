@@ -73,10 +73,15 @@ var getDatabaseName = function(token){
  */
 var buildConfig = function(){
   debug('building config')
+  //assign the full default config when none exists, otherwise im confused
+  if(!Object.keys(config.prism.purchaseZoneCouch).length){
+    config.prism.purchaseZoneCouch.a = config.couchdb
+  }
   Object.keys(config.prism.purchaseZoneCouch).forEach(function(zone){
     debug('building config for zone',zone)
     var couchConfig = [
       {
+        protocol: config.couchdb.protocol || 'http://',
         host: config.couchdb.host,
         port: config.couchdb.port,
         options: config.couchdb.options
@@ -86,7 +91,18 @@ var buildConfig = function(){
       config.prism.purchaseZoneCouch &&
       config.prism.purchaseZoneCouch[zone] instanceof Array
     ){
-      couchConfig = config.prism.purchaseZoneCouch[zone]
+      if(config.prism.purchaseZoneCouch[zone].protocol){
+        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].protocol
+      }
+      if(config.prism.purchaseZoneCouch[zone].host){
+        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].host
+      }
+      if(config.prism.purchaseZoneCouch[zone].port){
+        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].port
+      }
+      if(config.prism.purchaseZoneCouch[zone].options){
+        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].options
+      }
     }
     debug('config for zone',zone,couchConfig)
     couchConfigs[zone] = couchConfig
@@ -174,8 +190,10 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
   var repldbconn = connectCouchDb(replConfig)
   P.promisifyAll(repldbconn)
   debug('couchdb creating oose-purchase-' + databaseName)
-  var repldb = repldbconn.database('oose-purchase-' + databaseName)
-  var couchdb = couchdbconn.database('oose-purchase-' + databaseName)
+  var repldb = P.promisifyAll(
+    repldbconn.db.use('oose-purchase-' + databaseName))
+  var couchdb = P.promisifyAll(
+    couchdbconn.db.use('oose-purchase-' + databaseName))
   return P.all([
     couchdb.createAsync()
       .catch(suppressDatabaseExists),
@@ -183,7 +201,7 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
       .catch(suppressDatabaseExists)
   ])
     .then(function(){
-      var replicator = couchdbconn.database('_replicator')
+      var replicator = P.promisifyAll(couchdbconn.db.use('_replicator'))
       debug('saving replicator from couch to repl',couchConfig,replConfig)
       var replControl = {
         source: {
@@ -236,7 +254,7 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
         .catch(suppressForbidden)
     })
     .then(function(){
-      var replicator = repldbconn.database('_replicator')
+      var replicator = P.promisifyAll(repldbconn.db.use('_replicator'))
       debug('saving replicator from repl to couch',replConfig,couchConfig)
       var couchControl = {
         source: {
@@ -329,11 +347,11 @@ var pruneDatabase = function(days){
           debug('keeping',databaseName)
         } else {
           debug('removing',databaseName)
-          var db = couchdbconn.database(databaseName)
+          var db = P.promisifyAll(couchdbconn.db.use(databaseName))
           return db.destroyAsync()
           //return P.try(function(){console.log('WOULD DESTROY',databaseName)})
             .then(function(){
-              var db = couchdbconn.database('_replicator')
+              var db = P.promisifyAll(couchdbconn.db.use('_replicator'))
               return db.listAsync({
                 startkey: databaseName + '-',
                 endkey: databaseName + '-\uffff'
@@ -425,7 +443,7 @@ var couchWrap = function(token){
   var couchConfig = pickCouchConfig(zone)
   if(!couchConfig) return null
   couchPool[zone] = connectCouchDb(couchConfig)
-  return couchPool[zone].database('oose-purchase-' + databaseName)
+  return P.promisifyAll(couchPool[zone].db.use('oose-purchase-' + databaseName))
 }
 
 
@@ -490,7 +508,7 @@ PurchaseDb.prototype.exists = function(token){
   return this.get(token)
     .then(function(result){
       debug(token,'exists result',result)
-      return !!result
+      return (result)
     })
     .catch(function(err){
       debug(token,'exists error',err)
