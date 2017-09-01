@@ -17,7 +17,7 @@ var runInterval = function(done){
   var purchaseKey = couchdb.schema.purchase()
   var purchases = []
   debug('requesting purchases',purchaseKey)
-  couchdb.purchase.allAsync({
+  couchdb.purchase.listAsync({
     startkey: purchaseKey,
     endkey: purchaseKey + '\uffff'
   })

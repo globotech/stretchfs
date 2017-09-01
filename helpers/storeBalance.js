@@ -17,7 +17,7 @@ exports.storeList = function(prism){
   redis.incr(redis.schema.counter('prism','storeBalance:storeList'))
   var storeKey = couchdb.schema.store(prism)
   debug(storeKey,'getting store list')
-  return couchdb.peer.allAsync(
+  return couchdb.peer.listAsync(
     {startkey: storeKey, endkey: storeKey + '\uffff'})
     .then(function(rows){
       var ids = []

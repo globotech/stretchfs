@@ -17,7 +17,7 @@ var runInterval = function(done){
   var hbKey = couchdb.schema.downVote()
   var votes = []
   debug('requesting votes',hbKey)
-  couchdb.heartbeat.allAsync({
+  couchdb.heartbeat.listAsync({
     startkey: hbKey,
     endkey: hbKey + '\uffff'
   })

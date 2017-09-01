@@ -25,7 +25,7 @@ exports.peerList = function(){
   debug('Querying for peer list')
   return P.all([
     (function(){
-      return couchdb.peer.allAsync({
+      return couchdb.peer.listAsync({
           startkey: prismKey,
           endkey: prismKey + '\uffff'
         })
@@ -38,7 +38,7 @@ exports.peerList = function(){
         })
     }()),
     (function(){
-      return couchdb.peer.allAsync({
+      return couchdb.peer.listAsync({
         startkey: storeKey,
         endkey: storeKey + '\uffff'
       })
@@ -69,7 +69,7 @@ exports.peerList = function(){
 exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couchdb.schema.prism()
-  return couchdb.peer.allAsync(
+  return couchdb.peer.listAsync(
     {startkey: prismKey, endkey: prismKey + '\uffff'})
     .then(function(rows){
       return peerGetRows(rows)
@@ -198,7 +198,7 @@ exports.contentExists = function(hash,cacheEnable){
       if(cacheEnable && cacheValid){
         return result
       } else {
-        return couchdb.inventory.allAsync({
+        return couchdb.inventory.listAsync({
           startkey: existsKey,
           endkey: existsKey + '\uffff'
         })

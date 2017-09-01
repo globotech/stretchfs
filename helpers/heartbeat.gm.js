@@ -124,7 +124,7 @@ var Heartbeat = function(type,name){
         //got the node
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
-        return couchdb.heartbeat.allAsync(
+        return couchdb.heartbeat.listAsync(
           {startkey: downKey, endkey: downKey + '\uffff'})
       }).then(function(vL){
         currentVoteLog = vL
@@ -212,7 +212,7 @@ var Heartbeat = function(type,name){
         return couchdb.heartbeat.insertAsync(node,key)
       }).then(function(){
         //Time to delete the downvote log
-        return couchdb.heartbeat.allAsync(
+        return couchdb.heartbeat.listAsync(
           {startkey: downKey, endkey: downKey + '\uffff'})
       }).then(function(votelog){
         //Delete the vote log, it has served its purpose

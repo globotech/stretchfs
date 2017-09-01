@@ -334,7 +334,7 @@ var pruneDatabase = function(days){
           //return P.try(function(){console.log('WOULD DESTROY',databaseName)})
             .then(function(){
               var db = couchdbconn.database('_replicator')
-              return db.allAsync({
+              return db.listAsync({
                 startkey: databaseName + '-',
                 endkey: databaseName + '-\uffff'
               })
