@@ -40,20 +40,20 @@ if(require.main === module){
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return couchdb.peer.saveAsync(supervisorKey,doc)
+            return couchdb.peer.insertAsync(doc,supervisorKey)
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err.headers || 404 !== err.headers.status) throw err
             //now register ourselves or mark ourselves available
-            return couchdb.peer.saveAsync(supervisorKey,{
+            return couchdb.peer.insertAsync({
               name: config.store.name,
               host: config.store.host,
               port: config.store.port,
               available: true,
               active: true,
               createdAt: new Date().toJSON()
-            })
+            },supervisorKey)
           }
         )
         .then(function(){
@@ -79,7 +79,7 @@ if(require.main === module){
       couchdb.peer.getAsync(supervisorKey)
         .then(function(doc){
           doc.available = false
-          return couchdb.peer.saveAsync(supervisorKey,doc)
+          return couchdb.peer.insertAsync(doc,supervisorKey)
         })
         .then(function(){
           if(!cluster) return

@@ -10,21 +10,24 @@ var config = require('../config')
 P.promisifyAll(nano)
 
 //setup our client
-var dsn = config.couchdb.protocol
-if(config.couchdb.options.auth.username){
-  dsn = dsn + config.couchdb.options.auth.username
-  var couchPassword= 'password'
-  if(config.couchdb.options.auth.password !== '')
-    couchPassword = config.couchdb.options.auth.password
-  dsn = dsn + ':' + couchPassword
-  dsn = dsn + '@'
+var connectCouchDb = function(conf){
+  var dsn = conf.protocol
+  if(conf.options && conf.options.auth && conf.options.auth.username){
+    dsn = dsn + conf.options.auth.username
+    var couchPassword= 'password'
+    if(conf.options.auth.password && conf.options.auth.password !== '')
+      couchPassword = conf.options.auth.password
+    dsn = dsn + ':' + couchPassword
+    dsn = dsn + '@'
+  }
+  dsn = dsn + conf.host
+  dsn = dsn + ':' + conf.port
+  var client = nano(dsn)
+  P.promisifyAll(client)
+  P.promisifyAll(client.db)
+  return client
 }
-dsn = dsn + config.couchdb.host
-dsn = dsn + ':' + config.couchdb.port
-var client = nano(dsn)
-
-//make some promises
-P.promisifyAll(client)
+var client = connectCouchDb(config.couchdb)
 
 
 /**

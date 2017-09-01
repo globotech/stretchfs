@@ -40,7 +40,7 @@ var createInventory = function(fileDetail,verified){
   }
   if(verified) inventory.verifiedAt = verified
   debug(inventoryKey,'creating inventory record',inventory)
-  return couchdb.inventory.saveAsync(inventoryKey,inventory)
+  return couchdb.inventory.insertAsync(inventory,inventoryKey)
     .then(function(result){
       inventory._rev = result.rev
       return inventory
@@ -56,7 +56,7 @@ var updateInventory = function(fileDetail,doc,verified){
   )
   doc.size = fileDetail.stat.size
   if(verified) doc.verifiedAt = verified
-  return couchdb.inventory.saveAsync(doc._id,doc._rev,doc)
+  return couchdb.inventory.insertAsync(doc)
     .then(function(result){
       doc._rev = result.rev
       return doc

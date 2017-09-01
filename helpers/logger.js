@@ -1,8 +1,6 @@
 'use strict';
-var config = require('../config')
 var winston = require('winston')
 var moment = require('moment')
-require('winston-syslog').Syslog
 
 winston.remove(winston.transports.Console)
 
@@ -21,16 +19,6 @@ var logger = new winston.Logger({
           ' ' + err.level.toUpperCase() + ': ' + err.message + ' '
       }
     })
-    /*new winston.transports.Syslog({
-      protocol: 'unix',
-      path: '/dev/log',
-      json: false,
-      prettyPrint: true,
-      formatter: function(err){
-        return 'OOSE' + ' ' + err.level.toUpperCase() +
-          ': ' + err.message
-      }
-    })*/
   ]
 })
 

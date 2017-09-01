@@ -53,6 +53,7 @@ config.$load({
     options: {}
   },
   couchdb: {
+    protocol: 'http://',
     host: '127.0.0.1',
     port: '5984',
     prefix: '',

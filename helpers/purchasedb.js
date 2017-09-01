@@ -14,19 +14,26 @@ var config = require('../config')
 //make some promises
 P.promisifyAll(nano)
 
-//setup our client
-var dsn = config.couchdb.protocol
-if(config.couchdb.options.auth.username){
-  dsn = dsn + config.couchdb.options.auth.username
-  var couchPassword= 'password'
-  if(config.couchdb.options.auth.password !== '')
-    couchPassword = config.couchdb.options.auth.password
-  dsn = dsn + ':' + couchPassword
-  dsn = dsn + '@'
+var connectCouchDb = function(conf){
+  //setup our client
+  var dsn = conf.protocol
+  if(conf.options && conf.options.auth && conf.options.auth.username){
+    dsn = dsn + conf.options.auth.username
+    var couchPassword= 'password'
+    if(conf.options.auth.password && conf.options.auth.password !== '')
+      couchPassword = conf.options.auth.password
+    dsn = dsn + ':' + couchPassword
+    dsn = dsn + '@'
+  }
+  dsn = dsn + conf.host
+  dsn = dsn + ':' + conf.port
+  var client = nano(dsn)
+  P.promisifyAll(client)
+  P.promisifyAll(client.db)
+  return client
 }
-dsn = dsn + config.couchdb.host
-dsn = dsn + ':' + config.couchdb.port
-var couchdb = nano(dsn)
+var couchdb = connectCouchDb(config.couchdb)
+
 
 //make some promises
 P.promisifyAll(couchdb)
@@ -163,17 +170,8 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
     debug('replConfig matches couchConfig returning')
     return
   }
-  var couchdbconn = new (cradle.Connection)(
-    couchConfig.host,
-    couchConfig.port,
-    couchConfig.options
-  )
-  P.promisifyAll(couchdbconn)
-  var repldbconn = new (cradle.Connection)(
-    replConfig.host,
-    replConfig.port,
-    replConfig.options
-  )
+  var couchdbconn = connectCouchDb(couchConfig)
+  var repldbconn = connectCouchDb(replConfig)
   P.promisifyAll(repldbconn)
   debug('couchdb creating oose-purchase-' + databaseName)
   var repldb = repldbconn.database('oose-purchase-' + databaseName)
@@ -228,11 +226,11 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
           roles: ['_admin','_reader','_writer']
         }
       }
-      return replicator.saveAsync(
+      return replicator.insertAsync(
+        replControl,
         'oose-purchase-' + databaseName + '-' +
         couchConfig.host + '->' +
-        replConfig.host,
-        replControl
+        replConfig.host
       )
         .catch(suppressDocumentConflict)
         .catch(suppressForbidden)
@@ -281,11 +279,11 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
           roles: ['_admin','_reader','_writer']
         }
       }
-      return replicator.saveAsync(
+      return replicator.insertAsync(
+        couchControl,
         'oose-purchase-' + databaseName + '-' +
         replConfig.host + '->' +
-        couchConfig.host,
-        couchControl
+        couchConfig.host
       )
         .catch(suppressDocumentConflict)
         .catch(suppressForbidden)
@@ -300,14 +298,12 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
  * @return {P}
  */
 var setupWithoutReplication = function(databaseName,couchConfig){
-  var couchdb = new (cradle.Connection)(
-    couchConfig.host,
-    couchConfig.port,
-    couchConfig.options
-  )
-  P.promisifyAll(couchdb)
-  couchdb = couchdb.database('oose-purchase-' + databaseName)
-  return couchdb.createAsync()
+  var couchdb = connectCouchDb(couchConfig)
+  var dbName = 'oose-purchase-' + databaseName
+  return couchdb.db.createAsync(dbName)
+    .then(function(){
+      return couchdb.db.use(dbName)
+    })
 }
 
 
@@ -320,12 +316,7 @@ var pruneDatabase = function(days){
   var floorToken = +moment().subtract(days,'days').format('YYYYMMDD')
   debug('foorToken',floorToken)
   var pruneServer = function(couchConfig,zone){
-    var couchdbconn = new (cradle.Connection)(
-      couchConfig.host,
-      couchConfig.port,
-      couchConfig.options
-    )
-    P.promisifyAll(couchdbconn)
+    var couchdbconn = connectCouchDb(couchConfig)
     return couchdbconn.databasesAsync()
       .map(function(database){
         //THESE LINES ARE SUPER IMPORTANT
@@ -356,13 +347,12 @@ var pruneDatabase = function(days){
       })
   }
   var promises = []
-  var index = 0
-  var _pruneServer = function(couchConfig){
+  var _pruneServer = function(couchConfig,index){
     promises.push(pruneServer(couchConfig,index))
   }
   if(couchConfigs && Object.keys(couchConfigs)){
-    for(index in couchConfigs){
-      couchConfigs[index].forEach(_pruneServer)
+    for(var i in couchConfigs){
+      couchConfigs[i].forEach(_pruneServer)
     }
   } else {
     promises.push(pruneServer(config.couchdb))
@@ -431,11 +421,7 @@ var couchWrap = function(token){
   var databaseName = getDatabaseName(token)
   var couchConfig = pickCouchConfig(zone)
   if(!couchConfig) return null
-  couchPool[zone] = new (cradle.Connection)(
-    couchConfig.host,
-    couchConfig.port,
-    couchConfig.options
-  )
+  couchPool[zone] = connectCouchDb(couchConfig)
   return couchPool[zone].database('oose-purchase-' + databaseName)
 }
 
@@ -524,7 +510,7 @@ PurchaseDb.prototype.create = function(token,params){
     couchdb = couchWrap(token)
     if(!couchdb) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
-    return couchdb.saveAsync(token,params)
+    return couchdb.insertAsync(params,token)
   })
     .then(function(result){
       debug(token,'create result',result)
@@ -553,7 +539,7 @@ PurchaseDb.prototype.update = function(token,params){
     .then(function(result){
       if(result){
         debug(token,'update result received, udpating',result,params)
-        return couchdb.saveAsync(token,result._rev,params)
+        return couchdb.insertAsync(params,token)
       } else{
         debug(token,'doesnt exist, creating',result,params)
         that.create(token,params)

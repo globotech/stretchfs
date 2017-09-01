@@ -36,7 +36,7 @@ var runInterval = function(done){
       }
       debug('saving deletion of purchases',purchases.length,purchases[0])
       //now we just use couchdb to save the purchases
-      return couchdb.purchase.saveAsync(purchases)
+      return couchdb.purchase.insertAsync(purchases)
     })
     .then(function(result){
       var deleted = 0

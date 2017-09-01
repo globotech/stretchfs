@@ -86,13 +86,13 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   var currentVoteLog = null
   debug('DOWN VOTE: ' + key)
   var createDownVote = function(){
-    return couchdb.heartbeat.saveAsync(myDownKey,{
+    return couchdb.heartbeat.insertAsync({
       peer: peer,
       systemKey: systemKey,
       systemType: systemType,
       reason: reason,
       timestamp: +(new Date())
-    })
+    },myDownKey)
   }
   //get down votes that have already been set for this host
   return couchdb.heartbeat.allAsync(
@@ -123,7 +123,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if(count === 0 || votes < (count / 2))
         throw new Error('Ok, got it')
       peer.available = false
-      return couchdb.peer.saveAsync(key,peer._rev,peer)
+      return couchdb.peer.insertAsync(peer,key)
     })
     .catch(function(err){
       if('Ok, got it' === err.message){
@@ -179,7 +179,7 @@ var runHeartbeat = function(systemKey,systemType){
     return couchdb.peer.getAsync(peer._id)
       .then(function(result){
         result.available = true
-        return couchdb.peer.saveAsync(result._id,result._rev,result)
+        return couchdb.peer.insertAsync(result)
       })
       .then(function(){
         //remove down votes
@@ -343,7 +343,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
         debug('Got peer information back',peer)
         peer.available = true
         peer.active = true
-        return couchdb.peer.saveAsync(key,peer._rev,peer)
+        return couchdb.peer.insertAsync(peer,key)
       },
       function(err){
         debug('Got an error getting peer information',err)
