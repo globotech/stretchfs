@@ -343,7 +343,7 @@ var pruneDatabase = function(days){
                 })
                 .map(function(key){
                   //console.log('WOULD REMOVE _replicator',key.key)
-                  return db.removeAsync(key.key)
+                  return db.destroyAsync(key.key)
                 })
             })
         }
@@ -564,7 +564,7 @@ PurchaseDb.prototype.remove = function(token){
       debug(token,'remove result',result)
       if(result){
         debug(token,'remove exists, removing')
-        return couchWrap(token).removeAsync(token,result._rev)
+        return couchWrap(token).destroyAsync(token,result._rev)
       } else {
         debug(token,'remove doesnt exist do nothing')
         //otherwise it doesn't exist... cool

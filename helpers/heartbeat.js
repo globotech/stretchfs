@@ -195,7 +195,7 @@ var runHeartbeat = function(systemKey,systemType){
           })
       })
       .map(function(vote){
-        return couchdb.heartbeat.removeAsync(vote._id,vote._rev)
+        return couchdb.heartbeat.destroyAsync(vote._id,vote._rev)
       },{concurrency: config.heartbeat.concurrency})
       .catch(function(err){
         logger.log('error', 'Failed to restore peer' + err)
@@ -314,7 +314,7 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       debug('Pruning vote',vote._id)
-      return couchdb.heartbeat.removeAsync(vote._id,vote._rev).reflect()
+      return couchdb.heartbeat.destroyAsync(vote._id,vote._rev).reflect()
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
       logger.log('error', 'vote prune error: ' + err)
@@ -370,7 +370,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     })
     .map(function(log){
       debug('Removing downvote',log)
-      return couchdb.heartbeat.removeAsync(log.key,log._rev).reflect()
+      return couchdb.heartbeat.destroyAsync(log.key,log._rev).reflect()
     },{concurrency: config.heartbeat.concurrency})
     .then(function(result){
       debug('finished marking myself up',result)

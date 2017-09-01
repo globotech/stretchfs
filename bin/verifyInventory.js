@@ -62,7 +62,7 @@ var verifyInventoryAsync = function(){
             counter.valid++
           } else {
             counter.invalid++
-            return couchdb.inventory.removeAsync(record._id,record._rev)
+            return couchdb.inventory.destroyAsync(record._id,record._rev)
               .catch(function(){
                 counter.warning++
               })

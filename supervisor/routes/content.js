@@ -100,7 +100,7 @@ var verifyFile = function(fileDetail,force){
       if(!fileDetail.exists){
         return couchdb.inventory.getAsync(inventoryKey)
           .then(function(result){
-            return couchdb.inventory.removeAsync(result._id,result._rev)
+            return couchdb.inventory.destroyAsync(result._id,result._rev)
           })
           .catch(function(err){
             if(!err || !err.statusCode || 404 !== err.statusCode){
@@ -113,7 +113,7 @@ var verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return couchdb.inventory.removeAsync(inventory._id,inventory._rev)
+            return couchdb.inventory.destroyAsync(inventory._id,inventory._rev)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
@@ -238,7 +238,7 @@ exports.put = function(req,res){
       fs.unlinkSync(dest)
       couchdb.inventory.getAsync(inventoryKey)
         .then(function(result){
-          return couchdb.inventory.removeAsync(result._id,result._rev)
+          return couchdb.inventory.destroyAsync(result._id,result._rev)
         })
         .catch(function(err){
           console.log('Failed to clean up broken inventory record',
@@ -340,7 +340,7 @@ exports.remove = function(req,res){
         hashFile.remove(fileDetail.hash),
         couchdb.inventory.getAsync(inventoryKey)
           .then(function(result){
-            return couchdb.inventory.removeAsync(result._id,result._rev)
+            return couchdb.inventory.destroyAsync(result._id,result._rev)
           })
           .catch(function(){
             //nothing
