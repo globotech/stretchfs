@@ -19,9 +19,11 @@ var runInterval = function(done){
   debug('requesting votes',hbKey)
   couchdb.heartbeat.listAsync({
     startkey: hbKey,
-    endkey: hbKey + '\uffff'
+    endkey: hbKey + '\uffff',
+    include_docs: true
   })
     .then(function(result){
+      result = result.rows
       debug('vote result; votes: ',result.length)
       //this gives us the purchase keys and to my understanding we just have
       //to update these to deleted now

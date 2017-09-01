@@ -27,9 +27,11 @@ exports.peerList = function(){
     (function(){
       return couchdb.peer.listAsync({
           startkey: prismKey,
-          endkey: prismKey + '\uffff'
+          endkey: prismKey + '\uffff',
+          include_docs: true
         })
         .then(function(rows){
+          rows = rows.rows
           return peerGetRows(rows)
         })
         .map(function(row){
@@ -40,9 +42,11 @@ exports.peerList = function(){
     (function(){
       return couchdb.peer.listAsync({
         startkey: storeKey,
-        endkey: storeKey + '\uffff'
+        endkey: storeKey + '\uffff',
+        include_docs: true
       })
         .then(function(rows){
+          rows = rows.rows
           return peerGetRows(rows)
         })
         .map(function(row){
@@ -70,8 +74,9 @@ exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couchdb.schema.prism()
   return couchdb.peer.listAsync(
-    {startkey: prismKey, endkey: prismKey + '\uffff'})
+    {startkey: prismKey, endkey: prismKey + '\uffff', include_docs: true})
     .then(function(rows){
+      rows = rows.rows
       return peerGetRows(rows)
     })
     .map(function(row){
@@ -200,8 +205,12 @@ exports.contentExists = function(hash,cacheEnable){
       } else {
         return couchdb.inventory.listAsync({
           startkey: existsKey,
-          endkey: existsKey + '\uffff'
+          endkey: existsKey + '\uffff',
+          include_docs: true
         })
+          .then(function(result){
+            return result.rows
+          })
           .map(function(row){
             debug(existsKey,'got record',row)
             count++

@@ -96,9 +96,10 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   }
   //get down votes that have already been set for this host
   return couchdb.heartbeat.listAsync(
-    {startkey: downKey, endkey: downKey + '\uffff'})
+    {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
     .then(
       function(log){
+        log = log.rows
         currentVoteLog = log
         for(var i = 0; i < log.length; i++){
           if(log[i].key === myDownKey) {
@@ -186,8 +187,12 @@ var runHeartbeat = function(systemKey,systemType){
         var downKey = couchdb.schema.downVote(peer.name)
         return couchdb.heartbeat.listAsync({
           startkey: downKey,
-          endkey: downKey + '\uffff'
+          endkey: downKey + '\uffff',
+          include_docs: true
         })
+          .then(function(result){
+            return result.rows
+          })
       })
       .map(function(vote){
         return couchdb.heartbeat.removeAsync(vote._id,vote._rev)
@@ -293,8 +298,12 @@ var runVotePrune = function(systemKey,systemType){
   }
   return couchdb.heartbeat.listAsync({
     startkey: downVoteKey,
-    endkey: downVoteKey + '\uffff'
+    endkey: downVoteKey + '\uffff',
+    include_docs: true
   })
+    .then(function(result){
+      return result.rows
+    })
     .map(function(vote){
       return couchdb.heartbeat.getAsync(vote.id).reflect()
     },{concurrency: config.heartbeat.concurrency})
@@ -354,7 +363,10 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
       //Time to delete the downvote log
       debug('About to get down votes',downKey)
       return couchdb.heartbeat.listAsync(
-        {startkey: downKey, endkey: downKey + '\uffff'})
+        {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
+    })
+    .then(function(result){
+      return result.rows
     })
     .map(function(log){
       debug('Removing downvote',log)

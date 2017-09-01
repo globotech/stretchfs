@@ -164,8 +164,14 @@ exports.before = function(that){
     })
     .then(function(){
       var key = couchdb.schema.inventory()
-      return couchdb.inventory.listAsync(
-        {startkey: key, endkey: key + '\uffff'})
+      return couchdb.inventory.listAsync({
+        startkey: key,
+        endkey: key + '\uffff',
+        include_docs: true
+      })
+    })
+    .then(function(result){
+      return result.rows
     })
     .map(function(row){
       return couchdb.inventory.removeAsync(row.key)
@@ -175,22 +181,42 @@ exports.before = function(that){
     })
     .then(function(){
       var key = couchdb.schema.prism()
-      return couchdb.peer.listAsync({startkey: key, endkey: key + '\uffff'})
+      return couchdb.peer.listAsync({
+        startkey: key,
+        endkey: key + '\uffff',
+        include_docs: true
+      })
+    })
+    .then(function(result){
+      return result.rows
     })
     .map(function(row){
       return couchdb.peer.removeAsync(row.key)
     })
     .then(function(){
       var key = couchdb.schema.store()
-      return couchdb.peer.listAsync({startkey: key, endkey: key + '\uffff'})
+      return couchdb.peer.listAsync({
+        startkey: key,
+        endkey: key + '\uffff',
+        include_docs: true
+      })
+    })
+    .then(function(result){
+      return result.rows
     })
     .map(function(row){
       return couchdb.peer.removeAsync(row.key)
     })
     .then(function(){
       var key = couchdb.schema.downVote()
-      return couchdb.heartbeat.listAsync(
-        {startkey: key, endkey: key + '\uffff'})
+      return couchdb.heartbeat.listAsync({
+        startkey: key,
+        endkey: key + '\uffff',
+        include_docs: true
+      })
+    })
+    .then(function(result){
+      return result.rows
     })
     .map(function(row){
       return couchdb.heartbeat.removeAsync(row.key)

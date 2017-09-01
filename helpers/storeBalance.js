@@ -18,8 +18,9 @@ exports.storeList = function(prism){
   var storeKey = couchdb.schema.store(prism)
   debug(storeKey,'getting store list')
   return couchdb.peer.listAsync(
-    {startkey: storeKey, endkey: storeKey + '\uffff'})
+    {startkey: storeKey, endkey: storeKey + '\uffff', include_docs: true})
     .then(function(rows){
+      rows = rows.rows
       var ids = []
       for (var i=0; i < rows.length; i++) ids.push(rows[i].id)
       return couchdb.peer.getAsync(ids)

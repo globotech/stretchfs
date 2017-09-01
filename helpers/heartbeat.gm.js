@@ -125,8 +125,9 @@ var Heartbeat = function(type,name){
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
         return couchdb.heartbeat.listAsync(
-          {startkey: downKey, endkey: downKey + '\uffff'})
+          {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
       }).then(function(vL){
+        vL = vL.rows
         currentVoteLog = vL
         for(var i=0; i< vL.length; i++){
           if(vL[i].key === myDownKey) {
@@ -213,8 +214,9 @@ var Heartbeat = function(type,name){
       }).then(function(){
         //Time to delete the downvote log
         return couchdb.heartbeat.listAsync(
-          {startkey: downKey, endkey: downKey + '\uffff'})
+          {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
       }).then(function(votelog){
+        voteLog = voteLog.rows
         //Delete the vote log, it has served its purpose
         var promises = []
         //Added reflect() to avoid a race condition.

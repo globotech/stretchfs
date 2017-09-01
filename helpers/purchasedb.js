@@ -338,6 +338,9 @@ var pruneDatabase = function(days){
                 startkey: databaseName + '-',
                 endkey: databaseName + '-\uffff'
               })
+                .then(function(result){
+                  return result.rows
+                })
                 .map(function(key){
                   //console.log('WOULD REMOVE _replicator',key.key)
                   return db.removeAsync(key.key)

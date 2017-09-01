@@ -19,9 +19,11 @@ var runInterval = function(done){
   debug('requesting purchases',purchaseKey)
   couchdb.purchase.listAsync({
     startkey: purchaseKey,
-    endkey: purchaseKey + '\uffff'
+    endkey: purchaseKey + '\uffff',
+    include_docs: true
   })
     .then(function(result){
+      result = result.rows
       debug('purchase result; purchases: ',result.length)
       //this gives us the purchase keys and to my understanding we just have
       //to update these to deleted now
