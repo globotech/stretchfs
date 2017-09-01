@@ -41,7 +41,6 @@ if(require.main === module){
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
-              console.log(err)
               if(404 !== err.statusCode) throw err
               //now register ourselves or mark ourselves available
               return couchdb.peer.insertAsync({

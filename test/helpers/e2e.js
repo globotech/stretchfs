@@ -174,7 +174,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.inventory.destroyAsync(row.key,row._rev)
+      return couchdb.inventory.destroyAsync(row.key,row.value.rev)
     })
     .then(function(){
       //return purchasedb.flushallAsync();
@@ -191,7 +191,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.peer.destroyAsync(row.key,row._rev)
+      return couchdb.peer.destroyAsync(row.key,row.value.rev)
     })
     .then(function(){
       var key = couchdb.schema.store()
@@ -205,7 +205,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.peer.destroyAsync(row.key,row._rev)
+      return couchdb.peer.destroyAsync(row.key,row.value.rev)
     })
     .then(function(){
       var key = couchdb.schema.downVote()
@@ -219,7 +219,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.heartbeat.destroyAsync(row.key,row._rev)
+      return couchdb.heartbeat.destroyAsync(row.key,row.value.rev)
     })
     .then(function(){
       return P.all([
