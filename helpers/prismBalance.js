@@ -207,7 +207,7 @@ exports.contentExists = function(hash,cacheEnable){
             count++
             return couchdb.inventory.getAsync(row.key)
               .catch(function(err){
-                if(404 !== err.headers.status) throw err
+                if(404 !== err.statusCode) throw err
               })
           })
           .then(function(inventoryList){

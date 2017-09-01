@@ -94,7 +94,7 @@ module.exports = function(done){
           },
           function(err){
             //make sure we only catch 404s and let others bubble
-            if(404 !== err.headers.status) throw err
+            if(404 !== err.statusCode) throw err
             var doc = {
               store: config.store.name,
               prism: config.store.prism,

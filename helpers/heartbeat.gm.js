@@ -136,8 +136,8 @@ var Heartbeat = function(type,name){
         }
         return couchdb.heartbeat.insertAsync({date:Date.now()},myDownKey)
       },function(err){
-        if(!err.headers)throw err
-        if(404 !== err.headers.status) throw err
+        if(!err.statusCode) throw err
+        if(404 !== err.statusCode) throw err
         currentVoteLog = []
         return couchdb.heartbeat.insertAsync({date:Date.now()},myDownKey)
       }).then(function(myVote){

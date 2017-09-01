@@ -103,7 +103,7 @@ var verifyFile = function(fileDetail,force){
             return couchdb.inventory.removeAsync(result._id,result._rev)
           })
           .catch(function(err){
-            if(!err || !err.headers || 404 !== err.headers.status){
+            if(!err || !err.statusCode || 404 !== err.statusCode){
               console.log('Failed to delete inventory record for missing file',
                 err.message,err.stack)
             } else {
@@ -125,7 +125,7 @@ var verifyFile = function(fileDetail,force){
             },
             //record does not exist, create it
             function(err){
-              if(!err || !err.headers || 404 !== err.headers.status) throw err
+              if(!err || !err.statusCode || 404 !== err.statusCode) throw err
               return createInventory(fileDetail,verifiedAt)
             }
           )
@@ -225,7 +225,7 @@ exports.put = function(req,res){
       },
       //record does not exist, create it
       function(err){
-        if(!err || !err.headers || 404 !== err.headers.status) throw err
+        if(!err || !err.statusCode || 404 !== err.statusCode) throw err
         return createInventory(fileDetail)
       }
     )
@@ -500,7 +500,7 @@ exports.send = function(req,res){
         storeClient = api.store(store)
       },
       function(err){
-        if(404 !== err.headers.status) throw err
+        if(404 !== err.statusCode) throw err
         throw new Error('Store not found')
       }
     )
