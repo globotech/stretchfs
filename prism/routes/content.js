@@ -55,7 +55,7 @@ var sendToPrism = function(tmpfile,hash,extension){
         'instance to upload to')
       }
       winners.push(result)
-      return prismBalance.winner('newFile',prismList,[result.name])
+      return prismBalance.winner('newFile',prismList)
     })
     //stream the file to winners
     .then(function(result){

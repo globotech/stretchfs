@@ -137,7 +137,6 @@ FileOp.prototype.addClones = function(){
       //skip prisms and whatever else
       if(couchdb.schema.PEER_TYPES.store !== peer.type) return
       if(
-        peer.prism !== prismFromWinner &&
         -1 === storeWinnerList.indexOf(peer.name) &&
         -1 === file.map.indexOf(peer.prism + ':' + peer.name) &&
         true === peer.available &&
