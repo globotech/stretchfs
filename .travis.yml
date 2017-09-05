@@ -1,7 +1,6 @@
 language: node_js
 sudo: false
 node_js:
-  - "4"
   - "6"
   - "8"
 addons:
@@ -21,6 +20,7 @@ before_script:
   - curl -X PUT http://root:blah1234@localhost:5984/oose-peer
   - curl -X PUT http://root:blah1234@localhost:5984/oose-inventory
   - curl -X PUT http://root:blah1234@localhost:5984/oose-heartbeat
+  - curl -X PUT http://root:blah1234@localhost:5984/oose-purchase-a`date +%Y%m%d`
   - curl -X GET http://root:blah1234@localhost:5984/_config
   - >
     curl -X PUT http://root:blah1234@localhost:5984/_users/org.couchdb.user:oose
