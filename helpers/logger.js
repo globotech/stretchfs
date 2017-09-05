@@ -11,7 +11,7 @@ var logger = new winston.Logger({
       json: false,
       prettyPrint: true,
       timestamp: function(){
-        return moment().format('MM-DD-YYYY HH:mm:ss.ssss')
+        return moment().format('MM-DD-YYYY HH:mm:ss.SSS')
       },
       formatter: function(err){
         // Return string will be passed to logger.

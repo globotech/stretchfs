@@ -69,7 +69,7 @@ var sendToPrism = function(tmpfile,hash,extension){
       var client
       var url
       for(var i = 0; i < winners.length; i++){
-        client = api.prism(winners[i])
+        client = api.setupAccess('prism',winners[i])
         url = client.url('/content/put/' + hash + '.' + extension)
         promises.push(
           promisePipe(readStream,client.put(url))
@@ -282,7 +282,7 @@ exports.put = function(req,res){
     .then(function(result){
       debug(details.hash,'winner',result)
       if(!result) throw new UserError('No suitable store instance found')
-      var client = api.store(result)
+      var client = api.setupAccess('store',result)
       var destination = client.put(client.url('/content/put/' + file))
       debug(details.hash,'streaming file to',result.name)
       return promisePipe(req,destination)
@@ -402,7 +402,7 @@ exports.download = function(req,res){
     })
     .then(function(result){
       winner = result
-      var store = api.store(winner)
+      var store = api.setupAccess('store',winner)
       return store.postAsync(store.url('/ping'))
         .then(function(){
           var req = store.post({
@@ -426,7 +426,7 @@ exports.download = function(req,res){
       return storeBalance.winnerFromExists(hash,inventory,[winner.name],true)
         .then(function(result){
           winner = result
-          var store = api.store(winner)
+          var store = api.setupAccess('store',winner)
           return store.postAsync(store.url('/ping'))
             .then(function(){
               store.post({
@@ -584,6 +584,9 @@ exports.purchase = function(req,res){
 exports.deliver = function(req,res){
   redis.incr(redis.schema.counter('prism','content:deliver'))
   var token = req.params.token
+  //support different address delivery types
+  var addressType = 'fqdn'
+  if(req.query.addressType) addressType = req.query.addressType
   //var filename = req.params.filename
   var cacheValid = false
   var purchaseCacheKey = redis.schema.purchaseCache(token)
@@ -613,7 +616,13 @@ exports.deliver = function(req,res){
       if('' === query) query = '?start=0'
       else query = query + '&start=0'
     }
-    return proto + '://' + store.name + '.' + config.domain +
+    var host = store.name + '.' + config.domain
+    if('ip' === addressType || 'ipv4' === addressType){
+      host = store.host + ':' + store.port
+    } else if('ipv6' === addressType){
+      host = (store.host6 || store.host) + ':[' + store.port + ']'
+    }
+    return proto + '://' + host +
       '/play/' + token + '/video.' + purchase.ext + (query ? '?' + query : '')
   }
   /**
@@ -757,6 +766,9 @@ exports.contentStatic = function(req,res){
   redis.incr(redis.schema.counter('prism','content:static'))
   var hash = req.params.hash || req.params.sha1 || ''
   var filename = req.params.filename
+  //support different address delivery types
+  var addressType = 'fqdn'
+  if(req.query.addressType) addressType = req.query.addressType
   //default based on the request
   var ext = path.extname(filename).replace(/^\./,'')
   var existsRecord
@@ -776,8 +788,14 @@ exports.contentStatic = function(req,res){
       if(req.get('X-Forwarded-Protocol')){
         proto = 'https' === req.get('X-Forwarded-Protocol') ? 'https' : 'http'
       }
-      var url = proto + '://' + result.name +
-        '.' + config.domain + '/static/' + existsRecord.relativePath
+      var host = result.name + '.' + config.domain
+      if('ip' === addressType || 'ipv4' === addressType){
+        host = result.host + ':' + (+result.port +1)
+      } else if('ipv6' === addressType){
+        host = (result.host6 || result.host) + ':[' + (+result.port +1) + ']'
+      }
+      var url = proto + '://' + host +
+        '/static/' + existsRecord.hash + '/' + filename
       res.redirect(302,url)
     })
     .catch(NetworkError,function(err){

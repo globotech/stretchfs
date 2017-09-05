@@ -45,7 +45,7 @@ var Heartbeat = function(type,name){
         if(prisms.length){
           for(var i = 0; i<prisms.length; i++){
             var tmpPrism = extend({},prisms[i])
-            tmpPrism.request = api.prism(tmpPrism)
+            tmpPrism.request = api.setupAccess('prism',tmpPrism)
             tmpPrism.type = 'prism'
             prismList.push(tmpPrism)
           }
@@ -68,7 +68,7 @@ var Heartbeat = function(type,name){
         if(stores.length){
           for(var i = 0; i<stores.length; i++){
             var tmpStore = extend({},stores[i])
-            tmpStore.request = api.store(tmpStore)
+            tmpStore.request = api.setupAccess('store',tmpStore)
             tmpStore.type = 'store'
             storeList.push(tmpStore)
           }

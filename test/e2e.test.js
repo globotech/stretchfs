@@ -1,6 +1,9 @@
 'use strict';
 var expect = require('chai').expect
 
+var couchdb = require('../helpers/couchdb')
+var purchasedb = require('../helpers/purchasedb')
+
 var e2e = require('./helpers/e2e')
 
 describe('e2e',function(){
@@ -23,6 +26,10 @@ describe('e2e',function(){
       it('store2 should be up',e2e.checkUp('store',e2e.clconf.store2))
       it('store3 should be up',e2e.checkUp('store',e2e.clconf.store3))
       it('store4 should be up',e2e.checkUp('store',e2e.clconf.store4))
+      it('send1 should be up',e2e.checkUp('send',e2e.clconf.send1))
+      it('send2 should be up',e2e.checkUp('send',e2e.clconf.send2))
+      it('send3 should be up',e2e.checkUp('send',e2e.clconf.send3))
+      it('send4 should be up',e2e.checkUp('send',e2e.clconf.send4))
     })
     describe('authentication',function(){
       it('should not require authentication for public functions',
@@ -49,12 +56,12 @@ describe('e2e',function(){
         return e2e.prismLogin(e2e.clconf.prism1)()
           .then(function(session){
             e2e.user.session = session
+            return e2e.contentUpload(e2e.clconf.prism1)
           })
       })
       after(function(){
         return e2e.prismLogout(e2e.clconf.prism1,e2e.user.session)()
       })
-      before(e2e.contentUpload(e2e.clconf.prism1))
       it('should retrieve content',e2e.contentRetrieve(e2e.clconf.prism1))
       it('should show the content exists in 2 places',
         e2e.contentExists(e2e.clconf.prism1))
@@ -72,6 +79,10 @@ describe('e2e',function(){
         e2e.contentStatic(e2e.clconf.prism1))
       it('should deliver static content on prism2',
         e2e.contentStatic(e2e.clconf.prism2))
+      it('should receive content from send on prism1',
+        e2e.contentReceive(e2e.clconf.prism1))
+      it('should receive content from send on prism2',
+        e2e.contentReceive(e2e.clconf.prism2))
       it('should deny static content that must be purchased',function(){
         return e2e.contentStatic(e2e.clconf.prism1,'127.0.0.1','mp4')()
           .catch(function(err){
@@ -80,15 +91,24 @@ describe('e2e',function(){
       })
     })
     describe('purchases',function(){
+      var purchaseDbToken = purchasedb.generate()
+      var purchaseDatabase = purchasedb.databaseName(purchaseDbToken)
       before(function(){
         return e2e.prismLogin(e2e.clconf.prism1)()
           .then(function(session){
             e2e.user.session = session
             return e2e.contentUpload(e2e.clconf.prism1)()
           })
+          .then(function(){
+            return purchasedb.createDatabase(purchaseDbToken)
+              .catch(function(){})
+          })
       })
       after(function(){
-        return e2e.prismLogout(e2e.clconf.prism1,e2e.user.session)()
+        return couchdb.db.destroyAsync(purchaseDatabase)
+          .then(function(){
+            return e2e.prismLogout(e2e.clconf.prism1,e2e.user.session)()
+          })
       })
       it('should allow purchase of the content',function(){
         return e2e.contentPurchase(e2e.clconf.prism1)()

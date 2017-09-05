@@ -230,7 +230,7 @@ var runHeartbeat = function(systemKey,systemType){
       //if we already have a downvote the peer should not be contacted
       if(peer.existingDownVote) return true
       var peerRequest = 'prism' === peer.type ?
-        api.prism(peer) : api.store(peer)
+        api.setupAccess('prism',peer) : api.setupAccess('store',peer)
       //make the ping request
       return peerRequest.postAsync({
         url: peerRequest.url('/ping') + '',

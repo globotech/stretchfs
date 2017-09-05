@@ -2,12 +2,9 @@
 var P = require('bluebird')
 var expect = require('chai').expect
 var infant = require('infant')
-var oose = require('oose-sdk')
 var request = require('request')
 
 var api = require('../helpers/api')
-
-var purchase = oose.mock.purchase
 
 var config = require('../config')
 
@@ -28,7 +25,7 @@ describe('prism',function(){
   var client
   //start servers and create a user
   before(function(){
-    client = api.prism(config.prism)
+    client = api.setupAccess('prism',config.prism)
     return prismServer.startAsync()
   })
   //remove user and stop services

@@ -467,6 +467,16 @@ PurchaseDb.prototype.createDatabase = function(token,setupReplication){
 
 
 /**
+ * Get database name
+ * @param {string} token
+ * @return {string}
+ */
+PurchaseDb.prototype.databaseName = function(token){
+  return 'oose-purchase-' + getDatabaseName(token)
+}
+
+
+/**
  * Prune databases
  * @param {integer} days number of days to keep from today
  * @return {P}

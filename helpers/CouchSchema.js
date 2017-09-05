@@ -19,8 +19,29 @@ var CouchSchema = function(prefix){
  */
 CouchSchema.prototype.PEER_TYPES = {
   'prism': 'prism',
-  'store': 'store'
+  'store': 'store',
+  'send': 'send',
+  'supervisor': 'supervisor'
 }
+
+
+/**
+ * Valid Store Types
+ * @enum {string} STORE_TYPES
+ *
+CouchSchema.prototype.STORE_TYPES = {
+  'tape': 'tape',
+  'floppy': 'floppy',
+  'cdrom': 'cdrom',
+  'zip': 'zip',
+  'usb': 'usb',
+  'flash': 'flash',
+  'cloud': 'cloud',
+  'hdd': 'hdd',
+  'ssd': 'ssd',
+  'memory': 'memory'
+}
+*/
 
 
 /**
@@ -93,6 +114,20 @@ CouchSchema.prototype.store = function(prism,name){
     this.PEER_TYPES.store + ':' +
     (prism || '') +
     (name ? ':' + name : '')
+  )
+}
+
+
+/**
+ * Send Key
+ * @param {string} prism
+ * @param {string} store
+ * @param {string} name
+ * @return {string}
+ */
+CouchSchema.prototype.send = function(prism,store,name){
+  return this.applyPrefix(
+    this.PEER_TYPES.send + ':' + prism + ':' + store + ':' + name
   )
 }
 

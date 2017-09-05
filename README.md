@@ -64,6 +64,11 @@ From there follow the debug filtering rules defined
 
 ## Changelog
 
+### 2.6.0
+
+* Introduce new send component to aid in dropping NGINX OpenResty from the OOSE
+standard build.
+
 ### 2.5.0
 
 * Merge patches of various 2.4 scripts.

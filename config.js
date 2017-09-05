@@ -177,11 +177,23 @@ config.$load({
     purchasePruneConcurrency: 512,
     verifyExpiration: 15552000000//ms  (180 days = 7776000000)
   },
+  //send system
+  send: {
+    enabled: false,
+    prism: 'prism1',
+    name: 'store1',
+    port: 5973,
+    host: null,
+    workers: {
+      count: 1,
+      maxConnections: 10000
+    }
+  },
   //supervisor system
   supervisor: {
     enabled: false,
     name: 'supervisor1',
-    port: 5972,
+    port: 5974,
     host: null,
     username: 'oose',
     password: 'oose',

@@ -36,7 +36,7 @@ describe('store',function(){
   var client
   //start servers and create a user
   before(function(){
-    client = api.store(config.store)
+    client = api.setupAccess('store',config.store)
     return rmfr(config.root)
       .then(function(){
         return storeServer.startAsync()

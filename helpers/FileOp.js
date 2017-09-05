@@ -86,7 +86,7 @@ FileOp.prototype.setupStore = function(store){
   opts.$load(config.store)
   opts.$load(store)
   opts = opts.$strip()
-  return oose.api.store(opts)
+  return oose.api.setupAccess('store',opts)
 }
 
 

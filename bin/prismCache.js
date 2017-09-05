@@ -8,7 +8,7 @@ var logger = require('../helpers/logger')
 
 var config = require('../config')
 
-var prism = api.prism(config.prism)
+var prism = api.setupAccess('prism',config.prism)
 
 var commandList = [
   'all',

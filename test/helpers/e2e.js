@@ -16,7 +16,6 @@ var logger = require('../../helpers/logger')
 var content = oose.mock.content
 //var purchasedb = require('../../helpers/purchasedb')
 var redis = require('../../helpers/redis')()
-var hashFile = require('../../helpers/hashFile')
 
 var NetworkError = oose.NetworkError
 var UserError = oose.UserError
@@ -118,7 +117,11 @@ exports.clconf = {
   store1: exports.getConfig(__dirname + '/../assets/store1.config.js'),
   store2: exports.getConfig(__dirname + '/../assets/store2.config.js'),
   store3: exports.getConfig(__dirname + '/../assets/store3.config.js'),
-  store4: exports.getConfig(__dirname + '/../assets/store4.config.js')
+  store4: exports.getConfig(__dirname + '/../assets/store4.config.js'),
+  send1: exports.getConfig(__dirname + '/../assets/send1.config.js'),
+  send2: exports.getConfig(__dirname + '/../assets/send2.config.js'),
+  send3: exports.getConfig(__dirname + '/../assets/send3.config.js'),
+  send4: exports.getConfig(__dirname + '/../assets/send4.config.js')
 }
 
 
@@ -144,6 +147,18 @@ exports.server = {
   }),
   store4: infant.parent('../../store',{
     fork: {env: exports.makeEnv(__dirname + '/../assets/store4.config.js')}
+  }),
+  send1: infant.parent('../../send',{
+    fork: {env: exports.makeEnv(__dirname + '/../assets/send1.config.js')}
+  }),
+  send2: infant.parent('../../send',{
+    fork: {env: exports.makeEnv(__dirname + '/../assets/send2.config.js')}
+  }),
+  send3: infant.parent('../../send',{
+    fork: {env: exports.makeEnv(__dirname + '/../assets/send3.config.js')}
+  }),
+  send4: infant.parent('../../send',{
+    fork: {env: exports.makeEnv(__dirname + '/../assets/send4.config.js')}
   })
 }
 
@@ -228,7 +243,11 @@ exports.before = function(that){
         exports.server.store1.startAsync(),
         exports.server.store2.startAsync(),
         exports.server.store3.startAsync(),
-        exports.server.store4.startAsync()
+        exports.server.store4.startAsync(),
+        exports.server.send1.startAsync(),
+        exports.server.send2.startAsync(),
+        exports.server.send3.startAsync(),
+        exports.server.send4.startAsync()
       ])
     })
     .then(function(){
@@ -245,7 +264,18 @@ exports.before = function(that){
 exports.after = function(that){
   that.timeout(80000)
   logger.log('info','Stopping mock cluster...')
+  var clconf = exports.clconf
+  var removePeerEntry = function(peerKey){
+    return couchdb.peer.getAsync(peerKey)
+      .then(function(result){
+        return couchdb.peer.destroyAsync(peerKey,result._rev)
+      })
+  }
   return P.all([
+    exports.server.send4.stopAsync(),
+    exports.server.send3.stopAsync(),
+    exports.server.send2.stopAsync(),
+    exports.server.send1.stopAsync(),
     exports.server.store4.stopAsync(),
     exports.server.store3.stopAsync(),
     exports.server.store2.stopAsync(),
@@ -253,6 +283,41 @@ exports.after = function(that){
     exports.server.prism2.stopAsync(),
     exports.server.prism1.stopAsync()
   ])
+    .then(function(){
+      //remove peer entries
+      return P.all([
+        removePeerEntry(couchdb.schema.prism(clconf.prism1.prism.name)),
+        removePeerEntry(couchdb.schema.prism(clconf.prism2.prism.name)),
+        removePeerEntry(couchdb.schema.store(
+          clconf.store1.store.prism,clconf.store1.store.name)),
+        removePeerEntry(couchdb.schema.store(
+          clconf.store2.store.prism,clconf.store2.store.name)),
+        removePeerEntry(couchdb.schema.store(
+          clconf.store3.store.prism,clconf.store3.store.name)),
+        removePeerEntry(couchdb.schema.store(
+          clconf.store4.store.prism,clconf.store4.store.name)),
+        removePeerEntry(couchdb.schema.send(
+          clconf.send1.send.prism,
+          clconf.send1.send.store,
+          clconf.send1.send.name
+        )),
+        removePeerEntry(couchdb.schema.send(
+          clconf.send2.send.prism,
+          clconf.send2.send.store,
+          clconf.send2.send.name
+        )),
+        removePeerEntry(couchdb.schema.send(
+          clconf.send3.send.prism,
+          clconf.send3.send.store,
+          clconf.send3.send.name
+        )),
+        removePeerEntry(couchdb.schema.send(
+          clconf.send4.send.prism,
+          clconf.send4.send.store,
+          clconf.send4.send.name
+        ))
+      ])
+    })
     .then(function(){
       logger.log('info','Mock cluster stopped!')
     })
@@ -267,7 +332,7 @@ exports.after = function(that){
  */
 exports.checkUp = function(type,server){
   return function(){
-    var client = api[type](server[type])
+    var client = api.setupAccess(type,server[type])
     return client.postAsync({url: client.url('/ping'), timeout: 1000})
       .spread(function(res,body){
         expect(body.pong).to.equal('pong')
@@ -284,7 +349,7 @@ exports.checkUp = function(type,server){
  */
 exports.checkDown = function(type,server){
   return function(){
-    var client = api[type](server[type])
+    var client = api.setupAccess(type,server[type])
     return client.postAsync({url: client.url('/ping'), timeout: 1000})
       .then(function(){
         throw new Error('Server not down')
@@ -304,7 +369,7 @@ exports.checkDown = function(type,server){
  */
 exports.checkPublic = function(prism){
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     return client
       .postAsync(client.url('/'))
       .spread(client.validateResponse())
@@ -337,7 +402,7 @@ exports.checkPublic = function(prism){
  */
 exports.checkProtected = function(prism){
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     return client.postAsync(client.url('/user/logout'))
       .catch(UserError,function(err){
         expect(err.message).to.match(/Invalid response code \(401\) to POST/)
@@ -369,7 +434,7 @@ exports.checkProtected = function(prism){
  */
 exports.prismLogin = function(prism){
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     return client.postAsync({
       url: client.url('/user/login'),
       json: {
@@ -394,7 +459,7 @@ exports.prismLogin = function(prism){
  */
 exports.prismLogout = function(prism,session){
   return function(){
-    var client = api.setSession(session,api.prism(prism.prism))
+    var client = api.setSession(session,api.setupAccess('prism',prism.prism))
     return client.postAsync({
       url: client.url('/user/logout'),
       localAddress: '127.0.0.1'
@@ -413,7 +478,8 @@ exports.prismLogout = function(prism,session){
  */
 exports.contentUpload = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     return client
       .postAsync({
         url: client.url('/content/upload'),
@@ -444,7 +510,8 @@ exports.contentUpload = function(prism){
  */
 exports.contentRetrieve = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     var app = express()
     var server = http.createServer(app)
     app.get('/test.txt',function(req,res){
@@ -490,7 +557,7 @@ exports.contentRetrieve = function(prism){
  */
 exports.contentSend = function(prism){
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     var storeFrom = null
     var storeTo = null
     var storeClient = {}
@@ -520,7 +587,8 @@ exports.contentSend = function(prism){
         //now we need to get the configuration details so lets figure out the
         //store so we can just locally call the config
         var storeShortname = storeFrom.split(':')[1]
-        storeClient = api.store(exports.clconf[storeShortname].store)
+        storeClient = api.setupAccess(
+          'store',exports.clconf[storeShortname].store)
         return storeClient.postAsync({
           url: storeClient.url('/content/send'),
           json: {
@@ -535,7 +603,8 @@ exports.contentSend = function(prism){
         expect(body.fileDetail.hash).to.equal(content.hash)
         expect(body.fileDetail.ext).to.equal(content.ext)
         var storeShortname = storeTo.split(':')[1]
-        storeClient = api.store(exports.clconf[storeShortname].store)
+        storeClient = api.setupAccess(
+          'store',exports.clconf[storeShortname].store)
         return storeClient.postAsync({
           url: storeClient.url('/content/remove'),
           json: {
@@ -564,7 +633,7 @@ exports.contentExists = function(prism,options){
   if(!options.hasOwnProperty('deepChecks'))
     options.deepChecks = ['prism1','prism2']
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     return client
       .postAsync({
         url: client.url('/content/exists'),
@@ -602,7 +671,7 @@ exports.contentExistsBulk = function(prism,options){
   if(!options.hasOwnProperty('deepChecks'))
     options.deepChecks = ['prism1','prism2']
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     return client
       .postAsync({
         url: client.url('/content/exists'),
@@ -640,7 +709,8 @@ exports.contentExistsBulk = function(prism,options){
  */
 exports.contentDetail = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     return client
       .postAsync({
         url: client.url('/content/detail'),
@@ -664,7 +734,8 @@ exports.contentDetail = function(prism){
  */
 exports.contentDetailBulk = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     return client
       .postAsync({
         url: client.url('/content/detail'),
@@ -693,7 +764,8 @@ exports.contentDetailBulk = function(prism){
  */
 exports.contentPurchase = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     return client
       .postAsync({
         url: client.url('/content/purchase'),
@@ -729,7 +801,7 @@ exports.contentPurchase = function(prism){
 exports.contentStatic = function(prism,localAddress,ext){
   ext = ext || content.ext
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     var options = {
       url: client.url('/static/' + content.hash + '/test.' + ext),
       followRedirect: false,
@@ -743,7 +815,7 @@ exports.contentStatic = function(prism,localAddress,ext){
         expect(host[0]).to.match(/^store\d{1}$/)
         expect(host[1]).to.equal(prism.domain)
         expect(uri.pathname).to.equal(
-          '/static/' + hashFile.toRelativePath(content.hash,ext)
+          '/static/' + content.hash + '/test.' + ext
         )
       })
   }
@@ -759,7 +831,7 @@ exports.contentStatic = function(prism,localAddress,ext){
  */
 exports.contentDeliver = function(prism,localAddress,referrer){
   return function(){
-    var client = api.prism(prism.prism)
+    var client = api.setupAccess('prism',prism.prism)
     var options = {
       url: client.url('/' + exports.purchase.token + '/' + content.filename),
       headers: {
@@ -781,13 +853,42 @@ exports.contentDeliver = function(prism,localAddress,referrer){
 
 
 /**
+ * Receive content
+ * @param {object} prism
+ * @return {Function}
+ */
+exports.contentReceive = function(prism){
+  return function(){
+    var client = api.setupAccess('prism',prism.prism)
+    var options = {
+      url: client.url(
+        '/static/' + content.hash + '/' + content.filename + '?addressType=ip'),
+      query: {
+        addressType: 'ipv4'
+      },
+      headers: {
+        'Referer': 'localhost'
+      },
+      localAddress: '127.0.0.1'
+    }
+    return client.getAsync(options)
+      .spread(function(res,body){
+        expect(res.statusCode).to.equal(200)
+        expect(body).to.equal('The fox is brown')
+      })
+  }
+}
+
+
+/**
  * Download content
  * @param {object} prism
  * @return {Function}
  */
 exports.contentDownload = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     return client.postAsync({
       url: client.url('/content/download'),
       json: {hash: content.hash},
@@ -807,7 +908,8 @@ exports.contentDownload = function(prism){
  */
 exports.contentPurchaseRemove = function(prism){
   return function(){
-    var client = api.setSession(exports.user.session,api.prism(prism.prism))
+    var client = api.setSession(
+      exports.user.session,api.setupAccess('prism',prism.prism))
     return client.postAsync({
       url: client.url('/content/purchase/remove'),
       json: {token: exports.purchase.token},

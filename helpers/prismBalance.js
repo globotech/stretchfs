@@ -200,14 +200,17 @@ exports.contentExists = function(hash,cacheEnable){
         }
       }
       if(cacheEnable && cacheValid){
+        debug(existsKey,'using cached result',result)
         return result
       } else {
+        debug(existsKey,'cache does not exist building')
         return couchdb.inventory.listAsync({
           startkey: existsKey,
           endkey: existsKey + '\uffff',
           include_docs: true
         })
           .then(function(result){
+            debug(existsKey,'got inventory result',result)
             return result.rows
           })
           .map(function(row){

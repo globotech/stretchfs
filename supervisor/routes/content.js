@@ -497,7 +497,7 @@ exports.send = function(req,res){
     .then(
       function(result){
         store = result
-        storeClient = api.store(store)
+        storeClient = api.setupAccess('store',store)
       },
       function(err){
         if(404 !== err.statusCode) throw err

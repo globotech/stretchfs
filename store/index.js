@@ -11,7 +11,6 @@ var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
-var statspush
 var storeKey = couchdb.schema.store(config.store.prism,config.store.name)
 
 //make some promises
@@ -32,7 +31,6 @@ if(require.main === module){
         }
       )
       heartbeat = infant.parent('../helpers/heartbeat')
-      statspush = infant.parent('../helpers/statspush')
       //check if our needed folders exist
       couchdb.peer.getAsync(storeKey)
         .then(
@@ -77,7 +75,6 @@ if(require.main === module){
           //start cluster and heartbeat system
           return P.all([
             cluster.startAsync(),
-            statspush.startAsync(),
             heartbeat.startAsync()
           ])
         })
@@ -103,13 +100,11 @@ if(require.main === module){
           if(!cluster) return
           return P.all([
             heartbeat.stopAsync(),
-            statspush.stopAsync(),
             cluster.stopAsync()
           ])
         })
         .then(function(){
           heartbeat.cp.kill('SIGKILL')
-          statspush.cp.kill('SIGKILL')
           logger.log('info','Store shutdown complete')
           done()
         })
