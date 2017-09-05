@@ -11,7 +11,7 @@ module.exports = {
     port: 5984,
     options: {
       auth: {
-        username: 'oose',
+        username: 'root',
         password: 'blah1234'
       }
     }
@@ -31,7 +31,7 @@ module.exports = {
           port: '5984',
           options: {
             auth: {
-              username: 'oose',
+              username: 'root',
               password: 'blah1234'
             }
           }
