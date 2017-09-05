@@ -3,6 +3,7 @@ var P = require('bluebird')
 var bodyParser = require('body-parser')
 var express = require('express')
 var fs = require('graceful-fs')
+var http = require('http')
 var https = require('https')
 var worker = require('infant').worker
 
@@ -15,6 +16,31 @@ var sslOptions = {
   cert: fs.readFileSync(config.ssl.pem)
 }
 var server = https.createServer(sslOptions,app)
+//if the config calls for additional servers set them up now
+var listenServer = []
+if(config.send.listen && config.send.listen.length){
+  config.send.listen.forEach(function(cfg){
+    var ssl = null
+    if(true === cfg.ssl) ssl = sslOptions
+    if(cfg.sslKey && cfg.sslCert){
+      ssl = {
+        key: fs.readFileSync(cfg.sslKey),
+        cert: fs.readFileSync(cfg.sslCert)
+      }
+    }
+    if(ssl){
+      listenServer.push({
+        server: P.promisifyAll(https.createServer(ssl,app)),
+        cfg: cfg
+      })
+    } else {
+      listenServer.push({
+        server: P.promisifyAll(http.createServer(app)),
+        cfg: cfg
+      })
+    }
+  })
+}
 var routes = require('./routes')
 //make some promises
 P.promisifyAll(server)
@@ -52,6 +78,12 @@ app.get('/play/:token/:file',routes.content.play)
 exports.start = function(done){
   server.listenAsync(+config.send.port,config.send.host)
     .then(function(){
+      return listenServer
+    })
+    .each(function(listen){
+      return listen.server.listenAsync(listen.cfg.port,listen.cfg.host)
+    })
+    .then(function(){
       done()
     })
 }
@@ -64,6 +96,9 @@ exports.start = function(done){
 exports.stop = function(done){
   //dont wait for this since it will take to long and we are stopping now
   server.close()
+  listenServer.forEach(function(listen){
+    listen.server.close()
+  })
   //just return now
   process.nextTick(done)
 }

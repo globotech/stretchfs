@@ -101,6 +101,15 @@ config.$load({
     name: 'prism1',
     port: 5971,
     host: null,
+    /*
+    listen: [
+      {port: 80, host: null},
+      //use your own cert
+      {port: 443, host: null, sslKey: '/key', sslCert: '/cert'},
+      //or use the default oose cert
+      {port: 443, host: null, ssl: true}
+    ],
+    */
     username: 'oose',
     password: 'oose',
     workers: {
@@ -184,6 +193,15 @@ config.$load({
     name: 'store1',
     port: 5973,
     host: null,
+    /*
+    listen: [
+      {port: 80, host: null},
+      //use your own cert
+      {port: 443, host: null, sslKey: '/key', sslCert: '/cert'},
+      //or use the default oose cert
+      {port: 443, host: null, ssl: true}
+    ],
+    */
     workers: {
       count: 1,
       maxConnections: 10000

@@ -68,6 +68,11 @@ From there follow the debug filtering rules defined
 
 * Introduce new send component to aid in dropping NGINX OpenResty from the OOSE
 standard build.
+* Prism now listens on multiple ports to support CDN functionality without the
+need for a proxy.
+* Send also supports listening on multiple ports. Again this is to complete the
+endpoint from Prism to Store to Send without the need for any third party web
+server software.
 
 ### 2.5.0
 
