@@ -604,18 +604,6 @@ exports.deliver = function(req,res){
     if(req.get('X-Forwarded-Protocol')){
       proto = 'https' === req.get('X-Forwarded-Protocol') ? 'https' : 'http'
     }
-    //add a start param regardless so nginx will act correctly on videos
-    // which should not hurt other queries
-    //instead of just adding this param whenever we want lets use the mime
-    //type of the file to figure this out
-    if(
-      mime.lookup(purchase.ext).match('video') &&
-      !req.query.start &&
-      !req.query.html5
-    ){
-      if('' === query) query = '?start=0'
-      else query = query + '&start=0'
-    }
     var host = store.name + '.' + config.domain
     if('ip' === addressType || 'ipv4' === addressType){
       host = store.host + ':' + store.port
