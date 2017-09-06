@@ -420,6 +420,7 @@ exports.stop = function(done){
   if(pruneTimeout) clearTimeout(pruneTimeout)
   logger.log('info','Heartbeat stopped')
   done()
+  process.exit()
 }
 
 if(require.main === module){
