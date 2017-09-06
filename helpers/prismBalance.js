@@ -7,12 +7,6 @@ var couchdb = require('../helpers/couchdb')
 var redis = require('../helpers/redis')()
 var logger = require('./logger')
 
-var peerGetRows = function(rows){
-  var ids = []
-  for(var i=0; i < rows.length; i++) ids.push(rows[i].id)
-  return couchdb.peer.getAsync(ids)
-}
-
 
 /**
  * Get list of prisms and cache the result
@@ -30,9 +24,8 @@ exports.peerList = function(){
           endkey: prismKey + '\uffff',
           include_docs: true
         })
-        .then(function(rows){
-          rows = rows.rows
-          return peerGetRows(rows)
+        .then(function(result){
+          return result.rows
         })
         .map(function(row){
           row.doc.type = couchdb.schema.PEER_TYPES.prism
@@ -45,9 +38,8 @@ exports.peerList = function(){
         endkey: storeKey + '\uffff',
         include_docs: true
       })
-        .then(function(rows){
-          rows = rows.rows
-          return peerGetRows(rows)
+        .then(function(result){
+          return result.rows
         })
         .map(function(row){
           row.doc.type = couchdb.schema.PEER_TYPES.store
