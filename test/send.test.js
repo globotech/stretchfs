@@ -28,7 +28,7 @@ content.hash = content.sha1
 content.badHash = content.sha1Bogus
 
 var config = require('../config')
-config.$load(require(__dirname + '/assets/send1.config.js'))
+config.$load(require(__dirname + '/assets/send.config.js'))
 
 var makeEnv = function(configFile){
   var env = new ObjectManage()

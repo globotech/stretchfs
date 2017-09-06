@@ -22,6 +22,9 @@ module.exports = {
   store: {
     enabled: true
   },
+  send: {
+    enabled: true
+  },
   prism: {
     enabled: true,
     purchaseZoneCouch: {
