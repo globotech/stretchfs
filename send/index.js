@@ -7,7 +7,6 @@ var couchdb = require('../helpers/couchdb')
 var logger = require('../helpers/logger')
 
 var cluster
-var heartbeat
 var sendKey = couchdb.schema.send(
   config.send.prism,
   config.send.store,
@@ -31,7 +30,6 @@ if(require.main === module){
           maxConnections: config.store.workers.maxConnections
         }
       )
-      heartbeat = infant.parent('../helpers/heartbeat')
       //check if our needed folders exist
       couchdb.peer.getAsync(sendKey)
         .then(
@@ -66,9 +64,6 @@ if(require.main === module){
           return cluster.startAsync()
         })
         .then(function(){
-          return heartbeat.startAsync()
-        })
-        .then(function(){
           logger.log('info', 'Send startup complete')
           done()
         })
@@ -85,10 +80,6 @@ if(require.main === module){
         .then(function(doc){
           doc.available = false
           return couchdb.peer.insertAsync(doc,sendKey)
-        })
-        .then(function(){
-          if(!heartbeat) return
-          return heartbeat.stopAsync()
         })
         .then(function(){
           if(!cluster) return
