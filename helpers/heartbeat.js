@@ -301,6 +301,10 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       return couchdb.heartbeat.getAsync(vote.id)
+        .catch(function(err){
+          debug('failed to get vote to prune',err)
+          return false
+        })
     })
     .filter(function(vote){
       if(!vote) return false
