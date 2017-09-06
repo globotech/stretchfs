@@ -72,11 +72,11 @@ if(require.main === module){
           return P.all(promises)
         })
         .then(function(){
-          //start cluster and heartbeat system
-          return P.all([
-            cluster.startAsync(),
-            heartbeat.startAsync()
-          ])
+          //start cluster
+          return cluster.startAsync()
+        })
+        .then(function(){
+          return heartbeat.startAsync()
         })
         .then(function(){
           logger.log('info', 'Store startup complete')
@@ -97,11 +97,12 @@ if(require.main === module){
           return couchdb.peer.insertAsync(doc,storeKey)
         })
         .then(function(){
+          if(!heartbeat) return
+          return heartbeat.stopAsync()
+        })
+        .then(function(){
           if(!cluster) return
-          return P.all([
-            heartbeat.stopAsync(),
-            cluster.stopAsync()
-          ])
+          return cluster.stopAsync()
         })
         .then(function(){
           heartbeat.cp.kill('SIGKILL')

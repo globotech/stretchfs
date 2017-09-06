@@ -55,7 +55,10 @@ if(require.main === module){
             }
           )
           .then(function(){
-            return P.all([cluster.startAsync(),heartbeat.startAsync()])
+            return cluster.startAsync()
+          })
+          .then(function(){
+            return heartbeat.startAsync()
           })
           .then(function(){
             logger.log('info', 'Prism startup complete')
@@ -84,11 +87,12 @@ if(require.main === module){
             return couchdb.peer.insertAsync(doc,prismKey)
           })
           .then(function(){
+            if(!heartbeat) return
+            return heartbeat.stopAsync()
+          })
+          .then(function(){
             if(!cluster) return
-            return P.all([
-              cluster.stopAsync(),
-              heartbeat.stopAsync()
-            ])
+            return cluster.stopAsync()
           })
           .then(function(){
             heartbeat.cp.kill('SIGKILL')
