@@ -37,6 +37,12 @@ exports.static = function(req,res){
   couchdb.inventory.getAsync(inventoryKey)
     .then(function(result){
       debug('STATIC','got file inventory, sending content',result)
+      if(req.query.attach){
+        res.header(
+          'Content-Disposition',
+          'attachment; filename=' + req.query.attach
+        )
+      }
       res.sendFile(path.join(contentFolder,result.relativePath))
     })
     .catch(function(err){
@@ -127,6 +133,12 @@ exports.play = function(req,res){
         res.status(500)
         res.send('500 Internal Server Error')
       } else{
+        if(req.query.attach){
+          res.header(
+            'Content-Disposition',
+            'attachment; filename=' + req.query.attach
+          )
+        }
         res.sendFile(result)
       }
     })
