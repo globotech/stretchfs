@@ -130,7 +130,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if('Ok, got it' === err.message){
         debug('Vote already cast',peer.name)
       } else {
-        logger.log('error', err)
+        logger.log('error', 'Failed to cast down vote', err)
       }
     })
 }
@@ -236,28 +236,30 @@ var runHeartbeat = function(systemKey,systemType){
         url: peerRequest.url('/ping') + '',
         timeout: config.heartbeat.pingResponseTimeout || 1000
       })
-        .spread(function(res,body){
-          debug('Ping response',peer.name,body)
-          if(body && body.pong && 'pong' === body.pong){
-            //success, so do nothing i think or check if its down
-            //and file an up vote
-            debug('Cleared vote log',peer.name)
-            voteLog[peer.name] = 0
-            //if this peer is not available this should be where it gets its
-            //votes cleared and returned to an available status
-            if(peer.active && !peer.available)
-              return restorePeer(peer)
-          } else {
-            return handlePingFailure('Got a bad response',peer)
+        .spread(
+          function(res,body){
+            debug('Ping response',peer.name,body)
+            if(body && body.pong && 'pong' === body.pong){
+              //success, so do nothing i think or check if its down
+              //and file an up vote
+              debug('Cleared vote log',peer.name)
+              voteLog[peer.name] = 0
+              //if this peer is not available this should be where it gets its
+              //votes cleared and returned to an available status
+              if(peer.active && !peer.available)
+                return restorePeer(peer)
+            } else {
+              return handlePingFailure('Got a bad response',peer)
+            }
+          },
+          function(err){
+            logger.log('error', 'Ping Error ' + peer.name,err.message)
+            return handlePingFailure(err.message,peer)
           }
-        })
-        .catch(function(err){
-          logger.log('error', 'Ping Error ' + peer.name,err.message)
-          return handlePingFailure(err.message,peer)
-        })
+        )
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
-      logger.log('error', err)
+      logger.log('error', 'ping error', err)
     })
     .finally(function(){
       var duration = +(new Date()) - startTime
