@@ -116,6 +116,9 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
         return true
       peer.available = false
       return couchdb.peer.insertAsync(peer,key)
+        .catch(function(err){
+          debug('failed to cast down vote',err)
+        })
     })
     .catch(function(err){
       console.log(err)
