@@ -232,8 +232,9 @@ var runHeartbeat = function(systemKey,systemType){
       var peerRequest = 'prism' === peer.type ?
         api.setupAccess('prism',peer) : api.setupAccess('store',peer)
       //make the ping request
+      var url = peerRequest.url('/ping')
       return peerRequest.postAsync({
-        url: peerRequest.url('/ping') + '',
+        url: url + '',
         timeout: config.heartbeat.pingResponseTimeout || 1000
       })
         .spread(
@@ -253,13 +254,16 @@ var runHeartbeat = function(systemKey,systemType){
             }
           },
           function(err){
-            logger.log('error', 'Ping Error ' + peer.name,err.message)
+            logger.log('error', 'Ping Error to ' + url,err.message)
             return handlePingFailure(err.message,peer)
           }
         )
+        .catch(function(err){
+          logger.log('error', 'Ping error to ' + url, err)
+        })
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
-      logger.log('error', 'ping error', err)
+      logger.log('error', 'Unknown ping error', err)
     })
     .finally(function(){
       var duration = +(new Date()) - startTime
