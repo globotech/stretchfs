@@ -1,5 +1,6 @@
 'use strict';
 var P = require('bluebird')
+var base64 = require('base-64')
 var nano = require('nano')
 var debug = require('debug')('oose:purchasedb')
 var moment = require('moment')
@@ -190,18 +191,34 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
       var replicator = P.promisifyAll(couchdbconn.db.use('_replicator'))
       debug('saving replicator from couch to repl',couchConfig,replConfig)
       var replControl = {
+        user_ctx: {
+          name: 'root',
+          roles: [
+            '_admin',
+            '_reader',
+            '_writer'
+          ]
+        },
         source: {
+          headers: {
+            Authorization: 'Basic ' +
+            base64.encode(
+              couchConfig.options.auth.username + ':' +
+              couchConfig.options.auth.password
+            )
+          },
           url: 'http://' + couchConfig.host +
                ':' + couchConfig.port + '/' +
                'oose-purchase-' + databaseName
         },
         target: {
+          headers: {},
           url: 'http://' + replConfig.host +
             ':' + replConfig.port + '/' +
             'oose-purchase-' + databaseName
         },
         continuous: true,
-        create_target: true,
+        create_target: false,
         owner: 'root'
       }
       if(couchConfig.authRepl && couchConfig.authRepl.username){
@@ -254,7 +271,7 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
         source: {
           headers: {
             Authorization: 'Basic ' +
-              btoa(
+              base64.encode(
                 replConfig.options.auth.username + ':' +
                 replConfig.options.auth.password
               )
