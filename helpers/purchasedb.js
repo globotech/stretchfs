@@ -74,38 +74,28 @@ var getDatabaseName = function(token){
 var buildConfig = function(){
   debug('building config')
   //assign the full default config when none exists, otherwise im confused
-  if(!Object.keys(config.prism.purchaseZoneCouch).length){
-    config.prism.purchaseZoneCouch.a = config.couchdb
+  if(!config.prism.purchaseZoneCouch){
+    config.prism.purchaseZoneCouch.a = [config.couchdb]
   }
+  //otherwise we iterate the zones and add that to our couchConfigs array
   Object.keys(config.prism.purchaseZoneCouch).forEach(function(zone){
     debug('building config for zone',zone)
-    var couchConfig = [
-      {
-        protocol: config.couchdb.protocol || 'http://',
-        host: config.couchdb.host,
-        port: config.couchdb.port,
-        options: config.couchdb.options
+    config.prism.purchaseZoneCouch[zone].forEach(function(cfg){
+      debug('building config for server',zone,cfg)
+      if(!cfg.protocol) cfg.protocol = config.couchdb.protocol
+      if(!cfg.host) cfg.host = config.couchdb.host
+      if(!cfg.port) cfg.port = config.couchdb.port
+      if(!cfg.options) cfg.options = {}
+      if(!cfg.options.auth) cfg.options.auth = {}
+      if(!cfg.options.auth.username){
+        cfg.options.auth.username = config.couchdb.options.auth.username
       }
-    ]
-    if(
-      config.prism.purchaseZoneCouch &&
-      config.prism.purchaseZoneCouch[zone] instanceof Array
-    ){
-      if(config.prism.purchaseZoneCouch[zone].protocol){
-        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].protocol
+      if(!cfg.options.auth.password){
+        cfg.options.auth.password = config.couchdb.options.auth.password
       }
-      if(config.prism.purchaseZoneCouch[zone].host){
-        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].host
-      }
-      if(config.prism.purchaseZoneCouch[zone].port){
-        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].port
-      }
-      if(config.prism.purchaseZoneCouch[zone].options){
-        couchConfig.protocol = config.prism.purchaseZoneCouch[zone].options
-      }
-    }
-    debug('config for zone',zone,couchConfig)
-    couchConfigs[zone] = couchConfig
+      if(!couchConfigs[zone]) couchConfigs[zone] = [cfg]
+      else couchConfigs[zone].push(cfg)
+    })
   })
   debug('config build complete',couchConfigs)
 }
@@ -190,14 +180,10 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
   var repldbconn = connectCouchDb(replConfig)
   P.promisifyAll(repldbconn)
   debug('couchdb creating oose-purchase-' + databaseName)
-  var repldb = P.promisifyAll(
-    repldbconn.db.use('oose-purchase-' + databaseName))
-  var couchdb = P.promisifyAll(
-    couchdbconn.db.use('oose-purchase-' + databaseName))
   return P.all([
-    couchdb.createAsync()
+    couchdbconn.db.createAsync('oose-purchase-' + databaseName)
       .catch(suppressDatabaseExists),
-    repldb.createAsync()
+    repldbconn.db.createAsync('oose-purchase-' + databaseName)
       .catch(suppressDatabaseExists)
   ])
     .then(function(){
