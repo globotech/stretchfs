@@ -340,6 +340,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
         peer.available = true
         peer.active = true
         return couchdb.peer.insertAsync(peer,key)
+          .catch(function(){})
       },
       function(err){
         debug('Got an error getting peer information',err)

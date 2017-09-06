@@ -14,10 +14,10 @@ module.exports = {
   },
   send: {
     enabled: true,
-    host: '127.0.3.4',
-    name: 'send1',
+    host: '127.0.2.5',
+    name: 'send5',
     prism: 'prism1',
-    store: 'store1',
+    store: 'store5',
     timeout: 2000,
     workers: {count: 2, maxConnections: 1000000}
   }

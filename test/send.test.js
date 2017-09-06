@@ -28,7 +28,7 @@ content.hash = content.sha1
 content.badHash = content.sha1Bogus
 
 var config = require('../config')
-config.$load(require(__dirname + '/assets/send.config.js'))
+config.$load(require(__dirname + '/assets/send5.config.js'))
 
 var makeEnv = function(configFile){
   var env = new ObjectManage()
@@ -44,7 +44,7 @@ P.promisifyAll(infant)
 describe('send',function(){
   this.timeout(10000)
   var sendServer = infant.parent('../send',{
-    fork: {env: makeEnv(__dirname + '/assets/send1.config.js')}
+    fork: {env: makeEnv(__dirname + '/assets/send5.config.js')}
   })
   var client
   //start services
@@ -79,7 +79,7 @@ describe('send',function(){
   //content
   describe('send:content',function(){
     //get tokens
-    var inventoryKey = couchdb.schema.inventory(content.hash,'prism1','store1')
+    var inventoryKey = couchdb.schema.inventory(content.hash,'prism1','store5')
     var purchaseToken = purchasedb.generate()
     var badPurchaseToken = purchasedb.generate()
     before(function(){
@@ -89,7 +89,7 @@ describe('send',function(){
         mimeExtension: content.ext,
         mimeType: content.type,
         prism: 'prism1',
-        store: 'store1',
+        store: 'store5',
         relativePath: content.relativePath,
         size: content.data.length,
         createdAt: +(new Date())
