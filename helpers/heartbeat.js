@@ -2,7 +2,6 @@
 var program = require('commander')
 var debug = require('debug')('oose:hb')
 var infant = require('infant')
-var random = require('random-js')()
 
 var api = require('../helpers/api')
 var couchdb = require('../helpers/couchdb')
@@ -25,6 +24,14 @@ var config = require('../config')
  TCP ping to each member of the cluster on a sliding interval to prevent
  dos-beat.
 */
+
+/**
+ * Some notes about the changes for 2.6. I am going to be working fixing the
+ * issue that leaves heartbeat running when the main process shuts down. I am
+ * also going to check through all the promise chains and look for holes that
+ * need extra handling.
+ */
+
 
 var heartbeatTimeout = null
 var pruneTimeout = null
@@ -83,7 +90,6 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   var key = getPeerKey(peer)
   var downKey = couchdb.schema.downVote(peer.name)
   var myDownKey = couchdb.schema.downVote(peer.name, systemKey)
-  var currentVoteLog = null
   debug('DOWN VOTE: ' + key)
   var createDownVote = function(){
     return couchdb.heartbeat.insertAsync({
@@ -95,43 +101,25 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
     },myDownKey)
   }
   //get down votes that have already been set for this host
-  return couchdb.heartbeat.listAsync(
-    {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
-    .then(
-      function(log){
-        log = log.rows
-        currentVoteLog = log
-        for(var i = 0; i < log.length; i++){
-          if(log[i].key === myDownKey) {
-            debug('Already recorded')
-            return false
-          }
-        }
-        return createDownVote()
-      },
-      function(err){
-        if(!err.statusCode) throw err
-        if(404 !== err.statusCode) throw err
-        currentVoteLog = []
-        return createDownVote()
-      }
-    )
-    .then(function(myVote){
-      if(myVote !== false)
-        currentVoteLog.push(myVote)
+  return createDownVote()
+    .then(function(){
+      return couchdb.heartbeat.listAsync({
+        startkey: downKey,
+        endkey: downKey + '\uffff',
+        include_docs: true
+      })
+    })
+    .then(function(result){
       var count = peerCount
-      var votes = currentVoteLog.length
+      var votes = result.rows.length
       if(count === 0 || votes < (count / 2))
         throw new Error('Ok, got it')
       peer.available = false
       return couchdb.peer.insertAsync(peer,key)
     })
     .catch(function(err){
-      if('Ok, got it' === err.message){
-        debug('Vote already cast',peer.name)
-      } else {
-        logger.log('error', 'Failed to cast down vote' + err.message)
-      }
+      console.log(err)
+      logger.log('error', 'Failed to cast down vote: ' + err.message)
     })
 }
 
@@ -140,6 +128,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
  * Run the heartbeat from this peer
  * @param {string} systemKey
  * @param {string} systemType
+ * @return {P}
  */
 var runHeartbeat = function(systemKey,systemType){
   //steps to a successful heartbeat run
@@ -148,7 +137,6 @@ var runHeartbeat = function(systemKey,systemType){
   // 3) collect failures to calculate loss
   // 4) check loss against triggers
   // 5) expire down votes from this peer
-  var startTime = +(new Date())
   var peerCount = 0
   debug('Getting peer list for heartbeat ping')
 
@@ -176,7 +164,7 @@ var runHeartbeat = function(systemKey,systemType){
    * @return {P}
    */
   var restorePeer = function(peer){
-    logger.log('info', 'Restoring peer ' + peer)
+    logger.log('info', 'Restoring peer ' + peer.name)
     return couchdb.peer.getAsync(peer._id)
       .then(function(result){
         result.available = true
@@ -190,18 +178,19 @@ var runHeartbeat = function(systemKey,systemType){
           endkey: downKey + '\uffff',
           include_docs: true
         })
-          .then(function(result){
-            return result.rows
-          })
+      })
+      .then(function(result){
+        return result.rows
       })
       .map(function(vote){
         return couchdb.heartbeat.destroyAsync(vote._id,vote._rev)
-      },{concurrency: config.heartbeat.concurrency})
+      })
       .catch(function(err){
-        logger.log('error', 'Failed to restore peer' + err.message)
+        console.log(err)
+        logger.log('error', 'Failed to restore peer: ' + err.message)
       })
   }
-  prismBalance.peerList()
+  return prismBalance.peerList()
     .then(function(result){
       peerCount = result.length
       debug('Found peers',result.length)
@@ -221,7 +210,8 @@ var runHeartbeat = function(systemKey,systemType){
             return peer
           }
         )
-    },{concurrency: config.heartbeat.concurrency})
+    })
+    //MAIN PING LOOP
     .map(function(peer){
       //setup the ping handler
       debug('Setting up to ping peer',peer.name,peer.host + ':' + peer.port)
@@ -260,21 +250,12 @@ var runHeartbeat = function(systemKey,systemType){
         )
         .catch(function(err){
           logger.log('error', 'Ping error to ' + url, err)
+          return handlePingFailure(err.message,peer)
         })
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
       console.log(err)
       logger.log('error', 'Unknown ping error' + err.message)
-    })
-    .finally(function(){
-      var duration = +(new Date()) - startTime
-      var delay = duration +
-        (random.integer(0,5) * 1000) +
-        config.heartbeat.frequency
-      debug('Setting next heart beat run',duration,delay)
-      heartbeatTimeout = setTimeout(function(){
-        runHeartbeat(systemKey,systemType)
-      },delay)
     })
 }
 
@@ -312,8 +293,8 @@ var runVotePrune = function(systemKey,systemType){
       return result.rows
     })
     .map(function(vote){
-      return couchdb.heartbeat.getAsync(vote.id).reflect()
-    },{concurrency: config.heartbeat.concurrency})
+      return couchdb.heartbeat.getAsync(vote.id)
+    })
     .filter(function(vote){
       if(!vote) return false
       debug('filtering vote',vote.id,validateVote(vote))
@@ -321,16 +302,11 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       debug('Pruning vote',vote._id)
-      return couchdb.heartbeat.destroyAsync(vote._id,vote._rev).reflect()
-    },{concurrency: config.heartbeat.concurrency})
-    .catch(function(err){
-      logger.log('error', 'vote prune error: ' + err)
+      return couchdb.heartbeat.destroyAsync(vote._id,vote._rev)
     })
-    .finally(function(){
-      debug('Vote prune complete')
-      pruneTimeout = setTimeout(function(){
-        runVotePrune(systemKey,systemType)
-      },+config.heartbeat.votePruneFrequency || 60000)
+    .catch(function(err){
+      console.log(err)
+      logger.log('error', 'Vote prune error: ' + err.message)
     })
 }
 
@@ -377,14 +353,15 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     })
     .map(function(log){
       debug('Removing downvote',log)
-      return couchdb.heartbeat.destroyAsync(log.key,log._rev).reflect()
-    },{concurrency: config.heartbeat.concurrency})
+      return couchdb.heartbeat.destroyAsync(log.key,log._rev)
+    })
     .then(function(result){
       debug('finished marking myself up',result)
       done(null,result)
     })
     .catch(function(err){
-      logger.log('error', 'markMeUp error: '+ err)
+      console.log(err)
+      logger.log('error', 'markMeUp error: '+ err.message)
     })
 }
 
@@ -403,10 +380,18 @@ exports.start = function(systemKey,systemPrism,systemType,done){
     throw new Error('System key has not been set, heartbeat not started')
   if(!systemType)
     throw new Error('System type has not been set, heartbeat not started')
-  heartbeatTimeout = setTimeout(function(){
-    runHeartbeat(systemKey,systemType)
-  },+(+config.heartbeat.startDelay || 5000))
-  runVotePrune(systemKey,systemType)
+  heartbeatTimeout = setInterval(function(){
+    return runHeartbeat(systemKey,systemType)
+      .then(function(){
+        logger.log('info','Heartbeat run complete')
+      })
+  },+config.heartbeat.frequency || 5000)
+  pruneTimeout = setInterval(function(){
+    return runVotePrune(systemKey,systemType)
+      .then(function(){
+        logger.log('info','Vote prune complete')
+      })
+  },+config.heartbeat.votePruneFrequency || 60000)
   markMeUp(systemKey,systemPrism,systemType,done)
 }
 
@@ -417,8 +402,8 @@ exports.start = function(systemKey,systemPrism,systemType,done){
  */
 exports.stop = function(done){
   logger.log('info','Stopping heartbeat')
-  if(heartbeatTimeout) clearTimeout(heartbeatTimeout)
-  if(pruneTimeout) clearTimeout(pruneTimeout)
+  if(heartbeatTimeout) clearInterval(heartbeatTimeout)
+  if(pruneTimeout) clearInterval(pruneTimeout)
   logger.log('info','Heartbeat stopped')
   done()
   process.exit()
