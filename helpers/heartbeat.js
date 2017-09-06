@@ -113,7 +113,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       var count = peerCount
       var votes = result.rows.length
       if(count === 0 || votes < (count / 2))
-        throw new Error('Ok, got it')
+        return true
       peer.available = false
       return couchdb.peer.insertAsync(peer,key)
     })
