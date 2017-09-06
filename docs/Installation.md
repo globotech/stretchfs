@@ -25,3 +25,14 @@ edit
 * `nginx -t` make sure it passes and `service nginx restart`
 
 This procedure could be expanded on later to be more in depth.
+
+
+## Notes
+
+### Linux Required Steps
+
+Enable node listening on ports < 1024
+
+```
+# setcap 'cap_net_bind_service=+ep' `which nodejs`
+```
