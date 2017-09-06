@@ -243,18 +243,28 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
       var replicator = P.promisifyAll(repldbconn.db.use('_replicator'))
       debug('saving replicator from repl to couch',replConfig,couchConfig)
       var couchControl = {
+        user_ctx: {
+          name: 'root',
+          roles: [
+            '_admin',
+            '_reader',
+            '_writer'
+          ]
+        },
         source: {
+          headers: {},
           url: 'http://' + replConfig.host +
             ':' + replConfig.port + '/' +
             'oose-purchase-' + databaseName
         },
         target: {
+          headers: {},
           url: 'http://' + couchConfig.host +
                ':' + couchConfig.port + '/' +
                'oose-purchase-' + databaseName
         },
         continuous: true,
-        create_target: true,
+        create_target: false,
         owner: 'root'
       }
       if(replConfig.authRepl && replConfig.authRepl.username){
