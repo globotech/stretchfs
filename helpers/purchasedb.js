@@ -252,7 +252,13 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
           ]
         },
         source: {
-          headers: {},
+          headers: {
+            Authorization: 'Basic ' +
+              btoa(
+                replConfig.options.auth.username + ':' +
+                replConfig.options.auth.password
+              )
+          },
           url: 'http://' + replConfig.host +
             ':' + replConfig.port + '/' +
             'oose-purchase-' + databaseName
