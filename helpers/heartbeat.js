@@ -154,6 +154,10 @@ var runHeartbeat = function(systemKey,systemType){
     if(voteLog[peer.name] > config.heartbeat.retries){
       debug('Vote log high water reached, down voting',peer.name)
       return downVote(peer,reason,systemKey,systemType,peerCount)
+        .catch(function(err){
+          logger.log('error','Failed to cast down vote for ' +
+            peer.name + ': ' + err.message)
+        })
     } else {
       return true
     }
