@@ -387,13 +387,13 @@ exports.start = function(systemKey,systemPrism,systemType,done){
   heartbeatTimeout = setInterval(function(){
     return runHeartbeat(systemKey,systemType)
       .then(function(){
-        logger.log('info','Heartbeat run complete')
+        debug('Heartbeat run complete')
       })
   },+config.heartbeat.frequency || 5000)
   pruneTimeout = setInterval(function(){
     return runVotePrune(systemKey,systemType)
       .then(function(){
-        logger.log('info','Vote prune complete')
+        debug('Vote prune complete')
       })
   },+config.heartbeat.votePruneFrequency || 60000)
   markMeUp(systemKey,systemPrism,systemType,done)
