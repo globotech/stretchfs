@@ -130,7 +130,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if('Ok, got it' === err.message){
         debug('Vote already cast',peer.name)
       } else {
-        logger.log('error', 'Failed to cast down vote', err)
+        logger.log('error', 'Failed to cast down vote' + err.message)
       }
     })
 }
@@ -198,7 +198,7 @@ var runHeartbeat = function(systemKey,systemType){
         return couchdb.heartbeat.destroyAsync(vote._id,vote._rev)
       },{concurrency: config.heartbeat.concurrency})
       .catch(function(err){
-        logger.log('error', 'Failed to restore peer' + err)
+        logger.log('error', 'Failed to restore peer' + err.message)
       })
   }
   prismBalance.peerList()
@@ -263,7 +263,8 @@ var runHeartbeat = function(systemKey,systemType){
         })
     },{concurrency: config.heartbeat.concurrency})
     .catch(function(err){
-      logger.log('error', 'Unknown ping error', err)
+      console.log(err)
+      logger.log('error', 'Unknown ping error' + err.message)
     })
     .finally(function(){
       var duration = +(new Date()) - startTime
