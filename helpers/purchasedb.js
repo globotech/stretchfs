@@ -335,7 +335,7 @@ var pruneDatabase = function(days){
   debug('foorToken',floorToken)
   var pruneServer = function(couchConfig,zone){
     var couchdbconn = connectCouchDb(couchConfig)
-    return couchdbconn.databasesAsync()
+    return couchdbconn.db.listAsync()
       .map(function(database){
         //THESE LINES ARE SUPER IMPORTANT
         if(database[0] === '_') return
