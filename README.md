@@ -75,8 +75,6 @@ endpoint from Prism to Store to Send without the need for any third party web
 server software.
 * Merge patches of various 2.4 scripts.
 * Add logger helper to enable syslog formatting for logs.
-
-### 2.4.x
 * Clonetool enriched with more upgrades/features/fixes
 * bin/createPurchasedb.js now maintains expiry of old databases
   with option `-K <days>` (keep `n` days, default `10`) 
