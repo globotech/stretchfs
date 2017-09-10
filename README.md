@@ -64,7 +64,7 @@ From there follow the debug filtering rules defined
 
 ## Changelog
 
-### 2.6.0
+### 2.5.0
 
 * Introduce new send component to aid in dropping NGINX OpenResty from the OOSE
 standard build.
@@ -73,9 +73,6 @@ need for a proxy.
 * Send also supports listening on multiple ports. Again this is to complete the
 endpoint from Prism to Store to Send without the need for any third party web
 server software.
-
-### 2.5.0
-
 * Merge patches of various 2.4 scripts.
 * Add logger helper to enable syslog formatting for logs.
 
