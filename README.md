@@ -64,7 +64,7 @@ From there follow the debug filtering rules defined
 
 ## Changelog
 
-### 2.9.0 (Planned)
+### 3.4.0 (Planned)
 
 * Content upgrades, this will introduce a forwarding table into the inventory
 system that will allow content to forward itself until it finds the latest
@@ -72,7 +72,7 @@ version of the file. This will make OOSE rewrite capable and instantly support
 version safe backups as the file inventory can forward and reverse sorted for
 revision changes.
 
-### 2.8.0 (Planned)
+### 3.3.0 (Planned)
 
 * Introduce the idea of store profiles. This will involve chosing a media type
 that will translate into a metric we will use to determine the availability of
@@ -80,21 +80,21 @@ a store, sot hat load can be properly managed on a disk to disk basis. This will
 also allow the idea of purpose built balancing. This should work naturally with
 the metric settings.
 
-### 2.7.0 (Planned)
+### 3.2.0 (Planned)
 
 * Implement supervisor process, that will run per store and expose an additional
 API for managing content and carrying out tasks on its content.
 * Implement new balancing procedures into Prism that will take into account
 the stats gather with the statPush system implemented in 2.6
 
-### 2.6.0 (Proposed)
+### 3.1.0 (Proposed)
 
 * Implement stat tracking into the `send` system using redis
 * Start a separate process to push the stats from the store to a collection
 of receivers
 * Implement stat receiver into the prism which will digest and publish results
 
-### 2.5.0 (Stable)
+### 3.0.0 (Development)
 
 * Introduce new send component to aid in dropping NGINX OpenResty from the OOSE
 standard build.
@@ -114,6 +114,14 @@ server software.
 * Added boolean `protected` to Peer record which when existing and `true` will
   concatenate that store onto the list (if any) provided in the above
   `clonetool.storeProtected` Array at runtime.
+* Replace couchdb with couchbase to provide a more consistent database model.
+ OOSE does is not compatible with eventual consistency which adds various
+ failures that OOSE doesnt know how to handle properly and results in false
+ 404s. These result from poor timing. The solution is to use couchbase which
+ will provide OOSE with consistent results, better timing / scaling.
+* Drop nano / couchdb / cradle
+* Implement couchbase-promise helper
+* Update config to work with couchbase
 
 ### 2.4.0
 
