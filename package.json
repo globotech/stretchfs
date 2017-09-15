@@ -34,6 +34,7 @@
     "connect-couchdb": "^1.0.0",
     "connect-flash": "^0.1.1",
     "cookie-parser": "^1.4.3",
+    "couchbase-promises": "^4.3.0",
     "debug": "^3.0.1",
     "dev-null": "^0.1.1",
     "event-stream": "^3.3.4",
