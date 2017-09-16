@@ -16,7 +16,7 @@ var handleCouchbaseConnectError = function(err){
 
 //setup our client
 var connectCouchbase = function(conf){
-  return couchbase.Cluster(
+  return new couchbase.Cluster(
     (conf.protocol || 'couchbase://') + (conf.host || '127.0.0.1'))
 }
 var cluster = connectCouchbase(config.couch)
