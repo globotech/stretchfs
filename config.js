@@ -153,30 +153,7 @@ config.$load({
     ],
     existsCacheLife: 30, //seconds
     purchaseCacheLife: 30, //seconds
-    purchaseZone: 'a',
-    purchaseZoneCouch: {}
-    /*
-    purchaseZoneCouch: {
-      'a': [
-        {
-          host: '192.168.100.100',
-          port: '5984'
-        },
-        {
-          host: '192.168.100.101',
-          port: '5984'
-        }
-      ],
-      'b': [
-        host: '192.168.100.101',
-        port: '5984'
-      ],
-     'c': [
-        host: '192.168.100.102',
-        port: '5984'
-      ]
-    }
-    */
+    purchaseZone: 'a'
   },
   //storage system
   store: {
@@ -217,14 +194,26 @@ config.$load({
       maxConnections: 10000
     }
   },
-  //supervisor system
-  supervisor: {
+  //shredder
+  shredder: {
     enabled: false,
-    name: 'supervisor1',
-    port: 5974,
+    name: 'localworker',
+    port: 5981,
     host: null,
-    username: 'oose',
-    password: 'oose',
+    superviseFrequency: 7000, //7 seconds
+    dispatchFrequency: 11000, //11 seconds
+    maxExecutionTime: 14400, // 4 hours
+    concurrency: 2,
+    job: {
+      timeout: {
+        process: 7200000, //2 hours
+        cleanup: 7200000, //2 hours
+        complete: 7200000 //2 hours
+      },
+      programs: []
+    },
+    username: 'shredder',
+    password: 'shredder',
     workers: {
       count: 1,
       maxConnections: 10000
