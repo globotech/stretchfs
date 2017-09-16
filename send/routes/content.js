@@ -4,7 +4,7 @@ var debug = require('debug')('oose:send:content')
 var fs = require('graceful-fs')
 var path = require('path')
 
-var couchdb = require('../../helpers/couchdb')
+var couchdb = require('../../helpers/couchbase')
 var redis = require('../../helpers/redis')()
 var logger = require('../../helpers/logger')
 var purchasedb = require('../../helpers/purchasedb')

@@ -10,7 +10,7 @@ var promisePipe = require('promisepipe')
 var hashStream = require('sha1-stream')
 
 var api = require('../../helpers/api')
-var couchdb = require('../../helpers/couchdb')
+var couchdb = require('../../helpers/couchbase')
 var redis = require('../../helpers/redis')
 var hashFile = require('../../helpers/hashFile')
 

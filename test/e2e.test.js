@@ -1,7 +1,7 @@
 'use strict';
 var expect = require('chai').expect
 
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchbase')
 var purchasedb = require('../helpers/purchasedb')
 
 var e2e = require('./helpers/e2e')

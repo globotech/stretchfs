@@ -11,7 +11,7 @@ var rmfr = require('rmfr')
 var url = require('url')
 
 var api = require('../../helpers/api')
-var couchdb = require('../../helpers/couchdb')
+var couchdb = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
 var content = oose.mock.content
 //var purchasedb = require('../../helpers/purchasedb')

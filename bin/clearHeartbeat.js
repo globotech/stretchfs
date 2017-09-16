@@ -3,7 +3,7 @@ var debug = require('debug')('oose:clearHeartbeat')
 var infant = require('infant')
 
 //var config = require('../config')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 

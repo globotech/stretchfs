@@ -7,7 +7,7 @@ var path = require('path')
 var ProgressBar = require('progress')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 //make some promises

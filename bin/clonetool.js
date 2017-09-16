@@ -16,7 +16,7 @@ var promisePipe = require('promisepipe')
 
 var UserError = oose.UserError
 
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchbase')
 var hasher = require('../helpers/hasher')
 var prismBalance = require('../helpers/prismBalance')
 var redis = require('../helpers/redis')()

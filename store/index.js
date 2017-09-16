@@ -6,7 +6,7 @@ var mkdirp = require('mkdirp-then')
 var path = require('path')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 var cluster

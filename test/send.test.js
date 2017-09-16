@@ -8,7 +8,7 @@ var oose = require('oose-sdk')
 var path = require('path')
 
 var api = require('../helpers/api')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('../helpers/couchbase')
 var purchasedb = require('../helpers/purchasedb')
 
 var content = oose.mock.content
