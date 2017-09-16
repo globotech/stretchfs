@@ -159,17 +159,13 @@ exports.winner = function(token,prismList,skip,allowFull){
 /**
  * Check existence of a hash (cached)
  * @param {string} hash
- * @param {boolean} cacheEnable
  * @return {P}
  */
-exports.contentExists = function(hash,cacheEnable){
-  if('undefined' === typeof cacheEnable) cacheEnable = true
-  else cacheEnable = (cacheEnable)
+exports.contentExists = function(hash){
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
   var existsKey = couchdb.schema.inventory(hash)
   var existsRecord = {}
   var count = 0
-  var cacheValid = false
   debug(existsKey,'contentExists received')
   var deadRecord = {
     hash: hash,
@@ -181,106 +177,77 @@ exports.contentExists = function(hash,cacheEnable){
     size: 0,
     map: []
   }
-  return redis.getAsync(existsKey)
+  return couchdb.inventory.listAsync({
+    startkey: existsKey,
+    endkey: existsKey + '\uffff',
+    include_docs: true
+  })
     .then(function(result){
-      if(result){
-        try {
-          result = JSON.parse(result)
-          cacheValid = true
-        } catch(e){
-          cacheValid = false
-        }
-      }
-      if(cacheEnable && cacheValid){
-        debug(existsKey,'using cached result',result)
-        return result
-      } else {
-        debug(existsKey,'cache does not exist building')
-        return couchdb.inventory.listAsync({
-          startkey: existsKey,
-          endkey: existsKey + '\uffff',
-          include_docs: true
+      debug(existsKey,'got inventory result',result)
+      return result.rows
+    })
+    .map(function(row){
+      debug(existsKey,'got record',row)
+      count++
+      return couchdb.inventory.getAsync(row.key)
+        .catch(function(err){
+          if(404 !== err.statusCode) throw err
         })
-          .then(function(result){
-            debug(existsKey,'got inventory result',result)
-            return result.rows
-          })
+    })
+    .then(function(inventoryList){
+      //debug(existsKey,'records',result)
+      if(!count || !inventoryList){
+        return deadRecord
+      } else {
+        return P.try(function(){
+          return inventoryList
+        })
           .map(function(row){
-            debug(existsKey,'got record',row)
-            count++
-            return couchdb.inventory.getAsync(row.key)
-              .catch(function(err){
-                if(404 !== err.statusCode) throw err
-              })
+            debug(existsKey,'got inventory list record',row)
+            return P.all([
+              couchdb.peer.getAsync(couchdb.schema.prism(row.prism))
+                .catch(function(){
+                  return {name:row.prism,available:false}
+                }),
+              couchdb.peer.getAsync(
+                couchdb.schema.store(row.prism,row.store))
+                .catch(function(){
+                  return {name:row.store,available:false}
+                })
+            ])
           })
-          .then(function(inventoryList){
-            //debug(existsKey,'records',result)
-            if(!count || !inventoryList){
-              return deadRecord
-            } else {
-              return P.try(function(){
-                return inventoryList
-              })
-                .map(function(row){
-                  debug(existsKey,'got inventory list record',row)
-                  return P.all([
-                    couchdb.peer.getAsync(couchdb.schema.prism(row.prism))
-                      .catch(function(){
-                        return {name:row.prism,available:false}
-                      }),
-                    couchdb.peer.getAsync(
-                      couchdb.schema.store(row.prism,row.store))
-                      .catch(function(){
-                        return {name:row.store,available:false}
-                      })
-                  ])
-                })
-                .filter(function(row){
-                  return (!cacheEnable)||(row[0].available && row[1].available)
-                })
-                .then(function(result){
-                  var map = result.map(function(val){
-                    var avail = cacheEnable ? '' : ':' +
-                      ((val[0].available) ? '+' : '-') +
-                      ((val[1].available) ? '+' : '-')
-                    return val[0].name + ':' + val[1].name + avail
-                  })
-                  var record = {
-                    hash: inventoryList[0].hash,
-                    mimeType: inventoryList[0].mimeType,
-                    mimeExtension: inventoryList[0].mimeExtension,
-                    relativePath: inventoryList[0].relativePath,
-                    size: inventoryList[0].size,
-                    count: map.length,
-                    exists: true,
-                    map: map
-                  }
-                  debug(existsKey,'inventory record',record)
-                  return record
-                })
-            }
+          .filter(function(row){
+            return (row[0].available && row[1].available)
           })
           .then(function(result){
-            existsRecord = result
-            //only record cache if record exists
-            if(true === existsRecord.exists){
-              return redis.setAsync(existsKey,JSON.stringify(existsRecord))
-                .then(function(){
-                  return redis.expireAsync(
-                    existsKey,+config.prism.existsCacheLife || 30
-                  )
-                })
+            var map = result.map(function(val){
+              var avail = ((val[0].available) ? '+' : '-') +
+                          ((val[1].available) ? '+' : '-')
+              return val[0].name + ':' + val[1].name + avail
+            })
+            var record = {
+              hash: inventoryList[0].hash,
+              mimeType: inventoryList[0].mimeType,
+              mimeExtension: inventoryList[0].mimeExtension,
+              relativePath: inventoryList[0].relativePath,
+              size: inventoryList[0].size,
+              count: map.length,
+              exists: true,
+              map: map
             }
-          })
-          .then(function(){
-            return existsRecord
-          })
-          .catch(function(err){
-            logger.log('error',err)
-            logger.log('error', err.stack)
-            logger.log('error', 'EXISTS ERROR: ' + err.message + '  ' + hash)
-            return deadRecord
+            debug(existsKey,'inventory record',record)
+            return record
           })
       }
+    })
+    .then(function(result){
+      existsRecord = result
+      return existsRecord
+    })
+    .catch(function(err){
+      logger.log('error',err)
+      logger.log('error', err.stack)
+      logger.log('error', 'EXISTS ERROR: ' + err.message + '  ' + hash)
+      return deadRecord
     })
 }

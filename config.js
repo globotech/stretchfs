@@ -151,7 +151,6 @@ config.$load({
       'webm',
       'wmv'
     ],
-    existsCacheLife: 30, //seconds
     purchaseCacheLife: 30, //seconds
     purchaseZone: 'a'
   },
