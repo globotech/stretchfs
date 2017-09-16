@@ -189,7 +189,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.inventory.destroyAsync(row.key,row.value.rev)
+      return couchdb.inventory.removeAsync(row.key)
     })
     .then(function(){
       //return purchasedb.flushallAsync();
@@ -206,7 +206,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.peer.destroyAsync(row.key,row.value.rev)
+      return couchdb.peer.removeAsync(row.key)
     })
     .then(function(){
       var key = couchdb.schema.store()
@@ -220,7 +220,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.peer.destroyAsync(row.key,row.value.rev)
+      return couchdb.peer.removeAsync(row.key)
     })
     .then(function(){
       var key = couchdb.schema.downVote()
@@ -234,7 +234,7 @@ exports.before = function(that){
       return result.rows
     })
     .map(function(row){
-      return couchdb.heartbeat.destroyAsync(row.key,row.value.rev)
+      return couchdb.heartbeat.removeAsync(row.key)
     })
     .then(function(){
       return P.all([
@@ -266,10 +266,7 @@ exports.after = function(that){
   logger.log('info','Stopping mock cluster...')
   var clconf = exports.clconf
   var removePeerEntry = function(peerKey){
-    return couchdb.peer.getAsync(peerKey)
-      .then(function(result){
-        return couchdb.peer.destroyAsync(peerKey,result._rev)
-      })
+    return couchdb.peer.removeAsync(peerKey)
   }
   return P.all([
     exports.server.send4.stopAsync(),

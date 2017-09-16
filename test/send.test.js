@@ -120,7 +120,7 @@ describe('send',function(){
       return purchasedb.remove(purchaseToken)
         //delete purchase db
         .then(function(){
-          return couchdb.db.destroyAsync(
+          return couchdb.db.removeAsync(
             purchasedb.databaseName(purchaseToken))
         })
         //delete inventory record
@@ -128,7 +128,7 @@ describe('send',function(){
           return couchdb.inventory.getAsync(inventoryKey)
         })
         .then(function(result){
-          return couchdb.inventory.destroyAsync(result._id,result._rev)
+          return couchdb.inventory.removeAsync(result._id)
         })
 
     })

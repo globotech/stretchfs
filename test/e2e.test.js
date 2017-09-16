@@ -105,7 +105,7 @@ describe('e2e',function(){
           })
       })
       after(function(){
-        return couchdb.db.destroyAsync(purchaseDatabase)
+        return couchdb.db.removeAsync(purchaseDatabase)
           .then(function(){
             return e2e.prismLogout(e2e.clconf.prism1,e2e.user.session)()
           })

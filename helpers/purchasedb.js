@@ -367,8 +367,8 @@ var pruneDatabase = function(days){
         } else {
           debug('removing',databaseName)
           var db = P.promisifyAll(couchdbconn.db.use(databaseName))
-          return db.destroyAsync()
-          //return P.try(function(){console.log('WOULD DESTROY',databaseName)})
+          //return db.destroyAsync()
+          return P.try(function(){console.log('WOULD DESTROY',databaseName)})
             .then(function(){
               var db = P.promisifyAll(couchdbconn.db.use('_replicator'))
               return db.listAsync({
@@ -380,7 +380,7 @@ var pruneDatabase = function(days){
                 })
                 .map(function(key){
                   //console.log('WOULD REMOVE _replicator',key.key)
-                  return db.destroyAsync(key.key)
+                  return db.removeAsync(key.key)
                 })
             })
         }
@@ -611,7 +611,7 @@ PurchaseDb.prototype.remove = function(token){
       debug(token,'remove result',result)
       if(result){
         debug(token,'remove exists, removing')
-        return couchWrap(token).destroyAsync(token,result._rev)
+        return couchWrap(token).removeAsync(token)
       } else {
         debug(token,'remove doesnt exist do nothing')
         //otherwise it doesn't exist... cool

@@ -190,7 +190,7 @@ var runHeartbeat = function(systemKey,systemType){
         return result.rows
       })
       .map(function(vote){
-        return couchdb.heartbeat.destroyAsync(vote._id,vote._rev)
+        return couchdb.heartbeat.removeAsync(vote._id)
           .catch(function(err){
             debug('failed to destroy vote restoring peer',err)
           })
@@ -316,7 +316,7 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       debug('Pruning vote',vote._id)
-      return couchdb.heartbeat.destroyAsync(vote._id,vote._rev)
+      return couchdb.heartbeat.removeAsync(vote._id)
         .catch(function(err){
           debug('failed to destroy vote pruning',err)
         })
@@ -373,7 +373,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     })
     .map(function(log){
       debug('Removing downvote',log)
-      return couchdb.heartbeat.destroyAsync(log.key,log._rev)
+      return couchdb.heartbeat.removeAsync(log.key)
         .catch(function(err){
           debug('failed to destroy vote marking myself up',err)
         })

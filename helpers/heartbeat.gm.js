@@ -154,8 +154,8 @@ var Heartbeat = function(type,name){
         var promises = []
         //Added reflect() to avoid a race condition.
         for(var i = 0; i<currentVoteLog.length; i++)
-          promises.push(couchdb.heartbeat.destroyAsync(
-            currentVoteLog[i].key,currentVoteLog[i]._rev).reflect())
+          promises.push(couchdb.heartbeat.removeAsync(
+            currentVoteLog[i].key))
         return P.all(promises)
       }).catch(function(err){
         debug(err.message)
@@ -221,8 +221,8 @@ var Heartbeat = function(type,name){
         var promises = []
         //Added reflect() to avoid a race condition.
         for(var i = 0; i < votelog.length; i++)
-          promises.push(couchdb.heartbeat.destroyAsync(
-            votelog[i].key,votelog[i]._rev).reflect())
+          promises.push(couchdb.heartbeat.removeAsync(
+            votelog[i].key))
         return P.all(promises)
       }).catch(function(err){
         debug(err.mesage)
