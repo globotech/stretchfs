@@ -44,7 +44,7 @@ var openBucket = function(name,secret){
       name + ' with secret ' + secret + ' ' + err
     )
     console.trace()
-    process.exit()
+    process.exit(2)
   }))
 }
 
