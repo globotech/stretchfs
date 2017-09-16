@@ -31,7 +31,7 @@ var client = {
  * Setup the Heartbeat DB
  * @type {object}
  */
-client.heartbeat = P.promisifyAll(client.openBucket(
+client.heartbeat = P.promisifyAll(cluster.openBucket(
   config.couch.bucket.heartbeat.name,
   config.couch.bucket.heartbeat.secret,
   handleCouchbaseConnectError
@@ -42,7 +42,7 @@ client.heartbeat = P.promisifyAll(client.openBucket(
  * Setup the Inventory DB
  * @type {object}
  */
-client.inventory = P.promisifyAll(client.openBucket(
+client.inventory = P.promisifyAll(cluster.openBucket(
   config.couch.bucket.inventory.name,
   config.couch.bucket.inventory.secret,
   handleCouchbaseConnectError
@@ -53,7 +53,7 @@ client.inventory = P.promisifyAll(client.openBucket(
  * Setup the Job DB
  * @type {object}
  */
-client.job = P.promisifyAll(client.openBucket(
+client.job = P.promisifyAll(cluster.openBucket(
   config.couch.bucket.job.name,
   config.couch.bucket.job.secret,
   handleCouchbaseConnectError
@@ -64,7 +64,7 @@ client.job = P.promisifyAll(client.openBucket(
  * Setup the Peer DB
  * @type {object}
  */
-client.peer = P.promisifyAll(client.openBucket(
+client.peer = P.promisifyAll(cluster.openBucket(
   config.couch.bucket.peer.name,
   config.couch.bucket.peer.secret,
   handleCouchbaseConnectError
@@ -75,7 +75,7 @@ client.peer = P.promisifyAll(client.openBucket(
  * Setup the Purchase DB
  * @type {object}
  */
-client.purchase = P.promisifyAll(client.openBucket(
+client.purchase = P.promisifyAll(cluster.openBucket(
   config.couch.bucket.purchase.name,
   config.couch.bucket.purchase.secret,
   handleCouchbaseConnectError
