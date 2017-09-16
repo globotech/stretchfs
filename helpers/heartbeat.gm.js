@@ -6,7 +6,7 @@ var oose = require('oose-sdk')
 var NetworkError = oose.NetworkError
 
 var api = require('../helpers/api')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('./couchbase')
 var prismBalance = require('../helpers/prismBalance')
 var redis = require('../helpers/redis')()
 var storeBalance = require('../helpers/storeBalance')

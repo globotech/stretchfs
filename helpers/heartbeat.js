@@ -4,7 +4,7 @@ var debug = require('debug')('oose:hb')
 var infant = require('infant')
 
 var api = require('../helpers/api')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('./couchbase')
 var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
 

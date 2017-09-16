@@ -4,7 +4,7 @@ var debug = require('debug')('oose:storeBalance')
 var oose = require('oose-sdk')
 
 var NotFoundError = oose.NotFoundError
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('./couchbase')
 var redis = require('../helpers/redis')()
 
 

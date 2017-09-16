@@ -8,7 +8,7 @@ var prettyBytes = require('pretty-bytes')
 
 var config = require('../config')
 
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('./couchbase')
 var redis = require('../helpers/redis')()
 
 

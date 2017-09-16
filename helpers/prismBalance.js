@@ -3,7 +3,7 @@ var P = require('bluebird')
 var debug = require('debug')('oose:prismBalance')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchdb')
+var couchdb = require('./couchbase')
 var redis = require('../helpers/redis')()
 var logger = require('./logger')
 
