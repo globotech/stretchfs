@@ -13,45 +13,30 @@ var config = require('../../config')
  * @param {object} res
  */
 exports.uri = function(req,res){
-  var purchaseCacheCheck = function(token){
+  var purchaseValidate = function(token){
     var purchaseUri = ''
-    var redisKey = redis.schema.purchaseCacheInternal(token)
-    return redis.getAsync(redisKey)
+    var purchase = {}
+    var inventory = {}
+    return purchasedb.get(token)
       .then(function(result){
-        if(!result){
-          //build cache
-          var purchase = {}
-          var inventory = {}
-          return purchasedb.get(token)
-            .then(function(result){
-              purchase = result
-              //get inventory
-              return couchdb.inventory.getAsync(couchdb.schema.inventory(
-                purchase.hash,
-                config.store.prism,
-                config.store.name
-              ))
-            })
-            .then(function(result){
-              inventory = result
-              if(inventory && purchase &&
-                purchase.expirationDate >= (+new Date())
-              ){
-                purchaseUri = '/../content/' + inventory.relativePath
-              } else{
-                purchaseUri = '/404'
-              }
-              return redis.setAsync(redisKey,purchaseUri)
-            })
-            .then(function(){
-              return redis.expireAsync(redisKey,900)
-            })
-            .then(function(){
-              return purchaseUri
-            })
-        } else {
-          return result
+        purchase = result
+        //get inventory
+        return couchdb.inventory.getAsync(couchdb.schema.inventory(
+          purchase.hash,
+          config.store.prism,
+          config.store.name
+        ))
+      })
+      .then(function(result){
+        inventory = result
+        if(inventory && purchase &&
+          purchase.expirationDate >= (+new Date())
+        ){
+          purchaseUri = '/../content/' + inventory.relativePath
+        } else{
+          purchaseUri = '/404'
         }
+        return purchaseUri
       })
       .catch(function(err){
         logger.log('error', err)
@@ -60,7 +45,7 @@ exports.uri = function(req,res){
       })
   }
   var token = req.params.token
-  purchaseCacheCheck(token)
+  purchaseValidate(token)
     .then(function(result){
       if('/404' === result) res.status(404)
       if('/403' === result) res.status(403)
