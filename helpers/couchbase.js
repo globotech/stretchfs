@@ -1,5 +1,6 @@
 'use strict';
-var couchbase = require('couchbase-promises')
+var P = require('bluebird')
+var couchbase = require('couchbase')
 
 var CouchSchema = require('./CouchSchema')
 var logger = require('./logger')
@@ -16,8 +17,8 @@ var handleCouchbaseConnectError = function(err){
 
 //setup our client
 var connectCouchbase = function(conf){
-  return new couchbase.Cluster(
-    (conf.protocol || 'couchbase://') + (conf.host || '127.0.0.1'))
+  return P.promisifyAll(new couchbase.Cluster(
+    (conf.protocol || 'couchbase://') + (conf.host || '127.0.0.1')))
 }
 var cluster = connectCouchbase(config.couch)
 
@@ -30,55 +31,55 @@ var client = {
  * Setup the Heartbeat DB
  * @type {object}
  */
-client.heartbeat = client.openBucket(
+client.heartbeat = P.promisifyAll(client.openBucket(
   config.couch.bucket.heartbeat.name,
   config.couch.bucket.heartbeat.secret,
   handleCouchbaseConnectError
-)
+))
 
 
 /**
  * Setup the Inventory DB
  * @type {object}
  */
-client.inventory = client.openBucket(
+client.inventory = P.promisifyAll(client.openBucket(
   config.couch.bucket.inventory.name,
   config.couch.bucket.inventory.secret,
   handleCouchbaseConnectError
-)
+))
 
 
 /**
  * Setup the Job DB
  * @type {object}
  */
-client.job = client.openBucket(
+client.job = P.promisifyAll(client.openBucket(
   config.couch.bucket.job.name,
   config.couch.bucket.job.secret,
   handleCouchbaseConnectError
-)
+))
 
 
 /**
  * Setup the Peer DB
  * @type {object}
  */
-client.peer = client.openBucket(
+client.peer = P.promisifyAll(client.openBucket(
   config.couch.bucket.peer.name,
   config.couch.bucket.peer.secret,
   handleCouchbaseConnectError
-)
+))
 
 
 /**
  * Setup the Purchase DB
  * @type {object}
  */
-client.purchase = client.openBucket(
+client.purchase = P.promisifyAll(client.openBucket(
   config.couch.bucket.purchase.name,
   config.couch.bucket.purchase.secret,
   handleCouchbaseConnectError
-)
+))
 
 
 /**
