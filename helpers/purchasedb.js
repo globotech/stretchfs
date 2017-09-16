@@ -248,10 +248,10 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
         }
       }
       return replicator.insertAsync(
-        replControl,
         'oose-purchase-' + databaseName + '-' +
         couchConfig.host + '->' +
-        replConfig.host
+        replConfig.host,
+        replControl
       )
         .catch(suppressDocumentConflict)
         .catch(suppressForbidden)
@@ -317,10 +317,10 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
         }
       }
       return replicator.insertAsync(
-        couchControl,
         'oose-purchase-' + databaseName + '-' +
         replConfig.host + '->' +
-        couchConfig.host
+        couchConfig.host,
+        couchControl
       )
         .catch(suppressDocumentConflict)
         .catch(suppressForbidden)
@@ -560,7 +560,7 @@ PurchaseDb.prototype.create = function(token,params){
     couchdb = couchWrap(token)
     if(!couchdb) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
-    return couchdb.insertAsync(params,token)
+    return couchdb.insertAsync(token,params)
   })
     .then(function(result){
       debug(token,'create result',result)
@@ -589,7 +589,7 @@ PurchaseDb.prototype.update = function(token,params){
     .then(function(result){
       if(result){
         debug(token,'update result received, udpating',result,params)
-        return couchdb.insertAsync(params,token)
+        return couchdb.insertAsync(token,params)
       } else{
         debug(token,'doesnt exist, creating',result,params)
         that.create(token,params)

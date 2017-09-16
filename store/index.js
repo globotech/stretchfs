@@ -42,13 +42,13 @@ if(require.main === module){
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return couchdb.peer.insertAsync(doc,storeKey)
+            return couchdb.peer.insertAsync(storeKey,doc)
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err.statusCode || 404 !== err.statusCode) throw err
             //now register ourselves or mark ourselves available
-            return couchdb.peer.insertAsync({
+            return couchdb.peer.insertAsync(storeKey,{
               prism: config.store.prism,
               name: config.store.name,
               host: config.store.host,
@@ -57,7 +57,7 @@ if(require.main === module){
               available: true,
               active: true,
               createdAt: new Date().toJSON()
-            },storeKey)
+            })
           }
         )
         .then(function(){
@@ -94,7 +94,7 @@ if(require.main === module){
       couchdb.peer.getAsync(storeKey)
         .then(function(doc){
           doc.available = false
-          return couchdb.peer.insertAsync(doc,storeKey)
+          return couchdb.peer.insertAsync(storeKey,doc)
         })
         .then(function(){
           if(!heartbeat) return

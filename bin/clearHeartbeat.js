@@ -38,7 +38,10 @@ var runInterval = function(done){
       }
       debug('saving deletion of vote',votes.length,votes[0])
       //now we just use couchdb to save the purchases
-      return couchdb.heartbeat.insertAsync(votes)
+      return votes
+    })
+    .each(function(vote){
+      return couchdb.heartbeat.insertAsync(vote._id,vote)
     })
     .then(function(result){
       var deleted = 0

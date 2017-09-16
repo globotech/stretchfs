@@ -42,13 +42,13 @@ if(require.main === module){
             doc.port = config.send.port
             doc.available = true
             doc.active = true
-            return couchdb.peer.insertAsync(doc,sendKey)
+            return couchdb.peer.insertAsync(sendKey,doc)
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err.statusCode || 404 !== err.statusCode) throw err
             //now register ourselves or mark ourselves available
-            return couchdb.peer.insertAsync({
+            return couchdb.peer.insertAsync(sendKey,{
               prism: config.send.prism,
               store: config.send.store,
               name: config.send.name,
@@ -57,7 +57,7 @@ if(require.main === module){
               available: true,
               active: true,
               createdAt: new Date().toJSON()
-            },sendKey)
+            })
           }
         )
         .then(function(){
@@ -79,7 +79,7 @@ if(require.main === module){
       couchdb.peer.getAsync(sendKey)
         .then(function(doc){
           doc.available = false
-          return couchdb.peer.insertAsync(doc,sendKey)
+          return couchdb.peer.insertAsync(sendKey,doc)
         })
         .then(function(){
           if(!cluster) return

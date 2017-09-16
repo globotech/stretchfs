@@ -135,12 +135,12 @@ var Heartbeat = function(type,name){
             return false
           }
         }
-        return couchdb.heartbeat.insertAsync({date:Date.now()},myDownKey)
+        return couchdb.heartbeat.insertAsync(myDownKey,{date:Date.now()})
       },function(err){
         if(!err.statusCode) throw err
         if(404 !== err.statusCode) throw err
         currentVoteLog = []
-        return couchdb.heartbeat.insertAsync({date:Date.now()},myDownKey)
+        return couchdb.heartbeat.insertAsync(myDownKey,{date:Date.now()})
       }).then(function(myVote){
         if(myVote !== false)
           currentVoteLog.push(myVote)
@@ -148,7 +148,7 @@ var Heartbeat = function(type,name){
         var votes = currentVoteLog.length
         if(count === 0 || votes < (count/2))throw new Error('Ok, got it')
         hostInfo.available = false
-        return couchdb.heartbeat.insertAsync(hostInfo,key)
+        return couchdb.heartbeat.insertAsync(key,hostInfo)
       }).then(function(){
         //Delete the vote log, it has served its purpose
         var promises = []
@@ -210,7 +210,7 @@ var Heartbeat = function(type,name){
       .then(function(node){
         node.available = true
         node.active = true
-        return couchdb.heartbeat.insertAsync(node,key)
+        return couchdb.heartbeat.insertAsync(key,node)
       }).then(function(){
         //Time to delete the downvote log
         return couchdb.heartbeat.listAsync(
