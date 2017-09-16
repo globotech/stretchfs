@@ -27,12 +27,12 @@ var client = {
 
 
 /**
- * Setup the Peer DB
+ * Setup the Heartbeat DB
  * @type {object}
  */
-client.peer = client.openBucket(
-  config.couch.bucket.peer.name,
-  config.couch.bucket.peer.secret,
+client.heartbeat = client.openBucket(
+  config.couch.bucket.heartbeat.name,
+  config.couch.bucket.heartbeat.secret,
   handleCouchbaseConnectError
 )
 
@@ -49,12 +49,34 @@ client.inventory = client.openBucket(
 
 
 /**
- * Setup the Heartbeat DB
+ * Setup the Job DB
  * @type {object}
  */
-client.inventory = client.openBucket(
-  config.couch.bucket.heartbeat.name,
-  config.couch.bucket.heartbeat.secret,
+client.job = client.openBucket(
+  config.couch.bucket.job.name,
+  config.couch.bucket.job.secret,
+  handleCouchbaseConnectError
+)
+
+
+/**
+ * Setup the Peer DB
+ * @type {object}
+ */
+client.peer = client.openBucket(
+  config.couch.bucket.peer.name,
+  config.couch.bucket.peer.secret,
+  handleCouchbaseConnectError
+)
+
+
+/**
+ * Setup the Purchase DB
+ * @type {object}
+ */
+client.purchase = client.openBucket(
+  config.couch.bucket.purchase.name,
+  config.couch.bucket.purchase.secret,
   handleCouchbaseConnectError
 )
 
