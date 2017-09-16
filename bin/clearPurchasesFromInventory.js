@@ -35,7 +35,7 @@ var runInterval = function(done){
       return purchases
     })
     .each(function(purchase){
-      return couchdb.inventory.insertAsync(purchase._id,purchase)
+      return couchdb.inventory.upsertAsync(purchase._id,purchase)
     })
     .then(function(result){
       var deleted = 0

@@ -37,13 +37,13 @@ if(require.main === module){
               doc.port = config.prism.port
               doc.available = true
               doc.active = true
-              return couchdb.peer.insertAsync(prismKey,doc)
+              return couchdb.peer.upsertAsync(prismKey,doc)
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
               if(404 !== err.statusCode) throw err
               //now register ourselves or mark ourselves available
-              return couchdb.peer.insertAsync(prismKey,{
+              return couchdb.peer.upsertAsync(prismKey,{
                 name: config.prism.name,
                 host: config.prism.host,
                 port: config.prism.port,
@@ -84,7 +84,7 @@ if(require.main === module){
         couchdb.peer.getAsync(prismKey)
           .then(function(doc){
             doc.available = false
-            return couchdb.peer.insertAsync(prismKey,doc)
+            return couchdb.peer.upsertAsync(prismKey,doc)
           })
           .then(function(){
             if(!heartbeat) return

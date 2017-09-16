@@ -84,7 +84,7 @@ describe('send',function(){
     var badPurchaseToken = purchasedb.generate()
     before(function(){
       //create inventory record
-      return couchdb.inventory.insertAsync(inventoryKey,{
+      return couchdb.inventory.upsertAsync(inventoryKey,{
         hash: content.hash,
         mimeExtension: content.ext,
         mimeType: content.type,

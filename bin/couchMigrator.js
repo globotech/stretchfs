@@ -111,7 +111,7 @@ var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
                 }
                 else{
                   counter.moved++
-                  resolve(couchdb[dbName].insertAsync(newKey,record))
+                  resolve(couchdb[dbName].upsertAsync(newKey,record))
                 }
               })
             })

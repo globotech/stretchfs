@@ -41,7 +41,7 @@ var runInterval = function(done){
       return votes
     })
     .each(function(vote){
-      return couchdb.heartbeat.insertAsync(vote._id,vote)
+      return couchdb.heartbeat.upsertAsync(vote._id,vote)
     })
     .then(function(result){
       var deleted = 0

@@ -247,7 +247,7 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
           roles: ['_admin','_reader','_writer']
         }
       }
-      return replicator.insertAsync(
+      return replicator.upsertAsync(
         'oose-purchase-' + databaseName + '-' +
         couchConfig.host + '->' +
         replConfig.host,
@@ -316,7 +316,7 @@ var setupWithReplication = function(databaseName,couchConfig,replConfig){
           roles: ['_admin','_reader','_writer']
         }
       }
-      return replicator.insertAsync(
+      return replicator.upsertAsync(
         'oose-purchase-' + databaseName + '-' +
         replConfig.host + '->' +
         couchConfig.host,
@@ -560,7 +560,7 @@ PurchaseDb.prototype.create = function(token,params){
     couchdb = couchWrap(token)
     if(!couchdb) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
-    return couchdb.insertAsync(token,params)
+    return couchdb.upsertAsync(token,params)
   })
     .then(function(result){
       debug(token,'create result',result)
@@ -589,7 +589,7 @@ PurchaseDb.prototype.update = function(token,params){
     .then(function(result){
       if(result){
         debug(token,'update result received, udpating',result,params)
-        return couchdb.insertAsync(token,params)
+        return couchdb.upsertAsync(token,params)
       } else{
         debug(token,'doesnt exist, creating',result,params)
         that.create(token,params)

@@ -92,7 +92,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   var myDownKey = couchdb.schema.downVote(peer.name,systemKey)
   debug('DOWN VOTE: ' + key)
   var createDownVote = function(){
-    return couchdb.heartbeat.insertAsync(myDownKey,{
+    return couchdb.heartbeat.upsertAsync(myDownKey,{
       peer: peer,
       systemKey: systemKey,
       systemType: systemType,
@@ -115,7 +115,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if(count === 0 || votes < (count / 2))
         return true
       peer.available = false
-      return couchdb.peer.insertAsync(key,peer)
+      return couchdb.peer.upsertAsync(key,peer)
         .catch(function(err){
           debug('failed to cast down vote',err)
         })
@@ -175,7 +175,7 @@ var runHeartbeat = function(systemKey,systemType){
     return couchdb.peer.getAsync(peer._id)
       .then(function(result){
         result.available = true
-        return couchdb.peer.insertAsync(result._id,result)
+        return couchdb.peer.upsertAsync(result._id,result)
       })
       .then(function(){
         //remove down votes
@@ -352,7 +352,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
         debug('Got peer information back',peer)
         peer.available = true
         peer.active = true
-        return couchdb.peer.insertAsync(key,peer)
+        return couchdb.peer.upsertAsync(key,peer)
           .catch(function(err){
             debug('failed to mark peer up',err)
           })

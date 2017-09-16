@@ -105,7 +105,7 @@ module.exports = function(done){
             }
             debug(hash,'creating inventory record',doc)
             counter.created++
-            return couchdb.inventory.insertAsync(inventoryKey,doc)
+            return couchdb.inventory.upsertAsync(inventoryKey,doc)
           }
         )
         .then(function(){

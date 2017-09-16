@@ -23,7 +23,7 @@ var emit = function(){}
  */
 var runInterval = function(done){
   logger.log('info','Starting create couch designs')
-  couchdb.inventory.insertAsync('_design/inventory',{
+  couchdb.inventory.upsertAsync('_design/inventory',{
     byStore: {
       map: function(doc){
         emit([doc.store],doc)
