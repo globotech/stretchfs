@@ -588,8 +588,6 @@ exports.deliver = function(req,res){
   var addressType = 'fqdn'
   if(req.query.addressType) addressType = req.query.addressType
   //var filename = req.params.filename
-  var cacheValid = false
-  var purchaseCacheKey = redis.schema.purchaseCache(token)
   /**
    * Make a content URL
    * @param {object} req
@@ -646,47 +644,22 @@ exports.deliver = function(req,res){
     }
     return result
   }
-  //try to get our purchase record from cache
-  redis.getAsync(purchaseCacheKey)
-    .then(function(result){
-      if(result){
-        try {
-          result = JSON.parse(result)
-          cacheValid = true
-        } catch(e){
-          cacheValid = false
-        }
+  //hard look up of purchase
+  purchasedb.get(token)
+    .then(
+      function(result){
+        if(!result) throw new NotFoundError('Purchase not found')
+        return prismBalance.contentExists(result.hash)
+          .then(function(existsResult){
+            result.inventory = existsResult
+            //store new cache here
+            return result
+          })
+      },
+      function(){
+        throw new NotFoundError('Purchase not found')
       }
-      if(result && cacheValid){
-        return result
-      } else {
-        //hard look up of purchase
-        return purchasedb.get(token)
-          .then(
-            function(result){
-              if(!result) throw new NotFoundError('Purchase not found')
-              return prismBalance.contentExists(result.hash)
-                .then(function(existsResult){
-                  result.inventory = existsResult
-                  //store new cache here
-                  return redis.setAsync(purchaseCacheKey,JSON.stringify(result))
-                    .then(function(){
-                      return redis.expireAsync(
-                        purchaseCacheKey,
-                        (+config.prism.purchaseCacheLife || 30)
-                      )
-                    })
-                    .then(function(){
-                      return result
-                    })
-                })
-            },
-            function(){
-              throw new NotFoundError('Purchase not found')
-            }
-          )
-      }
-    })
+    )
     .then(function(purchase){
       //okay so now we have the purchase record and reading it from cache like
       //we wanted, now we do validation and winner selection like normal
