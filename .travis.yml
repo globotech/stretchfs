@@ -23,7 +23,7 @@ before_script:
   # Couchbase Server
   - sudo wget https://packages.couchbase.com/releases/4.5.1/couchbase-server-community_4.5.1-ubuntu14.04_amd64.deb
   - sudo dpkg -i couchbase-server-community_4.5.1-ubuntu14.04_amd64.deb
-  - sudo systemctl start couchbase-server
+  - sudo service couchbase-server start
   # Setup Bucket for test
   - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=Administrator --cluster-init-password=password --cluster-init-ramsize=256
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=oose-hearbeat --bucket-password=password --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize=100 --bucket-replica=0 -u Administrator -p password
