@@ -2,7 +2,6 @@
 var couchdb = require('../../helpers/couchbase')
 var purchasedb = require('../../helpers/purchasedb')
 var logger = require('../../helpers/logger')
-var redis = require('../../helpers/redis.js')()
 
 var config = require('../../config')
 
