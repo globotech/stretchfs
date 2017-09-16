@@ -55,11 +55,11 @@ var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
   var readSize = 0
   var readStreamOpts = {
     url: 'http://' +
-      config.couchdb.options.auth.username + ':' +
-      config.couchdb.options.auth.password + '@' +
-      config.couchdb.host + ':' +
-      config.couchdb.port + '/' +
-      config.couchdb.database + '/_all_docs?' +
+      config.couch.options.auth.username + ':' +
+      config.couch.options.auth.password + '@' +
+      config.couch.host + ':' +
+      config.couch.port + '/' +
+      config.couch.database + '/_all_docs?' +
       'startkey=' + encodeURIComponent('"' + itemKey + '"') + '&' +
       'endkey=' + encodeURIComponent('"' + itemKey + '\uffff' + '"')
   }

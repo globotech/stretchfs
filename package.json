@@ -50,7 +50,6 @@
     "mkdirp-then": "^1.2.0",
     "moment": "^2.18.1",
     "morgan": "^1.8.2",
-    "nano": "^6.4.0",
     "node-password": "^1.0.2",
     "object-manage": "^1.0.0",
     "oose-sdk": "^2.2.2",

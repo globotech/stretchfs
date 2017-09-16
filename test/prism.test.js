@@ -56,8 +56,8 @@ describe('prism',function(){
         .postAsync({
           url: client.url('/user/login'),
           json: {
-            username: config.couchdb.options.auth.username,
-            password: config.couchdb.options.auth.password
+            username: config.couch.options.auth.username,
+            password: config.couch.options.auth.password
           }
         })
         .spread(function(res,body){

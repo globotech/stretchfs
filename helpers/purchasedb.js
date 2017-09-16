@@ -33,7 +33,7 @@ var connectCouchDb = function(conf){
   P.promisifyAll(client.db)
   return client
 }
-var couchdb = connectCouchDb(config.couchdb)
+var couchdb = connectCouchDb(config.couch)
 
 
 //make some promises
@@ -76,23 +76,23 @@ var buildConfig = function(){
   debug('building config')
   //assign the full default config when none exists, otherwise im confused
   if(!config.prism.purchaseZoneCouch){
-    config.prism.purchaseZoneCouch.a = [config.couchdb]
+    config.prism.purchaseZoneCouch.a = [config.couch]
   }
   //otherwise we iterate the zones and add that to our couchConfigs array
   Object.keys(config.prism.purchaseZoneCouch).forEach(function(zone){
     debug('building config for zone',zone)
     config.prism.purchaseZoneCouch[zone].forEach(function(cfg){
       debug('building config for server',zone,cfg)
-      if(!cfg.protocol) cfg.protocol = config.couchdb.protocol
-      if(!cfg.host) cfg.host = config.couchdb.host
-      if(!cfg.port) cfg.port = config.couchdb.port
+      if(!cfg.protocol) cfg.protocol = config.couch.protocol
+      if(!cfg.host) cfg.host = config.couch.host
+      if(!cfg.port) cfg.port = config.couch.port
       if(!cfg.options) cfg.options = {}
       if(!cfg.options.auth) cfg.options.auth = {}
       if(!cfg.options.auth.username){
-        cfg.options.auth.username = config.couchdb.options.auth.username
+        cfg.options.auth.username = config.couch.options.auth.username
       }
       if(!cfg.options.auth.password){
-        cfg.options.auth.password = config.couchdb.options.auth.password
+        cfg.options.auth.password = config.couch.options.auth.password
       }
       if(!couchConfigs[zone]) couchConfigs[zone] = [cfg]
       else couchConfigs[zone].push(cfg)
@@ -395,7 +395,7 @@ var pruneDatabase = function(days){
       couchConfigs[i].forEach(_pruneServer)
     }
   } else {
-    promises.push(pruneServer(config.couchdb))
+    promises.push(pruneServer(config.couch))
   }
   return P.all(promises)
 }
@@ -429,11 +429,11 @@ var createDatabase = function(token,setupReplication){
           setupWithoutReplication(databaseName,couchConfigs[zone][0]
         ))
       } else {
-        promises.push(setupWithoutReplication(databaseName,config.couchdb))
+        promises.push(setupWithoutReplication(databaseName,config.couch))
       }
     }
   } else {
-    promises.push(setupWithoutReplication(databaseName,config.couchdb))
+    promises.push(setupWithoutReplication(databaseName,config.couch))
   }
   debug('promises set for creation',databaseName,promises)
   return P.all(promises)

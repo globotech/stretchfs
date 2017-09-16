@@ -8,9 +8,9 @@ var redis = require('../../helpers/redis')()
 
 var config = require('../../config')
 var couchLoginUrl =
-  config.couchdb.options.secure ? 'https://' : 'http://' +
-  config.couchdb.host + ':' +
-  config.couchdb.port + '/_session'
+  config.couch.options.secure ? 'https://' : 'http://' +
+  config.couch.host + ':' +
+  config.couch.port + '/_session'
 var UserError = oose.UserError
 
 //make some promises

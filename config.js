@@ -52,16 +52,30 @@ config.$load({
     prefix: 'oose',
     options: {}
   },
-  couchdb: {
-    protocol: 'http://',
+  couch: {
+    protocol: 'couchbase://',
     host: '127.0.0.1',
-    port: '5984',
     prefix: '',
-    database: 'oose',
-    options: {
-      auth: {
-        username: 'oose',
-        password: ''
+    bucket: {
+      heartbeat: {
+        name: 'oose-heartbeat',
+        secret: 'password'
+      },
+      job: {
+        name: 'oose-job',
+        secret: 'password'
+      },
+      inventory: {
+        name: 'oose-inventory',
+        secret: 'password'
+      },
+      peer: {
+        name: 'oose-peer',
+        secret: 'password'
+      },
+      purchase: {
+        name: 'oose-purchase',
+        secret: 'password'
       }
     }
   },
