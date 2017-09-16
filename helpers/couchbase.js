@@ -1,26 +1,52 @@
 'use strict';
 var P = require('bluebird')
 var couchbase = require('couchbase')
+var debug = require('debug')('oose:couchbase')
 
 var CouchSchema = require('./CouchSchema')
 var logger = require('./logger')
 
 var config = require('../config')
 
-//setup error handler
-var handleCouchbaseConnectError = function(err){
-  logger.log('error','Failed to connect to Couchbase bucket ' + err.message)
-  console.log(err)
-  console.log(err.stack)
-  process.exit()
-}
 
-//setup our client
+/**
+ * Connect to Couchbase
+ * @param {object} conf
+ * @return {object}
+ */
 var connectCouchbase = function(conf){
-  return P.promisifyAll(new couchbase.Cluster(
-    (conf.protocol || 'couchbase://') + (conf.host || '127.0.0.1')))
+  var dsn = (conf.protocol || 'couchbase://') +
+    (conf.host || '127.0.0.1') + ':' +
+    (conf.port || '8091')
+  debug('connecting to couchbase',dsn)
+  return P.promisifyAll(new couchbase.Cluster(dsn))
 }
 var cluster = connectCouchbase(config.couch)
+
+
+/**
+ * Open Couchbase bucket
+ * @param {string} name
+ * @param {string} secret
+ * @return {object}
+ */
+var openBucket = function(name,secret){
+  debug('opening bucket',name,secret)
+  return P.promisifyAll(cluster.openBucket(name,secret,function(err){
+    if('undefined' === typeof err){
+      debug('connected to',name)
+      return
+    }
+    debug('couchbase connect error',err)
+    logger.log(
+      'error',
+      'Failed to connect to Couchbase bucket ' +
+      name + ' with secret ' + secret + ' ' + err
+    )
+    console.trace()
+    process.exit()
+  }))
+}
 
 var client = {
   cluster: cluster
@@ -31,55 +57,50 @@ var client = {
  * Setup the Heartbeat DB
  * @type {object}
  */
-client.heartbeat = P.promisifyAll(cluster.openBucket(
+client.heartbeat = openBucket(
   config.couch.bucket.heartbeat.name,
-  config.couch.bucket.heartbeat.secret,
-  handleCouchbaseConnectError
-))
+  config.couch.bucket.heartbeat.secret
+)
 
 
 /**
  * Setup the Inventory DB
  * @type {object}
  */
-client.inventory = P.promisifyAll(cluster.openBucket(
+client.inventory = openBucket(
   config.couch.bucket.inventory.name,
-  config.couch.bucket.inventory.secret,
-  handleCouchbaseConnectError
-))
+  config.couch.bucket.inventory.secret
+)
 
 
 /**
  * Setup the Job DB
  * @type {object}
  */
-client.job = P.promisifyAll(cluster.openBucket(
+client.job = openBucket(
   config.couch.bucket.job.name,
-  config.couch.bucket.job.secret,
-  handleCouchbaseConnectError
-))
+  config.couch.bucket.job.secret
+)
 
 
 /**
  * Setup the Peer DB
  * @type {object}
  */
-client.peer = P.promisifyAll(cluster.openBucket(
+client.peer = openBucket(
   config.couch.bucket.peer.name,
-  config.couch.bucket.peer.secret,
-  handleCouchbaseConnectError
-))
+  config.couch.bucket.peer.secret
+)
 
 
 /**
  * Setup the Purchase DB
  * @type {object}
  */
-client.purchase = P.promisifyAll(cluster.openBucket(
+client.purchase = openBucket(
   config.couch.bucket.purchase.name,
-  config.couch.bucket.purchase.secret,
-  handleCouchbaseConnectError
-))
+  config.couch.bucket.purchase.secret
+)
 
 
 /**

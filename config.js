@@ -37,13 +37,6 @@ config.$load({
     voteLife: 60000, //ms vote hold down time (no pings during this window)
     pingResponseTimeout: 2000 //ms
   },
-  //statsPush
-  statsPush: {
-    systemKey: null,
-    systemType: null,
-    startDelay: 0, //ms default: 0/false which autodelays to next round minute
-    frequency: (156000/11) //ms static reporting frequency
-  },
   //databases
   redis: {
     host: '127.0.0.1',
@@ -55,27 +48,28 @@ config.$load({
   couch: {
     protocol: 'couchbase://',
     host: '127.0.0.1',
+    port: '8091',
     prefix: '',
     bucket: {
       heartbeat: {
         name: 'oose-heartbeat',
-        secret: 'password'
+        secret: ''
       },
       job: {
         name: 'oose-job',
-        secret: 'password'
+        secret: ''
       },
       inventory: {
         name: 'oose-inventory',
-        secret: 'password'
+        secret: ''
       },
       peer: {
         name: 'oose-peer',
-        secret: 'password'
+        secret: ''
       },
       purchase: {
         name: 'oose-purchase',
-        secret: 'password'
+        secret: ''
       }
     }
   },
