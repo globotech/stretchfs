@@ -1,443 +1,15 @@
 'use strict';
 var P = require('bluebird')
-var base64 = require('base-64')
-var nano = require('nano')
 var debug = require('debug')('oose:purchasedb')
 var moment = require('moment')
 var oose = require('oose-sdk')
 var Password = require('node-password').Password
-var random = require('random-js')()
 
 var UserError = oose.UserError
 
+var couchbase = require('./couchbase')
+
 var config = require('../config')
-
-//make some promises
-P.promisifyAll(nano)
-
-var connectCouchDb = function(conf){
-  //setup our client
-  var dsn = conf.protocol
-  if(conf.options && conf.options.auth && conf.options.auth.username){
-    dsn = dsn + conf.options.auth.username
-    var couchPassword= 'password'
-    if(conf.options.auth.password && conf.options.auth.password !== '')
-      couchPassword = conf.options.auth.password
-    dsn = dsn + ':' + couchPassword
-    dsn = dsn + '@'
-  }
-  dsn = dsn + conf.host
-  dsn = dsn + ':' + conf.port
-  var client = nano(dsn)
-  P.promisifyAll(client)
-  P.promisifyAll(client.db)
-  return client
-}
-var couchdb = connectCouchDb(config.couch)
-
-
-//make some promises
-P.promisifyAll(couchdb)
-
-//keep an object of couchdb connections based on the sharding configuration
-var couchPool = {}
-
-//keep an object of configurations relation to the pool
-var couchConfigs = {}
-
-//make some promises
-P.promisifyAll(couchdb)
-
-
-/**
- * Get Zone from Token
- * @param {string} token
- * @return {string}
- */
-var getZone = function(token){
-  return token.slice(0,1)
-}
-
-
-/**
- * Get database name from token
- * @param {string} token
- * @return {string}
- */
-var getDatabaseName = function(token){
-  return token.slice(0,9)
-}
-
-
-/**
- * Build configuration
- */
-var buildConfig = function(){
-  debug('building config')
-  //assign the full default config when none exists, otherwise im confused
-  if(!config.prism.purchaseZoneCouch){
-    config.prism.purchaseZoneCouch.a = [config.couch]
-  }
-  //otherwise we iterate the zones and add that to our couchConfigs array
-  Object.keys(config.prism.purchaseZoneCouch).forEach(function(zone){
-    debug('building config for zone',zone)
-    config.prism.purchaseZoneCouch[zone].forEach(function(cfg){
-      debug('building config for server',zone,cfg)
-      if(!cfg.protocol) cfg.protocol = config.couch.protocol
-      if(!cfg.host) cfg.host = config.couch.host
-      if(!cfg.port) cfg.port = config.couch.port
-      if(!cfg.options) cfg.options = {}
-      if(!cfg.options.auth) cfg.options.auth = {}
-      if(!cfg.options.auth.username){
-        cfg.options.auth.username = config.couch.options.auth.username
-      }
-      if(!cfg.options.auth.password){
-        cfg.options.auth.password = config.couch.options.auth.password
-      }
-      if(!couchConfigs[zone]) couchConfigs[zone] = [cfg]
-      else couchConfigs[zone].push(cfg)
-    })
-  })
-  debug('config build complete',couchConfigs)
-}
-buildConfig()
-
-
-/**
- * Pick a couch from a zone to use
- * @param {string} zone
- * @return {Object|false}
- */
-var pickCouchConfig = function(zone){
-  debug('picking couch config',zone)
-  if(!couchConfigs || !couchConfigs[zone]){
-    debug('no configs',zone)
-    return false
-  }
-  if(1 === couchConfigs[zone].length){
-    debug('only one couch returning',zone)
-    return couchConfigs[zone][0]
-  }
-  debug('picking couch from zonelist',zone,couchConfigs[zone])
-  var winner = couchConfigs[zone][
-    random.integer(0,(couchConfigs[zone].length - 1))]
-  debug('winner picked',winner)
-  return winner
-}
-
-
-/**
- * Suppress errors about database already existing
- * @param {object} err
- * @return {boolean}
- */
-var suppressForbidden = function(err){
-  if(err && err.error && 'forbidden' === err.error) return true
-  else throw err
-}
-
-
-/**
- * Suppress errors about database already existing
- * @param {object} err
- * @return {boolean}
- */
-var suppressDocumentConflict = function(err){
-  if(err && err.error && 'conflict' === err.error) return true
-  else throw err
-}
-
-
-/**
- * Suppress errors about database already existing
- * @param {object} err
- * @return {boolean}
- */
-var suppressDatabaseExists = function(err){
-  if(err && err.error && 'file_exists' === err.error) return true
-  else throw err
-}
-
-
-/**
- * Setup replication
- * @param {string} databaseName
- * @param {object} couchConfig
- * @param {object} replConfig
- * @return {P}
- */
-var setupWithReplication = function(databaseName,couchConfig,replConfig){
-  //verify we are not the same server as currently being used
-  debug('setupReplication',databaseName,couchConfig,replConfig)
-  if(
-    replConfig.host === couchConfig.host &&
-    replConfig.port === couchConfig.port
-  )
-  {
-    debug('replConfig matches couchConfig returning')
-    return
-  }
-  var couchdbconn = connectCouchDb(couchConfig)
-  var repldbconn = connectCouchDb(replConfig)
-  P.promisifyAll(repldbconn)
-  debug('couchdb creating oose-purchase-' + databaseName)
-  return P.all([
-    couchdbconn.db.createAsync('oose-purchase-' + databaseName)
-      .catch(suppressDatabaseExists),
-    repldbconn.db.createAsync('oose-purchase-' + databaseName)
-      .catch(suppressDatabaseExists)
-  ])
-    .then(function(){
-      var replicator = P.promisifyAll(couchdbconn.db.use('_replicator'))
-      debug('saving replicator from couch to repl',couchConfig,replConfig)
-      var replControl = {
-        user_ctx: {
-          name: 'root',
-          roles: [
-            '_admin',
-            '_reader',
-            '_writer'
-          ]
-        },
-        source: {
-          headers: {
-            Authorization: 'Basic ' +
-            base64.encode(
-              couchConfig.options.auth.username + ':' +
-              couchConfig.options.auth.password
-            )
-          },
-          url: 'http://' + couchConfig.host +
-               ':' + couchConfig.port + '/' +
-               'oose-purchase-' + databaseName
-        },
-        target: {
-          headers: {},
-          url: 'http://' + replConfig.host +
-            ':' + replConfig.port + '/' +
-            'oose-purchase-' + databaseName
-        },
-        continuous: true,
-        create_target: false,
-        owner: 'root'
-      }
-      if(couchConfig.authRepl && couchConfig.authRepl.username){
-        replControl.target.url = 'http://' +
-          couchConfig.authRepl.username + ':' +
-          couchConfig.authRepl.password + '@' +
-          couchConfig.host +
-          ':' + couchConfig.port + '/' +
-          'oose-purchase-' + databaseName
-        replControl.owner = couchConfig.authRepl.username
-        replControl.user_ctx = {
-          name: couchConfig.authRepl.username,
-          roles: ['_admin','_reader','_writer']
-        }
-      }
-      if(replConfig.authRepl && replConfig.authRepl.username){
-        replControl.target.url = 'http://' +
-          replConfig.authRepl.username + ':' +
-          replConfig.authRepl.password + '@' +
-          replConfig.host +
-          ':' + replConfig.port + '/' +
-          'oose-purchase-' + databaseName
-        replControl.owner = replConfig.authRepl.username
-        replControl.user_ctx = {
-          name: replConfig.authRepl.username,
-          roles: ['_admin','_reader','_writer']
-        }
-      }
-      return replicator.upsertAsync(
-        'oose-purchase-' + databaseName + '-' +
-        couchConfig.host + '->' +
-        replConfig.host,
-        replControl
-      )
-        .catch(suppressDocumentConflict)
-        .catch(suppressForbidden)
-    })
-    .then(function(){
-      var replicator = P.promisifyAll(repldbconn.db.use('_replicator'))
-      debug('saving replicator from repl to couch',replConfig,couchConfig)
-      var couchControl = {
-        user_ctx: {
-          name: 'root',
-          roles: [
-            '_admin',
-            '_reader',
-            '_writer'
-          ]
-        },
-        source: {
-          headers: {
-            Authorization: 'Basic ' +
-              base64.encode(
-                replConfig.options.auth.username + ':' +
-                replConfig.options.auth.password
-              )
-          },
-          url: 'http://' + replConfig.host +
-            ':' + replConfig.port + '/' +
-            'oose-purchase-' + databaseName
-        },
-        target: {
-          headers: {},
-          url: 'http://' + couchConfig.host +
-               ':' + couchConfig.port + '/' +
-               'oose-purchase-' + databaseName
-        },
-        continuous: true,
-        create_target: false,
-        owner: 'root'
-      }
-      if(replConfig.authRepl && replConfig.authRepl.username){
-        couchControl.target.url = 'http://' +
-          replConfig.authRepl.username + ':' +
-          replConfig.authRepl.password + '@' +
-          replConfig.host +
-          ':' + replConfig.port + '/' +
-          'oose-purchase-' + databaseName
-        couchControl.owner = replConfig.authRepl.username
-        couchControl.user_ctx = {
-          name: replConfig.authRepl.username,
-          roles: ['_admin','_reader','_writer']
-        }
-      }
-      if(couchConfig.authRepl && couchConfig.authRepl.username){
-        couchControl.target.url = 'http://' +
-          couchConfig.authRepl.username + ':' +
-          couchConfig.authRepl.password + '@' +
-          couchConfig.host +
-          ':' + couchConfig.port + '/' +
-          'oose-purchase-' + databaseName
-        couchControl.owner = couchConfig.authRepl.username
-        couchControl.user_ctx = {
-          name: couchConfig.authRepl.username,
-          roles: ['_admin','_reader','_writer']
-        }
-      }
-      return replicator.upsertAsync(
-        'oose-purchase-' + databaseName + '-' +
-        replConfig.host + '->' +
-        couchConfig.host,
-        couchControl
-      )
-        .catch(suppressDocumentConflict)
-        .catch(suppressForbidden)
-    })
-}
-
-
-/**
- * Setup a new database without replication
- * @param {string} databaseName
- * @param {object} couchConfig
- * @return {P}
- */
-var setupWithoutReplication = function(databaseName,couchConfig){
-  var couchdb = connectCouchDb(couchConfig)
-  var dbName = 'oose-purchase-' + databaseName
-  return couchdb.db.createAsync(dbName)
-    .then(function(){
-      return couchdb.db.use(dbName)
-    })
-}
-
-
-/**
- * Prune purchase databases
- * @param {integer} days number of days to keep
- * @return {P}
- */
-var pruneDatabase = function(days){
-  var floorToken = +moment().subtract(days,'days').format('YYYYMMDD')
-  debug('foorToken',floorToken)
-  var pruneServer = function(couchConfig,zone){
-    var couchdbconn = connectCouchDb(couchConfig)
-    return couchdbconn.db.listAsync()
-      .map(function(database){
-        //THESE LINES ARE SUPER IMPORTANT
-        if(database[0] === '_') return
-        if(database.indexOf('oose-purchase-'+ zone) !== 0) return
-        if(!database.match(/^oose-purchase-[a-z]{1}[0-9]{8}/)) return
-        database = database.replace('oose-purchase-' + zone,'')
-        var databaseName = 'oose-purchase-' + zone + database
-        if((+database) > floorToken){
-          debug('keeping',databaseName)
-        } else {
-          debug('removing',databaseName)
-          var db = P.promisifyAll(couchdbconn.db.use(databaseName))
-          //return db.destroyAsync()
-          return P.try(function(){console.log('WOULD DESTROY',databaseName)})
-            .then(function(){
-              var db = P.promisifyAll(couchdbconn.db.use('_replicator'))
-              return db.listAsync({
-                startkey: databaseName + '-',
-                endkey: databaseName + '-\uffff'
-              })
-                .then(function(result){
-                  return result.rows
-                })
-                .map(function(key){
-                  //console.log('WOULD REMOVE _replicator',key.key)
-                  return db.removeAsync(key.key)
-                })
-            })
-        }
-      })
-  }
-  var promises = []
-  var _pruneServer = function(couchConfig,index){
-    promises.push(pruneServer(couchConfig,index))
-  }
-  if(couchConfigs && Object.keys(couchConfigs)){
-    for(var i in couchConfigs){
-      couchConfigs[i].forEach(_pruneServer)
-    }
-  } else {
-    promises.push(pruneServer(config.couch))
-  }
-  return P.all(promises)
-}
-
-
-/**
- * Create new database based on token and a no db file error
- * @param {string} token
- * @param {boolean} setupReplication
- * @return {P}
- */
-var createDatabase = function(token,setupReplication){
-  //the couchdb object should already be wrapped and pointed at the correct zone
-  //next would involve create the database
-  var databaseName = getDatabaseName(token)
-  var zone = getZone(token)
-  var promises = []
-  debug('create database',token,zone,databaseName)
-  if(setupReplication){
-    if(couchConfigs && couchConfigs[zone] && couchConfigs[zone].length > 1){
-      couchConfigs[zone].forEach(function(couchConfig){
-        couchConfigs[zone].forEach(function(replConfig){
-          var promise = setupWithReplication(
-            databaseName,couchConfig,replConfig)
-          if(promise) promises.push(promise)
-        })
-      })
-    } else {
-      if(couchConfigs && couchConfigs[zone] && couchConfigs[zone][0]){
-        promises.push(
-          setupWithoutReplication(databaseName,couchConfigs[zone][0]
-        ))
-      } else {
-        promises.push(setupWithoutReplication(databaseName,config.couch))
-      }
-    }
-  } else {
-    promises.push(setupWithoutReplication(databaseName,config.couch))
-  }
-  debug('promises set for creation',databaseName,promises)
-  return P.all(promises)
-}
 
 
 /**
@@ -457,51 +29,12 @@ var couchWrap = function(token){
   var year = +token.slice(1,5)
   if(year !== now.getFullYear() && year !== (now.getFullYear() -1))
     return null
-  var zone = getZone(token)
-  var databaseName = getDatabaseName(token)
-  var couchConfig = pickCouchConfig(zone)
-  if(!couchConfig) return null
-  couchPool[zone] = connectCouchDb(couchConfig)
-  return P.promisifyAll(couchPool[zone].db.use('oose-purchase-' + databaseName))
+  return couchbase.purchase
 }
 
 
 var PurchaseDb = function(){
   //construct purchase db, couchdb is connectionless so not much to do here
-}
-
-
-/**
- * Create database will also create replication optionally
- * @param {string} token
- * @param {boolean} setupReplication
- * @return {P}
- */
-PurchaseDb.prototype.createDatabase = function(token,setupReplication){
-  //create a database and wire up replication if needed
-  if(undefined === setupReplication) setupReplication = false
-  if(!token) throw new Error('token must be defined to create purchase db')
-  return createDatabase(token,setupReplication)
-}
-
-
-/**
- * Get database name
- * @param {string} token
- * @return {string}
- */
-PurchaseDb.prototype.databaseName = function(token){
-  return 'oose-purchase-' + getDatabaseName(token)
-}
-
-
-/**
- * Prune databases
- * @param {integer} days number of days to keep from today
- * @return {P}
- */
-PurchaseDb.prototype.pruneDatabase = function(days){
-  return pruneDatabase(days)
 }
 
 
@@ -512,13 +45,13 @@ PurchaseDb.prototype.pruneDatabase = function(days){
  */
 PurchaseDb.prototype.get = function(token){
   //get token
-  var couchdb
+  var couch
   return P.try(function(){
     debug(token,'get')
-    couchdb = couchWrap(token)
+    couch = couchWrap(token)
     debug(token,'couch wrapped')
-    if(!couchdb) throw new UserError('Could not validate purchase token')
-    return couchdb.getAsync(token)
+    if(!couch) throw new UserError('Could not validate purchase token')
+    return couch.getAsync(token)
   })
     .then(function(result){
       debug(token,'get result',result)
@@ -554,13 +87,13 @@ PurchaseDb.prototype.exists = function(token){
  */
 PurchaseDb.prototype.create = function(token,params){
   //create purchase
-  var couchdb
+  var couch
   debug(token,'create')
   return P.try(function(){
-    couchdb = couchWrap(token)
-    if(!couchdb) throw new UserError('Could not validate purchase token')
+    couch = couchWrap(token)
+    if(!couch) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
-    return couchdb.upsertAsync(token,params)
+    return couch.upsertAsync(token,params)
   })
     .then(function(result){
       debug(token,'create result',result)
@@ -578,18 +111,18 @@ PurchaseDb.prototype.create = function(token,params){
 PurchaseDb.prototype.update = function(token,params){
   //update purchase
   var that = this
-  var couchdb
+  var couch
   debug(token,'update')
   return P.try(function(){
-    couchdb = couchWrap(token)
-    if(!couchdb) throw new UserError('Could not validate purchase token')
+    couch = couchWrap(token)
+    if(!couch) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped getting')
     return that.get(token)
   })
     .then(function(result){
       if(result){
         debug(token,'update result received, udpating',result,params)
-        return couchdb.upsertAsync(token,params)
+        return couch.upsertAsync(token,params)
       } else{
         debug(token,'doesnt exist, creating',result,params)
         that.create(token,params)

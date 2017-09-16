@@ -1,9 +1,6 @@
 'use strict';
 var expect = require('chai').expect
 
-var couchdb = require('../helpers/couchbase')
-var purchasedb = require('../helpers/purchasedb')
-
 var e2e = require('./helpers/e2e')
 
 describe('e2e',function(){
@@ -91,24 +88,15 @@ describe('e2e',function(){
       })
     })
     describe('purchases',function(){
-      var purchaseDbToken = purchasedb.generate()
-      var purchaseDatabase = purchasedb.databaseName(purchaseDbToken)
       before(function(){
         return e2e.prismLogin(e2e.clconf.prism1)()
           .then(function(session){
             e2e.user.session = session
             return e2e.contentUpload(e2e.clconf.prism1)()
           })
-          .then(function(){
-            return purchasedb.createDatabase(purchaseDbToken)
-              .catch(function(){})
-          })
       })
       after(function(){
-        return couchdb.db.removeAsync(purchaseDatabase)
-          .then(function(){
-            return e2e.prismLogout(e2e.clconf.prism1,e2e.user.session)()
-          })
+        return e2e.prismLogout(e2e.clconf.prism1,e2e.user.session)()
       })
       it('should allow purchase of the content',function(){
         return e2e.contentPurchase(e2e.clconf.prism1)()

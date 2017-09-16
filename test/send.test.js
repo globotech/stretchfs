@@ -94,17 +94,6 @@ describe('send',function(){
         size: content.data.length,
         createdAt: +(new Date())
       })
-      //create purchasedb
-        .then(
-          function(){
-            return purchasedb.createDatabase(purchaseToken,false)
-              .catch(function(){})
-          },
-          function(){
-            return purchasedb.createDatabase(purchaseToken,false)
-              .catch(function(){})
-          }
-        )
         //make a purchase against this
         .then(function(){
           return purchasedb.create(purchaseToken,{
@@ -118,15 +107,7 @@ describe('send',function(){
     after(function(){
       //delete purchase record
       return purchasedb.remove(purchaseToken)
-        //delete purchase db
-        .then(function(){
-          return couchdb.db.removeAsync(
-            purchasedb.databaseName(purchaseToken))
-        })
         //delete inventory record
-        .then(function(){
-          return couchdb.inventory.getAsync(inventoryKey)
-        })
         .then(function(result){
           return couchdb.inventory.removeAsync(result._id)
         })
