@@ -20,7 +20,7 @@ var config = require('../config')
 var couchWrap = function(token){
   //here need to enumerate couch servers and choose the right connection
   //using the token to set the proper zone and database then returning the
-  //configured couchdb object that can be used to work with the purchases as
+  //configured couch object that can be used to work with the purchases as
   //if they were local
   //so first things first lets see if we have a connection to this zoned server
   if(!token.match(/^[a-z]{1}[0-9]{8}/))
@@ -34,7 +34,7 @@ var couchWrap = function(token){
 
 
 var PurchaseDb = function(){
-  //construct purchase db, couchdb is connectionless so not much to do here
+  //construct purchase db, couch is connectionless so not much to do here
 }
 
 
@@ -168,8 +168,8 @@ PurchaseDb.prototype.generate = function(zone){
   // <zone 1 char a-z0-9><date in YYYYmmdd><random string 11 chars a-z0-9>
   //this will result in a 20 char string
   //the zone sharding will work by using a map in the configuration file that
-  //will map zone identifiers with couchdb configurations, if no configuration
-  //exists for a particular zone it will fall through to the default couchdb
+  //will map zone identifiers with couch configurations, if no configuration
+  //exists for a particular zone it will fall through to the default couch
   //configuration
   //databases will be named using oose-purchase-<zone><date>
   //example purchase token

@@ -4,7 +4,7 @@ var fs = require('graceful-fs')
 var infant = require('infant')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 //make some promises
@@ -12,7 +12,7 @@ P.promisifyAll(fs)
 
 
 /**
- * Emit will be executed in the context of couchdb not here this is just a dummy
+ * Emit will be executed in the context of couch not here this is just a dummy
  */
 var emit = function(){}
 
@@ -23,7 +23,7 @@ var emit = function(){}
  */
 var runInterval = function(done){
   logger.log('info','Starting create couch designs')
-  couchdb.inventory.upsertAsync('_design/inventory',{
+  couch.inventory.upsertAsync('_design/inventory',{
     byStore: {
       map: function(doc){
         emit([doc.store],doc)

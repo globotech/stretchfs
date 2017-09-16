@@ -8,7 +8,7 @@ var oose = require('oose-sdk')
 var path = require('path')
 
 var api = require('../helpers/api')
-var couchdb = require('../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 var purchasedb = require('../helpers/purchasedb')
 
 var content = oose.mock.content
@@ -79,12 +79,12 @@ describe('send',function(){
   //content
   describe('send:content',function(){
     //get tokens
-    var inventoryKey = couchdb.schema.inventory(content.hash,'prism1','store5')
+    var inventoryKey = couch.schema.inventory(content.hash,'prism1','store5')
     var purchaseToken = purchasedb.generate()
     var badPurchaseToken = purchasedb.generate()
     before(function(){
       //create inventory record
-      return couchdb.inventory.upsertAsync(inventoryKey,{
+      return couch.inventory.upsertAsync(inventoryKey,{
         hash: content.hash,
         mimeExtension: content.ext,
         mimeType: content.type,
@@ -109,7 +109,7 @@ describe('send',function(){
       return purchasedb.remove(purchaseToken)
         //delete inventory record
         .then(function(result){
-          return couchdb.inventory.removeAsync(result._id)
+          return couch.inventory.removeAsync(result._id)
         })
 
     })

@@ -16,7 +16,7 @@ var promisePipe = require('promisepipe')
 
 var UserError = oose.UserError
 
-var couchdb = require('../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 var hasher = require('../helpers/hasher')
 var prismBalance = require('../helpers/prismBalance')
 var redis = require('../helpers/redis')()
@@ -406,7 +406,7 @@ var keyScan = function(type,key,fileStream){
   var inventoryKeyDownload = function(progress){
     // use a view to only transfer _id (no data since we don't use it here)
     // _design/keyList/all: { map: function(doc){emit(null,'')} }
-    return couchdb.inventory.viewAsync('keyList/all',
+    return couch.inventory.viewAsync('keyList/all',
       {limit: keyBlockSize, skip: keyList.length}
     )
       .then(function(result){

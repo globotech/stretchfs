@@ -4,9 +4,9 @@ var request = require('request-promise')
 
 
 var couchLoginUrl =
-  config.couchdb.options.secure ? 'https://' : 'http://' +
-  config.couchdb.host + ':' +
-  config.couchdb.port + '/_session'
+  config.couch.options.secure ? 'https://' : 'http://' +
+  config.couch.host + ':' +
+  config.couch.port + '/_session'
 
 
 /**
@@ -48,7 +48,7 @@ exports.login = function(req,res){
       resolveWithFullResponse: true,
       json: true,
       //headers: {
-      //  HOST: config.couchdb.host + ':' + config.couchdb.port
+      //  HOST: config.couch.host + ':' + config.couchdb.port
       //},
       body: {
         name: req.body.username,

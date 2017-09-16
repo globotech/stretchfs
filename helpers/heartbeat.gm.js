@@ -6,7 +6,7 @@ var oose = require('oose-sdk')
 var NetworkError = oose.NetworkError
 
 var api = require('../helpers/api')
-var couchdb = require('./couchbase')
+var couch = require('./couchbase')
 var prismBalance = require('../helpers/prismBalance')
 var redis = require('../helpers/redis')()
 var storeBalance = require('../helpers/storeBalance')
@@ -110,21 +110,21 @@ var Heartbeat = function(type,name){
   var downVote = function(host){
     //var downHost = extend({},host)
     var key = (host.type === 'prism') ?
-      couchdb.schema.prism(host.name) :
-      couchdb.schema.store(host.prism,host.name)
+      couch.schema.prism(host.name) :
+      couch.schema.store(host.prism,host.name)
 
-    var downKey = couchdb.schema.downVote(host.name)
-    var myDownKey = couchdb.schema.downVote(host.name, name)
+    var downKey = couch.schema.downVote(host.name)
+    var myDownKey = couch.schema.downVote(host.name, name)
     debug('DOWNVOTING: '+key)
     var currentVoteLog = null
     var hostInfo = null
     //if(downHost.request) delete(downHost.request)
-    return couchdb.heartbeat.getAsync(key)
+    return couch.heartbeat.getAsync(key)
       .then(function(node){
         //got the node
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
-        return couchdb.heartbeat.listAsync(
+        return couch.heartbeat.listAsync(
           {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
       }).then(function(vL){
         vL = vL.rows
@@ -135,12 +135,12 @@ var Heartbeat = function(type,name){
             return false
           }
         }
-        return couchdb.heartbeat.upsertAsync(myDownKey,{date:Date.now()})
+        return couch.heartbeat.upsertAsync(myDownKey,{date:Date.now()})
       },function(err){
         if(!err.statusCode) throw err
         if(404 !== err.statusCode) throw err
         currentVoteLog = []
-        return couchdb.heartbeat.upsertAsync(myDownKey,{date:Date.now()})
+        return couch.heartbeat.upsertAsync(myDownKey,{date:Date.now()})
       }).then(function(myVote){
         if(myVote !== false)
           currentVoteLog.push(myVote)
@@ -148,13 +148,13 @@ var Heartbeat = function(type,name){
         var votes = currentVoteLog.length
         if(count === 0 || votes < (count/2))throw new Error('Ok, got it')
         hostInfo.available = false
-        return couchdb.heartbeat.upsertAsync(key,hostInfo)
+        return couch.heartbeat.upsertAsync(key,hostInfo)
       }).then(function(){
         //Delete the vote log, it has served its purpose
         var promises = []
         //Added reflect() to avoid a race condition.
         for(var i = 0; i<currentVoteLog.length; i++)
-          promises.push(couchdb.heartbeat.removeAsync(
+          promises.push(couch.heartbeat.removeAsync(
             currentVoteLog[i].key))
         return P.all(promises)
       }).catch(function(err){
@@ -203,17 +203,17 @@ var Heartbeat = function(type,name){
   var markMeUp = function(){
     debug('Marking myself up')
     var key = (type === 'prism') ?
-      couchdb.schema.prism(prismName) : couchdb.schema.store(prismName,name)
+      couch.schema.prism(prismName) : couch.schema.store(prismName,name)
     //The key used to track downvotes against me :(
-    var downKey = couchdb.schema.downVote(name)
-    return couchdb.heartbeat.getAsync(key)
+    var downKey = couch.schema.downVote(name)
+    return couch.heartbeat.getAsync(key)
       .then(function(node){
         node.available = true
         node.active = true
-        return couchdb.heartbeat.upsertAsync(key,node)
+        return couch.heartbeat.upsertAsync(key,node)
       }).then(function(){
         //Time to delete the downvote log
-        return couchdb.heartbeat.listAsync(
+        return couch.heartbeat.listAsync(
           {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
       }).then(function(votelog){
         voteLog = voteLog.rows
@@ -221,7 +221,7 @@ var Heartbeat = function(type,name){
         var promises = []
         //Added reflect() to avoid a race condition.
         for(var i = 0; i < votelog.length; i++)
-          promises.push(couchdb.heartbeat.removeAsync(
+          promises.push(couch.heartbeat.removeAsync(
             votelog[i].key))
         return P.all(promises)
       }).catch(function(err){

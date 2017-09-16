@@ -3,11 +3,11 @@ var P = require('bluebird')
 var infant = require('infant')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 var cluster
-var sendKey = couchdb.schema.send(
+var sendKey = couch.schema.send(
   config.send.prism,
   config.send.store,
   config.send.name
@@ -31,7 +31,7 @@ if(require.main === module){
         }
       )
       //check if our needed folders exist
-      couchdb.peer.getAsync(sendKey)
+      couch.peer.getAsync(sendKey)
         .then(
           //if we exist lets mark ourselves available
           function(doc){
@@ -42,13 +42,13 @@ if(require.main === module){
             doc.port = config.send.port
             doc.available = true
             doc.active = true
-            return couchdb.peer.upsertAsync(sendKey,doc)
+            return couch.peer.upsertAsync(sendKey,doc)
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err.statusCode || 404 !== err.statusCode) throw err
             //now register ourselves or mark ourselves available
-            return couchdb.peer.upsertAsync(sendKey,{
+            return couch.peer.upsertAsync(sendKey,{
               prism: config.send.prism,
               store: config.send.store,
               name: config.send.name,
@@ -76,10 +76,10 @@ if(require.main === module){
     function(done){
       logger.log('info','Beginning send shutdown')
       //mark ourselves as down
-      couchdb.peer.getAsync(sendKey)
+      couch.peer.getAsync(sendKey)
         .then(function(doc){
           doc.available = false
-          return couchdb.peer.upsertAsync(sendKey,doc)
+          return couch.peer.upsertAsync(sendKey,doc)
         })
         .then(function(){
           if(!cluster) return

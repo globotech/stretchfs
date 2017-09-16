@@ -7,7 +7,7 @@ var path = require('path')
 var ProgressBar = require('progress')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 //make some promises
@@ -37,7 +37,7 @@ var verifyInventoryAsync = function(){
     valid: 0
   }
   debug('starting to verify',contentFolder)
-  return couchdb.inventory.viewAsync('inventory/byStore',{
+  return couch.inventory.viewAsync('inventory/byStore',{
     startkey: [config.store.name],
     endkey: [config.store.name,'\uffff']
   })
@@ -62,7 +62,7 @@ var verifyInventoryAsync = function(){
             counter.valid++
           } else {
             counter.invalid++
-            return couchdb.inventory.removeAsync(record._id)
+            return couch.inventory.removeAsync(record._id)
               .catch(function(){
                 counter.warning++
               })

@@ -10,7 +10,7 @@ var promisePipe = require('promisepipe')
 var hashStream = require('sha1-stream')
 
 var api = require('../../helpers/api')
-var couchdb = require('../../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 var redis = require('../../helpers/redis')()
 var logger = require('../../helpers/logger')
 var hashFile = require('../../helpers/hashFile')
@@ -22,7 +22,7 @@ P.promisifyAll(fs)
 
 var createInventory = function(fileDetail,verified){
   if('undefined' === typeof verified) verified = false
-  var inventoryKey = couchdb.schema.inventory(
+  var inventoryKey = couch.schema.inventory(
     fileDetail.hash,
     config.store.prism,
     config.store.name
@@ -40,7 +40,7 @@ var createInventory = function(fileDetail,verified){
   }
   if(verified) inventory.verifiedAt = verified
   debug(inventoryKey,'creating inventory record',inventory)
-  return couchdb.inventory.upsertAsync(inventoryKey,inventory)
+  return couch.inventory.upsertAsync(inventoryKey,inventory)
     .then(function(result){
       inventory._rev = result.rev
       return inventory
@@ -56,7 +56,7 @@ var updateInventory = function(fileDetail,doc,verified){
   )
   doc.size = fileDetail.stat.size
   if(verified) doc.verifiedAt = verified
-  return couchdb.inventory.upsertAsync(doc._id,doc)
+  return couch.inventory.upsertAsync(doc._id,doc)
     .then(function(result){
       doc._rev = result.rev
       return doc
@@ -69,12 +69,12 @@ var verifyFile = function(fileDetail,force){
   var inventory = {}
   var verifySkipped = false
   var verifiedAt = +new Date()
-  inventoryKey = couchdb.schema.inventory(
+  inventoryKey = couch.schema.inventory(
     fileDetail.hash,
     config.store.prism,
     config.store.name
   )
-  return couchdb.inventory.getAsync(inventoryKey)
+  return couch.inventory.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result
@@ -99,9 +99,9 @@ var verifyFile = function(fileDetail,force){
     .then(function(){
       //validate the file, if it doesnt match remove it
       if(!fileDetail.exists){
-        return couchdb.inventory.getAsync(inventoryKey)
+        return couch.inventory.getAsync(inventoryKey)
           .then(function(result){
-            return couchdb.inventory.removeAsync(result._id)
+            return couch.inventory.removeAsync(result._id)
           })
           .catch(function(err){
             if(!err || !err.statusCode || 404 !== err.statusCode){
@@ -116,12 +116,12 @@ var verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return couchdb.inventory.removeAsync(inventory._id)
+            return couch.inventory.removeAsync(inventory._id)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
         //here we should get the inventory record, update it or create it
-        return couchdb.inventory.getAsync(inventoryKey)
+        return couch.inventory.getAsync(inventoryKey)
           .then(
             function(result){
               return updateInventory(fileDetail,result,verifiedAt)
@@ -191,7 +191,7 @@ exports.put = function(req,res){
     .then(function(result){
       fileDetail = result
       fileDetail.ext = ext
-      inventoryKey = couchdb.schema.inventory(
+      inventoryKey = couch.schema.inventory(
         fileDetail.hash,config.store.prism,config.store.name)
       dest = hashFile.toPath(fileDetail.hash,fileDetail.ext)
       debug(fileDetail.hash,dest)
@@ -218,7 +218,7 @@ exports.put = function(req,res){
       fileDetail = result
       //get existing existence record and add to it or create one
       debug(inventoryKey,'getting inventory record')
-      return couchdb.inventory.getAsync(inventoryKey)
+      return couch.inventory.getAsync(inventoryKey)
     })
     .then(
       //record exists, extend it
@@ -240,9 +240,9 @@ exports.put = function(req,res){
       logger.log('error', 'Failed to upload content ' + err.message)
       logger.log('error', err.stack)
       fs.unlinkSync(dest)
-      couchdb.inventory.getAsync(inventoryKey)
+      couch.inventory.getAsync(inventoryKey)
         .then(function(result){
-          return couchdb.inventory.removeAsync(result._id)
+          return couch.inventory.removeAsync(result._id)
         })
         .catch(function(err){
           logger.log('error', 'Failed to clean up broken inventory record ' +
@@ -322,7 +322,7 @@ exports.exists = function(req,res){
  */
 exports.remove = function(req,res){
   redis.incr(redis.schema.counter('store','content:remove'))
-  var inventoryKey = couchdb.schema.inventory(
+  var inventoryKey = couch.schema.inventory(
     req.body.hash,config.store.prism,config.store.name)
   var fileDetail = {}
   var verifyDetail = {}
@@ -343,9 +343,9 @@ exports.remove = function(req,res){
       //now remove the file
       return P.all([
         hashFile.remove(fileDetail.hash),
-        couchdb.inventory.getAsync(inventoryKey)
+        couch.inventory.getAsync(inventoryKey)
           .then(function(result){
-            return couchdb.inventory.removeAsync(result._id)
+            return couch.inventory.removeAsync(result._id)
           })
           .catch(function(){
             //nothing
@@ -416,9 +416,9 @@ exports.detail = function(req,res){
     }
   }
   var hash = req.body.hash
-  var inventoryKey = couchdb.schema.inventory(
+  var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
-  couchdb.inventory.getAsync(inventoryKey)
+  couch.inventory.getAsync(inventoryKey)
     .then(function(record){
       if(!record) throw new Error('File not found')
       detail.hash = record.hash
@@ -495,12 +495,12 @@ exports.send = function(req,res){
   var file = req.body.file
   var hash = hashFile.fromPath(file)
   var nameParts = req.body.store.split(':')
-  var storeKey = couchdb.schema.store(nameParts[0],nameParts[1])
+  var storeKey = couch.schema.store(nameParts[0],nameParts[1])
   var storeClient = null
   var store = {}
   var fileDetail = {}
   var verifyDetail = {}
-  couchdb.peer.getAsync(storeKey)
+  couch.peer.getAsync(storeKey)
     .then(
       function(result){
         store = result

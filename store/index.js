@@ -6,12 +6,12 @@ var mkdirp = require('mkdirp-then')
 var path = require('path')
 
 var config = require('../config')
-var couchdb = require('../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
-var storeKey = couchdb.schema.store(config.store.prism,config.store.name)
+var storeKey = couch.schema.store(config.store.prism,config.store.name)
 
 //make some promises
 P.promisifyAll(infant)
@@ -32,7 +32,7 @@ if(require.main === module){
       )
       heartbeat = infant.parent('../helpers/heartbeat')
       //check if our needed folders exist
-      couchdb.peer.getAsync(storeKey)
+      couch.peer.getAsync(storeKey)
         .then(
           //if we exist lets mark ourselves available
           function(doc){
@@ -42,13 +42,13 @@ if(require.main === module){
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return couchdb.peer.upsertAsync(storeKey,doc)
+            return couch.peer.upsertAsync(storeKey,doc)
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err.statusCode || 404 !== err.statusCode) throw err
             //now register ourselves or mark ourselves available
-            return couchdb.peer.upsertAsync(storeKey,{
+            return couch.peer.upsertAsync(storeKey,{
               prism: config.store.prism,
               name: config.store.name,
               host: config.store.host,
@@ -91,10 +91,10 @@ if(require.main === module){
     function(done){
       logger.log('info','Beginning store shutdown')
       //mark ourselves as down
-      couchdb.peer.getAsync(storeKey)
+      couch.peer.getAsync(storeKey)
         .then(function(doc){
           doc.available = false
-          return couchdb.peer.upsertAsync(storeKey,doc)
+          return couch.peer.upsertAsync(storeKey,doc)
         })
         .then(function(){
           if(!heartbeat) return

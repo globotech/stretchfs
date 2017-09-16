@@ -4,7 +4,7 @@ var debug = require('debug')('oose:hb')
 var infant = require('infant')
 
 var api = require('../helpers/api')
-var couchdb = require('./couchbase')
+var couch = require('./couchbase')
 var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
 
@@ -70,8 +70,8 @@ setupProgram()
  * @return {string}
  */
 var getPeerKey = function(peer){
-  var prismKey = couchdb.schema.prism(peer.name)
-  var storeKey = couchdb.schema.store(peer.prism,peer.name)
+  var prismKey = couch.schema.prism(peer.name)
+  var storeKey = couch.schema.store(peer.prism,peer.name)
   return (peer.type === 'prism') ? prismKey : storeKey
 }
 
@@ -88,11 +88,11 @@ var getPeerKey = function(peer){
 var downVote = function(peer,reason,systemKey,systemType,peerCount){
   //setup keys
   var key = getPeerKey(peer)
-  var downKey = couchdb.schema.downVote(peer.name)
-  var myDownKey = couchdb.schema.downVote(peer.name,systemKey)
+  var downKey = couch.schema.downVote(peer.name)
+  var myDownKey = couch.schema.downVote(peer.name,systemKey)
   debug('DOWN VOTE: ' + key)
   var createDownVote = function(){
-    return couchdb.heartbeat.upsertAsync(myDownKey,{
+    return couch.heartbeat.upsertAsync(myDownKey,{
       peer: peer,
       systemKey: systemKey,
       systemType: systemType,
@@ -103,7 +103,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   //get down votes that have already been set for this host
   return createDownVote()
     .then(function(){
-      return couchdb.heartbeat.listAsync({
+      return couch.heartbeat.listAsync({
         startkey: downKey,
         endkey: downKey + '\uffff',
         include_docs: true
@@ -115,7 +115,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if(count === 0 || votes < (count / 2))
         return true
       peer.available = false
-      return couchdb.peer.upsertAsync(key,peer)
+      return couch.peer.upsertAsync(key,peer)
         .catch(function(err){
           debug('failed to cast down vote',err)
         })
@@ -172,15 +172,15 @@ var runHeartbeat = function(systemKey,systemType){
    */
   var restorePeer = function(peer){
     logger.log('info', 'Restoring peer ' + peer.name)
-    return couchdb.peer.getAsync(peer._id)
+    return couch.peer.getAsync(peer._id)
       .then(function(result){
         result.available = true
-        return couchdb.peer.upsertAsync(result._id,result)
+        return couch.peer.upsertAsync(result._id,result)
       })
       .then(function(){
         //remove down votes
-        var downKey = couchdb.schema.downVote(peer.name)
-        return couchdb.heartbeat.listAsync({
+        var downKey = couch.schema.downVote(peer.name)
+        return couch.heartbeat.listAsync({
           startkey: downKey,
           endkey: downKey + '\uffff',
           include_docs: true
@@ -190,7 +190,7 @@ var runHeartbeat = function(systemKey,systemType){
         return result.rows
       })
       .map(function(vote){
-        return couchdb.heartbeat.removeAsync(vote._id)
+        return couch.heartbeat.removeAsync(vote._id)
           .catch(function(err){
             debug('failed to destroy vote restoring peer',err)
           })
@@ -208,8 +208,8 @@ var runHeartbeat = function(systemKey,systemType){
     })
     .map(function(peer){
       //check for down votes for this peer from us
-      var downKey = couchdb.schema.downVote(peer.name,systemKey)
-      return couchdb.heartbeat.getAsync(downKey)
+      var downKey = couch.schema.downVote(peer.name,systemKey)
+      return couch.heartbeat.getAsync(downKey)
         .then(
           function(result){
             peer.existingDownVote = result
@@ -278,7 +278,7 @@ var runHeartbeat = function(systemKey,systemType){
  */
 var runVotePrune = function(systemKey,systemType){
   //get votes we cast
-  var downVoteKey = couchdb.schema.downVote()
+  var downVoteKey = couch.schema.downVote()
   var currentTimestamp = +(new Date())
   debug('Starting vote prune',downVoteKey,currentTimestamp)
 
@@ -294,7 +294,7 @@ var runVotePrune = function(systemKey,systemType){
     if(vote.systemType && vote.systemType !== systemType) return false
     return (voteExpiresAfter <= currentTimestamp)
   }
-  return couchdb.heartbeat.listAsync({
+  return couch.heartbeat.listAsync({
     startkey: downVoteKey,
     endkey: downVoteKey + '\uffff',
     include_docs: true
@@ -303,7 +303,7 @@ var runVotePrune = function(systemKey,systemType){
       return result.rows
     })
     .map(function(vote){
-      return couchdb.heartbeat.getAsync(vote.id)
+      return couch.heartbeat.getAsync(vote.id)
         .catch(function(err){
           debug('failed to get vote to prune',err)
           return false
@@ -316,7 +316,7 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       debug('Pruning vote',vote._id)
-      return couchdb.heartbeat.removeAsync(vote._id)
+      return couch.heartbeat.removeAsync(vote._id)
         .catch(function(err){
           debug('failed to destroy vote pruning',err)
         })
@@ -344,15 +344,15 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     prism: systemPrism,
     type: systemType
   })
-  var downKey = couchdb.schema.downVote(systemKey)
+  var downKey = couch.schema.downVote(systemKey)
   debug('Getting peer information',key)
-  return couchdb.peer.getAsync(key)
+  return couch.peer.getAsync(key)
     .then(
       function(peer){
         debug('Got peer information back',peer)
         peer.available = true
         peer.active = true
-        return couchdb.peer.upsertAsync(key,peer)
+        return couch.peer.upsertAsync(key,peer)
           .catch(function(err){
             debug('failed to mark peer up',err)
           })
@@ -365,7 +365,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     .then(function(){
       //Time to delete the downvote log
       debug('About to get down votes',downKey)
-      return couchdb.heartbeat.listAsync(
+      return couch.heartbeat.listAsync(
         {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
     })
     .then(function(result){
@@ -373,7 +373,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     })
     .map(function(log){
       debug('Removing downvote',log)
-      return couchdb.heartbeat.removeAsync(log.key)
+      return couch.heartbeat.removeAsync(log.key)
         .catch(function(err){
           debug('failed to destroy vote marking myself up',err)
         })

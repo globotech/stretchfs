@@ -11,7 +11,7 @@ var rmfr = require('rmfr')
 var url = require('url')
 
 var api = require('../../helpers/api')
-var couchdb = require('../../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
 var content = oose.mock.content
 //var purchasedb = require('../../helpers/purchasedb')
@@ -178,63 +178,59 @@ exports.before = function(that){
       return redis.removeKeysPattern(redis.schema.flushKeys())
     })
     .then(function(){
-      var key = couchdb.schema.inventory()
-      return couchdb.inventory.listAsync({
+      var key = couch.schema.inventory()
+      return couch.inventory.listAsync({
         startkey: key,
-        endkey: key + '\uffff',
-        include_docs: true
+        endkey: key + '\uffff'
       })
     })
     .then(function(result){
       return result.rows
     })
     .map(function(row){
-      return couchdb.inventory.removeAsync(row.key)
+      return couch.inventory.removeAsync(row.key)
     })
     .then(function(){
       //return purchasedb.flushallAsync();
     })
     .then(function(){
-      var key = couchdb.schema.prism()
-      return couchdb.peer.listAsync({
+      var key = couch.schema.prism()
+      return couch.peer.listAsync({
         startkey: key,
-        endkey: key + '\uffff',
-        include_docs: true
+        endkey: key + '\uffff'
       })
     })
     .then(function(result){
       return result.rows
     })
     .map(function(row){
-      return couchdb.peer.removeAsync(row.key)
+      return couch.peer.removeAsync(row.key)
     })
     .then(function(){
-      var key = couchdb.schema.store()
-      return couchdb.peer.listAsync({
+      var key = couch.schema.store()
+      return couch.peer.listAsync({
         startkey: key,
-        endkey: key + '\uffff',
-        include_docs: true
+        endkey: key + '\uffff'
       })
     })
     .then(function(result){
       return result.rows
     })
     .map(function(row){
-      return couchdb.peer.removeAsync(row.key)
+      return couch.peer.removeAsync(row.key)
     })
     .then(function(){
-      var key = couchdb.schema.downVote()
-      return couchdb.heartbeat.listAsync({
+      var key = couch.schema.downVote()
+      return couch.heartbeat.listAsync({
         startkey: key,
-        endkey: key + '\uffff',
-        include_docs: true
+        endkey: key + '\uffff'
       })
     })
     .then(function(result){
       return result.rows
     })
     .map(function(row){
-      return couchdb.heartbeat.removeAsync(row.key)
+      return couch.heartbeat.removeAsync(row.key)
     })
     .then(function(){
       return P.all([
@@ -266,7 +262,7 @@ exports.after = function(that){
   logger.log('info','Stopping mock cluster...')
   var clconf = exports.clconf
   var removePeerEntry = function(peerKey){
-    return couchdb.peer.removeAsync(peerKey)
+    return couch.peer.removeAsync(peerKey)
   }
   return P.all([
     exports.server.send4.stopAsync(),
@@ -283,32 +279,32 @@ exports.after = function(that){
     .then(function(){
       //remove peer entries
       return P.all([
-        removePeerEntry(couchdb.schema.prism(clconf.prism1.prism.name)),
-        removePeerEntry(couchdb.schema.prism(clconf.prism2.prism.name)),
-        removePeerEntry(couchdb.schema.store(
+        removePeerEntry(couch.schema.prism(clconf.prism1.prism.name)),
+        removePeerEntry(couch.schema.prism(clconf.prism2.prism.name)),
+        removePeerEntry(couch.schema.store(
           clconf.store1.store.prism,clconf.store1.store.name)),
-        removePeerEntry(couchdb.schema.store(
+        removePeerEntry(couch.schema.store(
           clconf.store2.store.prism,clconf.store2.store.name)),
-        removePeerEntry(couchdb.schema.store(
+        removePeerEntry(couch.schema.store(
           clconf.store3.store.prism,clconf.store3.store.name)),
-        removePeerEntry(couchdb.schema.store(
+        removePeerEntry(couch.schema.store(
           clconf.store4.store.prism,clconf.store4.store.name)),
-        removePeerEntry(couchdb.schema.send(
+        removePeerEntry(couch.schema.send(
           clconf.send1.send.prism,
           clconf.send1.send.store,
           clconf.send1.send.name
         )),
-        removePeerEntry(couchdb.schema.send(
+        removePeerEntry(couch.schema.send(
           clconf.send2.send.prism,
           clconf.send2.send.store,
           clconf.send2.send.name
         )),
-        removePeerEntry(couchdb.schema.send(
+        removePeerEntry(couch.schema.send(
           clconf.send3.send.prism,
           clconf.send3.send.store,
           clconf.send3.send.name
         )),
-        removePeerEntry(couchdb.schema.send(
+        removePeerEntry(couch.schema.send(
           clconf.send4.send.prism,
           clconf.send4.send.store,
           clconf.send4.send.name

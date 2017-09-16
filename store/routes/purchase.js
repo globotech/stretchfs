@@ -1,5 +1,5 @@
 'use strict';
-var couchdb = require('../../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 var purchasedb = require('../../helpers/purchasedb')
 var logger = require('../../helpers/logger')
 
@@ -20,7 +20,7 @@ exports.uri = function(req,res){
       .then(function(result){
         purchase = result
         //get inventory
-        return couchdb.inventory.getAsync(couchdb.schema.inventory(
+        return couch.inventory.getAsync(couch.schema.inventory(
           purchase.hash,
           config.store.prism,
           config.store.name

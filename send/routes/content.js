@@ -4,7 +4,7 @@ var debug = require('debug')('oose:send:content')
 var fs = require('graceful-fs')
 var path = require('path')
 
-var couchdb = require('../../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 var redis = require('../../helpers/redis')()
 var logger = require('../../helpers/logger')
 var purchasedb = require('../../helpers/purchasedb')
@@ -28,13 +28,13 @@ exports.static = function(req,res){
   //then we must send it, that simple dont overthink it
   var hash = req.params.hash
   debug('STATIC','got file static request',hash)
-  var inventoryKey = couchdb.schema.inventory(
+  var inventoryKey = couch.schema.inventory(
     hash,
     config.send.prism,
     config.send.store
   )
   debug('STATIC','checking for inventory',inventoryKey)
-  couchdb.inventory.getAsync(inventoryKey)
+  couch.inventory.getAsync(inventoryKey)
     .then(function(result){
       debug('STATIC','got file inventory, sending content',result)
       if(req.query.attach){
@@ -75,7 +75,7 @@ exports.play = function(req,res){
                 debug('PLAY','got purchase result',token,result)
                 purchase = result
                 //get inventory
-                return couchdb.inventory.getAsync(couchdb.schema.inventory(
+                return couch.inventory.getAsync(couch.schema.inventory(
                   purchase.hash,
                   config.send.prism,
                   config.send.store

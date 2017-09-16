@@ -7,7 +7,7 @@ var mime = require('mime')
 var path = require('path')
 var ProgressBar = require('progress')
 
-var couchdb = require('../couchbase')
+var couch = require('../couchbase')
 var logger = require('../logger')
 
 var config = require('../../config')
@@ -130,9 +130,9 @@ module.exports = function(done){
         counter.valid++
         debug(hash,'inventory scan found',ext,relativePath,linkPath)
         //since nodes
-        var inventoryKey = couchdb.schema.inventory(
+        var inventoryKey = couch.schema.inventory(
           hash,config.store.prism,config.store.name)
-        return couchdb.inventory.getAsync(inventoryKey)
+        return couch.inventory.getAsync(inventoryKey)
           .then(
             function(doc){
               debug(hash,'inventory record exists',doc)
@@ -150,7 +150,7 @@ module.exports = function(done){
               }
               debug(hash,'creating inventory record',doc)
               counter.created++
-              return couchdb.inventory.upsertAsync(inventoryKey,doc)
+              return couch.inventory.upsertAsync(inventoryKey,doc)
             }
           )
           .then(function(){

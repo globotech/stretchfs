@@ -2,8 +2,7 @@
 var P = require('bluebird')
 var debug = require('debug')('oose:prismBalance')
 
-var config = require('../config')
-var couchdb = require('./couchbase')
+var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 var logger = require('./logger')
 
@@ -14,12 +13,12 @@ var logger = require('./logger')
  */
 exports.peerList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:peerList'))
-  var prismKey = couchdb.schema.prism()
-  var storeKey = couchdb.schema.store()
+  var prismKey = couch.schema.prism()
+  var storeKey = couch.schema.store()
   debug('Querying for peer list')
   return P.all([
     (function(){
-      return couchdb.peer.listAsync({
+      return couch.peer.listAsync({
           startkey: prismKey,
           endkey: prismKey + '\uffff',
           include_docs: true
@@ -28,12 +27,12 @@ exports.peerList = function(){
           return result.rows
         })
         .map(function(row){
-          row.doc.type = couchdb.schema.PEER_TYPES.prism
+          row.doc.type = couch.schema.PEER_TYPES.prism
           return row.doc
         })
     }()),
     (function(){
-      return couchdb.peer.listAsync({
+      return couch.peer.listAsync({
         startkey: storeKey,
         endkey: storeKey + '\uffff',
         include_docs: true
@@ -42,7 +41,7 @@ exports.peerList = function(){
           return result.rows
         })
         .map(function(row){
-          row.doc.type = couchdb.schema.PEER_TYPES.store
+          row.doc.type = couch.schema.PEER_TYPES.store
           return row.doc
         })
     }())
@@ -64,8 +63,8 @@ exports.peerList = function(){
  */
 exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
-  var prismKey = couchdb.schema.prism()
-  return couchdb.peer.listAsync(
+  var prismKey = couch.schema.prism()
+  return couch.peer.listAsync(
     {startkey: prismKey, endkey: prismKey + '\uffff', include_docs: true})
     .then(function(rows){
       return rows.rows
@@ -86,10 +85,10 @@ exports.prismList = function(){
  */
 exports.storeListByPrism = function(prism){
   redis.incr(redis.schema.counter('prism','prismBalance:storeListByPrism'))
-  var storeKey = couchdb.schema.store(prism)
-  return couchdb.peer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
+  var storeKey = couch.schema.store(prism)
+  return couch.peer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
     .map(function(row){
-      return couchdb.peer.getAsync(row.key)
+      return couch.peer.getAsync(row.key)
     })
     .filter(function(row){
       return row.available && row.active
@@ -163,7 +162,7 @@ exports.winner = function(token,prismList,skip,allowFull){
  */
 exports.contentExists = function(hash){
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
-  var existsKey = couchdb.schema.inventory(hash)
+  var existsKey = couch.schema.inventory(hash)
   var existsRecord = {}
   var count = 0
   debug(existsKey,'contentExists received')
@@ -177,7 +176,7 @@ exports.contentExists = function(hash){
     size: 0,
     map: []
   }
-  return couchdb.inventory.listAsync({
+  return couch.inventory.listAsync({
     startkey: existsKey,
     endkey: existsKey + '\uffff',
     include_docs: true
@@ -189,7 +188,7 @@ exports.contentExists = function(hash){
     .map(function(row){
       debug(existsKey,'got record',row)
       count++
-      return couchdb.inventory.getAsync(row.key)
+      return couch.inventory.getAsync(row.key)
         .catch(function(err){
           if(404 !== err.statusCode) throw err
         })
@@ -205,12 +204,12 @@ exports.contentExists = function(hash){
           .map(function(row){
             debug(existsKey,'got inventory list record',row)
             return P.all([
-              couchdb.peer.getAsync(couchdb.schema.prism(row.prism))
+              couch.peer.getAsync(couch.schema.prism(row.prism))
                 .catch(function(){
                   return {name:row.prism,available:false}
                 }),
-              couchdb.peer.getAsync(
-                couchdb.schema.store(row.prism,row.store))
+              couch.peer.getAsync(
+                couch.schema.store(row.prism,row.store))
                 .catch(function(){
                   return {name:row.store,available:false}
                 })

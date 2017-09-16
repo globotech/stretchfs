@@ -8,7 +8,7 @@ var prettyBytes = require('pretty-bytes')
 
 var config = require('../config')
 
-var couchdb = require('./couchbase')
+var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 
 
@@ -65,7 +65,7 @@ FileOp.prototype.FILE_ACTIONS = {
  */
 FileOp.prototype.selectPeer = function(type,opt_peerName){
   var that = this
-  if(!type) type = couchdb.schema.PEER_TYPES.store
+  if(!type) type = couch.schema.PEER_TYPES.store
   var result = {}
   that.peerList.forEach(function(peer){
     if(peer.type !== type || peer.name !== opt_peerName) return
@@ -135,7 +135,7 @@ FileOp.prototype.addClones = function(){
     // figure out a destination store
     that.peerList.forEach(function(peer){
       //skip prisms and whatever else
-      if(couchdb.schema.PEER_TYPES.store !== peer.type) return
+      if(couch.schema.PEER_TYPES.store !== peer.type) return
       if(
         -1 === storeWinnerList.indexOf(peer.name) &&
         -1 === file.map.indexOf(peer.prism + ':' + peer.name) &&
@@ -161,7 +161,7 @@ FileOp.prototype.addClones = function(){
         ' on prism ' + prismFromWinner +
         ' to ' + storeToWinner.store + ' on prism ' + prismToWinner)
       var storeFromInfo = that.selectPeer(
-        couchdb.schema.PEER_TYPES.store,
+        couch.schema.PEER_TYPES.store,
         storeFromWinner.store
       )
       var sendClient = that.setupStore(storeFromInfo)
@@ -198,7 +198,7 @@ FileOp.prototype.addClones = function(){
             'Failed to send clone to ' + storeToWinner.store,err.message)
         })
         .finally(function(){
-          var existsKey = couchdb.schema.inventory(file.hash)
+          var existsKey = couch.schema.inventory(file.hash)
           redis.del(existsKey)
         })
     }
@@ -230,7 +230,7 @@ FileOp.prototype.removeClones = function(){
       var prismName = parts[0]
       var storeName = parts[1]
       if(-1 === config.clonetool.storeProtected.indexOf(storeName)){
-        var peer = that.selectPeer(couchdb.schema.PEER_TYPES.store,storeName)
+        var peer = that.selectPeer(couch.schema.PEER_TYPES.store,storeName)
         prismNameList.push(prismName)
         storeNameList.push(storeName)
         if((true === peer.available) &&
@@ -254,7 +254,7 @@ FileOp.prototype.removeClones = function(){
         'Removing from ' + storeRemoveWinner.store +
         ' on prism ' + storeRemoveWinner.prism)
       var selectedStoreInfo = that.selectPeer(
-        couchdb.schema.PEER_TYPES.store,
+        couch.schema.PEER_TYPES.store,
         storeRemoveWinner.store
       )
       var storeClient = that.setupStore(selectedStoreInfo)
@@ -269,7 +269,7 @@ FileOp.prototype.removeClones = function(){
           console.error(file.hash,'Failed to remove clone',err.message)
         })
         .finally(function(){
-          var existsKey = couchdb.schema.inventory(file.hash)
+          var existsKey = couch.schema.inventory(file.hash)
           redis.del(existsKey)
         })
     }
@@ -299,7 +299,7 @@ FileOp.prototype.verifyFile = function(){
     .map(function(storeKey){
       var keyParts = storeKey.split(':')
       var storeInfo = that.selectPeer(
-        couchdb.schema.PEER_TYPES.store,
+        couch.schema.PEER_TYPES.store,
         keyParts[1]
       )
       var storeClient = that.setupStore(storeInfo)
@@ -327,7 +327,7 @@ FileOp.prototype.verifyFile = function(){
           console.error(file.hash,'Failed to verify inventory',err.message)
         })
         .finally(function(){
-          var existsKey = couchdb.schema.inventory(file.hash)
+          var existsKey = couch.schema.inventory(file.hash)
           redis.del(existsKey)
         })
     })
@@ -352,11 +352,11 @@ FileOp.prototype.cloneFile = function(){
     .then(function(storeKey){
       var keyParts = storeKey.split(':')
       var storeFromInfo = that.selectPeer(
-        couchdb.schema.PEER_TYPES.store,
+        couch.schema.PEER_TYPES.store,
         keyParts[1]
       )
       var storeToInfo = that.selectPeer(
-        couchdb.schema.PEER_TYPES.store,
+        couch.schema.PEER_TYPES.store,
         that.destination
       )
       var storeFromClient = that.setupStore(storeFromInfo)
@@ -384,7 +384,7 @@ FileOp.prototype.cloneFile = function(){
             'Failed to send clone to ' + storeToInfo.store,err.message)
         })
         .finally(function(){
-          var existsKey = couchdb.schema.inventory(file.hash)
+          var existsKey = couch.schema.inventory(file.hash)
           redis.del(existsKey)
         })
     })
@@ -405,7 +405,7 @@ FileOp.prototype.removeFile = function(){
   }
   return P.try(function(){
     var storeInfo = that.selectPeer(
-      couchdb.schema.PEER_TYPES.store,
+      couch.schema.PEER_TYPES.store,
       that.source
     )
     var storeClient = that.setupStore(storeInfo)
@@ -429,7 +429,7 @@ FileOp.prototype.removeFile = function(){
           'Failed to remove clone from ' + storeInfo.store,err.message)
       })
       .finally(function(){
-        var existsKey = couchdb.schema.inventory(file.hash)
+        var existsKey = couch.schema.inventory(file.hash)
         redis.del(existsKey)
       })
   })
