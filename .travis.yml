@@ -11,20 +11,23 @@ addons:
     - gcc-4.9
     - g++-4.9
 services:
-  - couchdb
   - redis
 env:
   - TRAVIS=travis CC=gcc-4.9 CXX=g++-4.9
 before_script:
-  - curl -X PUT http://localhost:5984/_config/admins/root -d '"blah1234"'
-  - curl -X PUT http://root:blah1234@localhost:5984/oose-peer
-  - curl -X PUT http://root:blah1234@localhost:5984/oose-inventory
-  - curl -X PUT http://root:blah1234@localhost:5984/oose-heartbeat
-  - curl -X GET http://root:blah1234@localhost:5984/_config
-  - >
-    curl -X PUT http://root:blah1234@localhost:5984/_users/org.couchdb.user:oose
-    -H "Accept: application/json"
-    -H "Content-Type: application/json"
-    -d '{"name": "oose", "password": "blah1234", "roles": [], "type": "user"}'
-  - curl -X GET http://root:blah1234@localhost:5984/_users/org.couchdb.user:oose/
-  - curl -X POST http://localhost:5984/_session -d 'name=oose&password=blah1234'
+  # LibCouchbase
+  - sudo wget -O /etc/apt/sources.list.d/couchbase.list http://packages.couchbase.com/ubuntu/couchbase-ubuntu1404.list
+  - "sudo wget http://packages.couchbase.com/ubuntu/couchbase.key && sudo cat couchbase.key | sudo apt-key add -"
+  - sudo apt-get update
+  - sudo apt-get install libcouchbase2 libcouchbase-dev
+  # Couchbase Server
+  - sudo wget https://packages.couchbase.com/releases/4.5.1/couchbase-server-community_4.5.1-ubuntu14.04_amd64.deb
+  - sudo dpkg -i couchbase-server-community_4.5.1-ubuntu14.04_amd64.deb
+  - sudo systemctl start couchbase-server
+  # Setup Bucket for test
+  - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=Administrator --cluster-init-password=password --cluster-init-ramsize=256
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=oose-hearbeat --bucket-password=password --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize=100 --bucket-replica=0 -u Administrator -p password
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=oose-inventory --bucket-password=password --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize=100 --bucket-replica=0 -u Administrator -p password
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=oose-job --bucket-password=password --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize=100 --bucket-replica=0 -u Administrator -p password
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=oose-peer --bucket-password=password --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize=100 --bucket-replica=0 -u Administrator -p password
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=oose-purchase --bucket-password=password --bucket-type=couchbase --bucket-port=11211 --bucket-ramsize=100 --bucket-replica=0 -u Administrator -p password
