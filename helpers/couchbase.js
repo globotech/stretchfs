@@ -3,6 +3,8 @@ var P = require('bluebird')
 var couchbase = require('couchbase')
 var debug = require('debug')('oose:couchbase')
 
+var N1Query = couchbase.N1qlQuery
+
 var CouchSchema = require('./CouchSchema')
 var logger = require('./logger')
 
@@ -49,7 +51,62 @@ var openBucket = function(name,secret){
 }
 
 var client = {
-  cluster: cluster
+  cluster: cluster,
+  type: {
+    HEARTBEAT: 'heartbeat',
+    INVENTORY: 'inventory',
+    JOB: 'job',
+    PEER: 'peer',
+    PURCHASE: 'purchase'
+  }
+}
+
+
+/**
+ * Get a database name
+ * @param {string} database
+ * @param {boolean} escape
+ * @return {string}
+ */
+client.getName = function(database,escape){
+  if(!config || !config.couch || !config.couch.bucket)
+    throw new Error('Could not get database name, config missing!')
+  if(!database)
+    throw new Error('Could not get database name, request blank')
+  if(!config.couch.bucket[database])
+    throw new Error('Could not get database name, section doesnt exist')
+  if(!config.couch.bucket[database].name)
+    throw new Error('Could not get database name, name missing')
+  var name = config.couch.bucket[database].name
+  if(true === escape) name = '`' + name + '`'
+  return name
+}
+
+
+/**
+ * Get a promisified manager
+ * @param {object} bucket
+ * @return {P}
+ */
+client.getManager = function(bucket){
+  return P.promisifyAll(bucket.manager())
+}
+
+
+/**
+ * Initialize couchbase in a harmless repeatable way
+ * @param {object} couch
+ * @return {P}
+ */
+client.init = function(couch){
+  var opts = {ignoreIfExists: true}
+  return P.all([
+    couch.getManager(couch.heartbeat).createPrimaryIndexAsync(opts),
+    couch.getManager(couch.inventory).createPrimaryIndexAsync(opts),
+    couch.getManager(couch.job).createPrimaryIndexAsync(opts),
+    couch.getManager(couch.peer).createPrimaryIndexAsync(opts),
+    couch.getManager(couch.purchase).createPrimaryIndexAsync(opts)
+  ])
 }
 
 
@@ -108,6 +165,13 @@ client.purchase = openBucket(
  * @type {CouchSchema}
  */
 client.schema = new CouchSchema(config.couch.prefix)
+
+
+/**
+ * Export N1Query object
+ * @type {N1qlQuery}
+ */
+client.N1Query = N1Query
 
 
 /**

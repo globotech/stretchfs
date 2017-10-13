@@ -103,15 +103,16 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   //get down votes that have already been set for this host
   return createDownVote()
     .then(function(){
-      return couch.heartbeat.listAsync({
-        startkey: downKey,
-        endkey: downKey + '\uffff',
-        include_docs: true
-      })
+      var qstring = 'SELECT * FROM ' +
+        couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      downKey = downKey + '%'
+      return couch.heartbeat.queryAsync(query,[downKey])
     })
     .then(function(result){
       var count = peerCount
-      var votes = result.rows.length
+      var votes = result.length
       if(count === 0 || votes < (count / 2))
         return true
       peer.available = false
@@ -180,20 +181,15 @@ var runHeartbeat = function(systemKey,systemType){
       .then(function(){
         //remove down votes
         var downKey = couch.schema.downVote(peer.name)
-        return couch.heartbeat.listAsync({
-          startkey: downKey,
-          endkey: downKey + '\uffff',
-          include_docs: true
-        })
+        var qstring = 'DELETE FROM ' +
+          couch.getName(couch.type.HEARTBEAT,true) +
+          ' b WHERE META(b).id LIKE $1'
+        var query = couch.N1Query.fromString(qstring)
+        downKey = downKey + '%'
+        return couch.purchase.queryAsync(query,[downKey])
       })
       .then(function(result){
-        return result.rows
-      })
-      .map(function(vote){
-        return couch.heartbeat.removeAsync(vote._id)
-          .catch(function(err){
-            debug('failed to destroy vote restoring peer',err)
-          })
+        debug('deleted ' + result.length + ' records')
       })
       .catch(function(err){
         console.log(err)
@@ -294,13 +290,14 @@ var runVotePrune = function(systemKey,systemType){
     if(vote.systemType && vote.systemType !== systemType) return false
     return (voteExpiresAfter <= currentTimestamp)
   }
-  return couch.heartbeat.listAsync({
-    startkey: downVoteKey,
-    endkey: downVoteKey + '\uffff',
-    include_docs: true
-  })
+  var qstring = 'SELECT * FROM ' +
+    couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
+    'WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  downVoteKey = downVoteKey + '%'
+  return couch.heartbeat.queryAsync(query,[downVoteKey])
     .then(function(result){
-      return result.rows
+      return result
     })
     .map(function(vote){
       return couch.heartbeat.getAsync(vote.id)
@@ -364,21 +361,15 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     )
     .then(function(){
       //Time to delete the downvote log
-      debug('About to get down votes',downKey)
-      return couch.heartbeat.listAsync(
-        {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
+      var qstring = 'DELETE FROM ' +
+        couch.getName(couch.type.HEARTBEAT,true) +
+        ' b WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      downKey = downKey + '%'
+      return couch.purchase.queryAsync(query,[downKey])
     })
     .then(function(result){
-      return result.rows
-    })
-    .map(function(log){
-      debug('Removing downvote',log)
-      return couch.heartbeat.removeAsync(log.key)
-        .catch(function(err){
-          debug('failed to destroy vote marking myself up',err)
-        })
-    })
-    .then(function(result){
+      debug('deleted ' + result.length + ' records')
       debug('finished marking myself up',result)
       done(null,result)
     })

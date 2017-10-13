@@ -2,7 +2,6 @@
 var debug = require('debug')('oose:clearPurchases')
 var infant = require('infant')
 
-//var config = require('../config')
 var couch = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
@@ -15,43 +14,19 @@ var runInterval = function(done){
   logger.log('info','Starting to clear purchases')
   //first lets get all the purchases
   var purchaseKey = couch.schema.purchase()
-  var purchases = []
   debug('requesting purchases',purchaseKey)
-  couch.purchase.listAsync({
-    startkey: purchaseKey,
-    endkey: purchaseKey + '\uffff',
-    include_docs: true
-  })
+  var qstring = 'DELETE FROM ' + couch.getName(couch.type.PURCHASE,true) +
+    ' b WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  purchaseKey = purchaseKey + '%'
+  couch.purchase.queryAsync(query,[purchaseKey])
     .then(function(result){
-      result = result.rows
-      debug('purchase result; purchases: ',result.length)
-      //this gives us the purchase keys and to my understanding we just have
-      //to update these to deleted now
-      var purchase = {}
-      for(var i = 0; i < result.length; i++){
-        purchase = result[i]
-        purchases.push({
-          _id: purchase.id,
-          _rev: purchase.value.rev,
-          _deleted: true
-        })
-      }
-      debug('saving deletion of purchases',purchases.length,purchases[0])
-      //now we just use couch to save the purchases
-      return purchases
-    })
-    .each(function(purchase){
-      return couch.purchase.upsertAsync(purchase._id,purchase)
-    })
-    .then(function(result){
-      var deleted = 0
-      result.forEach(function(row){
-        if(row.ok) deleted++
-      })
+      var deleted = result.length
       logger.log('info','Deletion complete, ' + deleted + ' records removed')
       done()
     })
     .catch(function(err){
+      console.log(err)
       logger.log('error',err.stack)
       done(err)
     })

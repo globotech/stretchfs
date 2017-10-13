@@ -2,7 +2,6 @@
 var debug = require('debug')('oose:clearHeartbeat')
 var infant = require('infant')
 
-//var config = require('../config')
 var couch = require('../helpers/couchbase')
 var logger = require('../helpers/logger')
 
@@ -15,43 +14,19 @@ var runInterval = function(done){
   logger.log('info','Starting to clear heartbeat')
   //first lets get all the purchases
   var hbKey = couch.schema.downVote()
-  var votes = []
   debug('requesting votes',hbKey)
-  couch.heartbeat.listAsync({
-    startkey: hbKey,
-    endkey: hbKey + '\uffff',
-    include_docs: true
-  })
+  var qstring = 'DELETE FROM ' + couch.getName(couch.type.HEARTBEAT,true) +
+    ' b WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  hbKey = hbKey + '%'
+  couch.heartbeat.queryAsync(query,[hbKey])
     .then(function(result){
-      result = result.rows
-      debug('vote result; votes: ',result.length)
-      //this gives us the purchase keys and to my understanding we just have
-      //to update these to deleted now
-      var vote = {}
-      for(var i = 0; i < result.length; i++){
-        vote = result[i]
-        votes.push({
-          _id: vote.id,
-          _rev: vote.value.rev,
-          _deleted: true
-        })
-      }
-      debug('saving deletion of vote',votes.length,votes[0])
-      //now we just use couch to save the purchases
-      return votes
-    })
-    .each(function(vote){
-      return couch.heartbeat.upsertAsync(vote._id,vote)
-    })
-    .then(function(result){
-      var deleted = 0
-      result.forEach(function(row){
-        if(row.ok) deleted++
-      })
+      var deleted = result.length
       logger.log('info','Deletion complete, ' + deleted + ' records removed')
       done()
     })
     .catch(function(err){
+      console.log(err)
       logger.log('error',err.stack)
       done(err)
     })

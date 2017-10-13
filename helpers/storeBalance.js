@@ -17,13 +17,15 @@ exports.storeList = function(prism){
   redis.incr(redis.schema.counter('prism','storeBalance:storeList'))
   var storeKey = couch.schema.store(prism)
   debug(storeKey,'getting store list')
-  return couch.peer.listAsync(
-    {startkey: storeKey, endkey: storeKey + '\uffff', include_docs: true})
-    .then(function(rows){
-      return rows.rows
-    })
-    .map(function(row){
-      return row.doc
+  var qstring = 'SELECT * FROM ' +
+    couch.getName(couch.type.PEER,true) + ' b ' +
+    'WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  storeKey = storeKey + '%'
+  return couch.peer.queryAsync(query,[storeKey])
+    .then(function(result){
+      debug(storeKey,'got store list result',result)
+      return result
     })
     .filter(function(doc){
       debug(storeKey,'got store',doc)

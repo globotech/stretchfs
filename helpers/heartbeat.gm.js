@@ -124,10 +124,13 @@ var Heartbeat = function(type,name){
         //got the node
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
-        return couch.heartbeat.listAsync(
-          {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
+        var qstring = 'SELECT * FROM ' +
+          couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
+          'WHERE META(b).id LIKE $1'
+        var query = couch.N1Query.fromString(qstring)
+        downKey = downKey + '%'
+        return couch.heartbeat.queryAsync(query,[downKey])
       }).then(function(vL){
-        vL = vL.rows
         currentVoteLog = vL
         for(var i=0; i< vL.length; i++){
           if(vL[i].key === myDownKey) {
@@ -206,25 +209,25 @@ var Heartbeat = function(type,name){
       couch.schema.prism(prismName) : couch.schema.store(prismName,name)
     //The key used to track downvotes against me :(
     var downKey = couch.schema.downVote(name)
-    return couch.heartbeat.getAsync(key)
+    return couch.peer.getAsync(key)
       .then(function(node){
         node.available = true
         node.active = true
-        return couch.heartbeat.upsertAsync(key,node)
-      }).then(function(){
+        return couch.peer.upsertAsync(key,node)
+      })
+      .then(function(){
         //Time to delete the downvote log
-        return couch.heartbeat.listAsync(
-          {startkey: downKey, endkey: downKey + '\uffff', include_docs: true})
-      }).then(function(votelog){
-        voteLog = voteLog.rows
-        //Delete the vote log, it has served its purpose
-        var promises = []
-        //Added reflect() to avoid a race condition.
-        for(var i = 0; i < votelog.length; i++)
-          promises.push(couch.heartbeat.removeAsync(
-            votelog[i].key))
-        return P.all(promises)
-      }).catch(function(err){
+        var qstring = 'DELETE FROM ' +
+          couch.getName(couch.type.HEARTBEAT,true) +
+          ' b WHERE META(b).id LIKE $1'
+        var query = couch.N1Query.fromString(qstring)
+        downKey = downKey + '%'
+        return couch.purchase.queryAsync(query,[downKey])
+      })
+      .then(function(result){
+        debug('deleted ' + result.length + ' records')
+      })
+      .catch(function(err){
         debug(err.mesage)
       })
   }

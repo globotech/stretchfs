@@ -18,31 +18,33 @@ exports.peerList = function(){
   debug('Querying for peer list')
   return P.all([
     (function(){
-      return couch.peer.listAsync({
-          startkey: prismKey,
-          endkey: prismKey + '\uffff',
-          include_docs: true
-        })
+      var qstring = 'SELECT * FROM ' +
+        couch.getName(couch.type.PEER,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      prismKey = prismKey + '%'
+      return couch.peer.queryAsync(query,[prismKey])
         .then(function(result){
-          return result.rows
+          return result
         })
         .map(function(row){
-          row.doc.type = couch.schema.PEER_TYPES.prism
-          return row.doc
+          row.type = couch.schema.PEER_TYPES.prism
+          return row
         })
     }()),
     (function(){
-      return couch.peer.listAsync({
-        startkey: storeKey,
-        endkey: storeKey + '\uffff',
-        include_docs: true
-      })
+      var qstring = 'SELECT * FROM ' +
+        couch.getName(couch.type.PEER,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      storeKey = storeKey + '%'
+      return couch.peer.queryAsync(query,[storeKey])
         .then(function(result){
-          return result.rows
+          return result
         })
         .map(function(row){
-          row.doc.type = couch.schema.PEER_TYPES.store
-          return row.doc
+          row.type = couch.schema.PEER_TYPES.store
+          return row
         })
     }())
   ])
@@ -64,13 +66,14 @@ exports.peerList = function(){
 exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couch.schema.prism()
-  return couch.peer.listAsync(
-    {startkey: prismKey, endkey: prismKey + '\uffff', include_docs: true})
-    .then(function(rows){
-      return rows.rows
-    })
-    .map(function(row){
-      return row.doc
+  var qstring = 'SELECT * FROM ' +
+    couch.getName(couch.type.PEER,true) + ' b ' +
+    'WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  prismKey = prismKey + '%'
+  return couch.peer.queryAsync(query,[prismKey])
+    .then(function(result){
+      return result
     })
     .filter(function(doc){
       return doc.name && doc.available && doc.active
@@ -163,6 +166,7 @@ exports.winner = function(token,prismList,skip,allowFull){
 exports.contentExists = function(hash){
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
   var existsKey = couch.schema.inventory(hash)
+  var existsKeyQ = existsKey + '%'
   var existsRecord = {}
   var count = 0
   debug(existsKey,'contentExists received')
@@ -176,14 +180,14 @@ exports.contentExists = function(hash){
     size: 0,
     map: []
   }
-  return couch.inventory.listAsync({
-    startkey: existsKey,
-    endkey: existsKey + '\uffff',
-    include_docs: true
-  })
+  var qstring = 'SELECT * FROM ' +
+    couch.getName(couch.type.INVENTORY,true) + ' b ' +
+    'WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  return couch.inventory.queryAsync(query,[existsKeyQ])
     .then(function(result){
       debug(existsKey,'got inventory result',result)
-      return result.rows
+      return result
     })
     .map(function(row){
       debug(existsKey,'got record',row)

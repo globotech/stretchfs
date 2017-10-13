@@ -179,58 +179,39 @@ exports.before = function(that){
     })
     .then(function(){
       var key = couch.schema.inventory()
-      return couch.inventory.listAsync({
-        startkey: key,
-        endkey: key + '\uffff'
-      })
-    })
-    .then(function(result){
-      return result.rows
-    })
-    .map(function(row){
-      return couch.inventory.removeAsync(row.key)
-    })
-    .then(function(){
-      //return purchasedb.flushallAsync();
+      var qstring = 'DELETE FROM ' +
+        couch.getName(couch.type.INVENTORY,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      key = key + '%'
+      return couch.inventory.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.prism()
-      return couch.peer.listAsync({
-        startkey: key,
-        endkey: key + '\uffff'
-      })
-    })
-    .then(function(result){
-      return result.rows
-    })
-    .map(function(row){
-      return couch.peer.removeAsync(row.key)
+      var qstring = 'DELETE FROM ' +
+        couch.getName(couch.type.PEER,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      key = key + '%'
+      return couch.peer.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.store()
-      return couch.peer.listAsync({
-        startkey: key,
-        endkey: key + '\uffff'
-      })
-    })
-    .then(function(result){
-      return result.rows
-    })
-    .map(function(row){
-      return couch.peer.removeAsync(row.key)
+      var qstring = 'DELETE FROM ' +
+        couch.getName(couch.type.PEER,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      key = key + '%'
+      return couch.peer.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.downVote()
-      return couch.heartbeat.listAsync({
-        startkey: key,
-        endkey: key + '\uffff'
-      })
-    })
-    .then(function(result){
-      return result.rows
-    })
-    .map(function(row){
-      return couch.heartbeat.removeAsync(row.key)
+      var qstring = 'DELETE FROM ' +
+        couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
+        'WHERE META(b).id LIKE $1'
+      var query = couch.N1Query.fromString(qstring)
+      key = key + '%'
+      return couch.heartbeat.queryAsync(query,[key])
     })
     .then(function(){
       return P.all([
