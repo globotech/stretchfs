@@ -43,7 +43,7 @@ if(require.main === module){
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return couch.peer.upsertAsync(storeKey,doc,{cas: result.value})
+            return couch.peer.upsertAsync(storeKey,doc,{cas: result.cas})
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
