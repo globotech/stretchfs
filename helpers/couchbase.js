@@ -17,9 +17,7 @@ var config = require('../config')
  * @return {object}
  */
 var connectCouchbase = function(conf){
-  var dsn = (conf.protocol || 'couchbase://') +
-    (conf.host || '127.0.0.1') + ':' +
-    (conf.port || '8091')
+  var dsn = (conf.protocol || 'couchbase://') + (conf.host || '127.0.0.1')
   debug('connecting to couchbase',dsn)
   return P.promisifyAll(new couchbase.Cluster(dsn))
 }
