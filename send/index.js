@@ -34,7 +34,8 @@ if(require.main === module){
       couch.peer.getAsync(sendKey)
         .then(
           //if we exist lets mark ourselves available
-          function(doc){
+          function(result){
+            var doc = result.value
             doc.prism = config.send.prism
             doc.store = config.send.store
             doc.name = config.send.name
@@ -42,7 +43,7 @@ if(require.main === module){
             doc.port = config.send.port
             doc.available = true
             doc.active = true
-            return couch.peer.upsertAsync(sendKey,doc)
+            return couch.peer.upsertAsync(sendKey,doc,{cas: result.cas})
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
@@ -77,9 +78,10 @@ if(require.main === module){
       logger.log('info','Beginning send shutdown')
       //mark ourselves as down
       couch.peer.getAsync(sendKey)
-        .then(function(doc){
+        .then(function(result){
+          var doc = result.value
           doc.available = false
-          return couch.peer.upsertAsync(sendKey,doc)
+          return couch.peer.upsertAsync(sendKey,doc,{cas: result.cas})
         })
         .then(function(){
           if(!cluster) return

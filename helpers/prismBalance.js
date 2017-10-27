@@ -94,6 +94,7 @@ exports.storeListByPrism = function(prism){
       return couch.peer.getAsync(row.key)
     })
     .filter(function(row){
+      row = row.value
       return row.available && row.active
     })
 }
@@ -193,6 +194,9 @@ exports.contentExists = function(hash){
       debug(existsKey,'got record',row)
       count++
       return couch.inventory.getAsync(row.key)
+        .then(function(result){
+          return result.value
+        })
         .catch(function(err){
           if(404 !== err.statusCode) throw err
         })
@@ -209,11 +213,17 @@ exports.contentExists = function(hash){
             debug(existsKey,'got inventory list record',row)
             return P.all([
               couch.peer.getAsync(couch.schema.prism(row.prism))
+                .then(function(result){
+                  return result.value
+                })
                 .catch(function(){
                   return {name:row.prism,available:false}
                 }),
               couch.peer.getAsync(
                 couch.schema.store(row.prism,row.store))
+                .then(function(result){
+                  return result.value
+                })
                 .catch(function(){
                   return {name:row.store,available:false}
                 })

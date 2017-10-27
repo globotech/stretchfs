@@ -77,7 +77,7 @@ var verifyFile = function(fileDetail,force){
   return couch.inventory.getAsync(inventoryKey)
     .then(
       function(result){
-        inventory = result
+        inventory = result.value
       },
       function(){}
     )
@@ -101,6 +101,7 @@ var verifyFile = function(fileDetail,force){
       if(!fileDetail.exists){
         return couch.inventory.getAsync(inventoryKey)
           .then(function(result){
+            result = result.value
             return couch.inventory.removeAsync(result._id)
           })
           .catch(function(err){
@@ -124,6 +125,7 @@ var verifyFile = function(fileDetail,force){
         return couch.inventory.getAsync(inventoryKey)
           .then(
             function(result){
+              result = result.value
               return updateInventory(fileDetail,result,verifiedAt)
             },
             //record does not exist, create it
@@ -222,7 +224,8 @@ exports.put = function(req,res){
     })
     .then(
       //record exists, extend it
-      function(doc){
+      function(result){
+        var doc = result.value
         debug(inventoryKey,'got inventory record',doc)
         return updateInventory(fileDetail,doc)
       },
@@ -242,6 +245,7 @@ exports.put = function(req,res){
       fs.unlinkSync(dest)
       couch.inventory.getAsync(inventoryKey)
         .then(function(result){
+          result = result.value
           return couch.inventory.removeAsync(result._id)
         })
         .catch(function(err){
@@ -345,6 +349,7 @@ exports.remove = function(req,res){
         hashFile.remove(fileDetail.hash),
         couch.inventory.getAsync(inventoryKey)
           .then(function(result){
+            result = result.value
             return couch.inventory.removeAsync(result._id)
           })
           .catch(function(){
@@ -419,7 +424,8 @@ exports.detail = function(req,res){
   var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
   couch.inventory.getAsync(inventoryKey)
-    .then(function(record){
+    .then(function(result){
+      var record = result.value
       if(!record) throw new Error('File not found')
       detail.hash = record.hash
       detail.mimeExtension = record.mimeExtension
@@ -503,7 +509,7 @@ exports.send = function(req,res){
   couch.peer.getAsync(storeKey)
     .then(
       function(result){
-        store = result
+        store = result.value
         storeClient = api.setupAccess('store',store)
       },
       function(err){

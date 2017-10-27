@@ -27,7 +27,7 @@ exports.uri = function(req,res){
         ))
       })
       .then(function(result){
-        inventory = result
+        inventory = result.value
         if(inventory && purchase &&
           purchase.expirationDate >= (+new Date())
         ){

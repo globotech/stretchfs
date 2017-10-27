@@ -90,6 +90,7 @@ module.exports = function(done){
       couch.inventory.getAsync(inventoryKey)
         .then(
           function(doc){
+            doc = doc.value
             debug(hash,'inventory record exists',doc)
           },
           function(err){

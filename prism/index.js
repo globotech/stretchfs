@@ -31,13 +31,14 @@ if(require.main === module){
         couch.peer.getAsync(prismKey)
           .then(
             //if we exist lets mark ourselves available
-            function(doc){
+            function(result){
+              var doc = result.value
               doc.name = config.prism.name
               doc.host = config.prism.host
               doc.port = config.prism.port
               doc.available = true
               doc.active = true
-              return couch.peer.upsertAsync(prismKey,doc)
+              return couch.peer.upsertAsync(prismKey,doc,{cas: result.cas})
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
@@ -82,9 +83,10 @@ if(require.main === module){
       if(!config.prism.ghost){
         //mark ourselves as down
         couch.peer.getAsync(prismKey)
-          .then(function(doc){
+          .then(function(result){
+            var doc = result.value
             doc.available = false
-            return couch.peer.upsertAsync(prismKey,doc)
+            return couch.peer.upsertAsync(prismKey,doc,{cas: result.cas})
           })
           .then(function(){
             if(!heartbeat) return

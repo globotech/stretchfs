@@ -62,6 +62,9 @@ exports.populateStores = function(stores){
   })
     .map(function(store){
       return couch.peer.getAsync(couch.schema.store(store))
+        .then(function(result){
+          return result.value
+        })
     })
     .then(function(results){
       return results

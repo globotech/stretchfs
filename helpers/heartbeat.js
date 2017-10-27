@@ -175,8 +175,9 @@ var runHeartbeat = function(systemKey,systemType){
     logger.log('info', 'Restoring peer ' + peer.name)
     return couch.peer.getAsync(peer._id)
       .then(function(result){
-        result.available = true
-        return couch.peer.upsertAsync(result._id,result)
+        var peer = result.value
+        peer.available = true
+        return couch.peer.upsertAsync(peer._id,peer,{cas: result.cas})
       })
       .then(function(){
         //remove down votes
@@ -208,7 +209,7 @@ var runHeartbeat = function(systemKey,systemType){
       return couch.heartbeat.getAsync(downKey)
         .then(
           function(result){
-            peer.existingDownVote = result
+            peer.existingDownVote = result.value
             return peer
           },
           function(){
@@ -307,6 +308,7 @@ var runVotePrune = function(systemKey,systemType){
         })
     })
     .filter(function(vote){
+      vote = vote.value
       if(!vote) return false
       debug('filtering vote',vote.id,validateVote(vote))
       return validateVote(vote)

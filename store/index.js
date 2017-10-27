@@ -35,14 +35,15 @@ if(require.main === module){
       couch.peer.getAsync(storeKey)
         .then(
           //if we exist lets mark ourselves available
-          function(doc){
+          function(result){
+            var doc = result.value
             doc.prism = config.store.prism
             doc.name = config.store.name
             doc.host = config.store.host
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return couch.peer.upsertAsync(storeKey,doc)
+            return couch.peer.upsertAsync(storeKey,doc,{cas: result.value})
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
@@ -92,9 +93,10 @@ if(require.main === module){
       logger.log('info','Beginning store shutdown')
       //mark ourselves as down
       couch.peer.getAsync(storeKey)
-        .then(function(doc){
+        .then(function(result){
+          var doc = result.value
           doc.available = false
-          return couch.peer.upsertAsync(storeKey,doc)
+          return couch.peer.upsertAsync(storeKey,doc,{cas: result.cas})
         })
         .then(function(){
           if(!heartbeat) return

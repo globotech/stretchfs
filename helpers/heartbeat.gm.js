@@ -120,7 +120,8 @@ var Heartbeat = function(type,name){
     var hostInfo = null
     //if(downHost.request) delete(downHost.request)
     return couch.heartbeat.getAsync(key)
-      .then(function(node){
+      .then(function(result){
+        var node = result.value
         //got the node
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
@@ -210,10 +211,11 @@ var Heartbeat = function(type,name){
     //The key used to track downvotes against me :(
     var downKey = couch.schema.downVote(name)
     return couch.peer.getAsync(key)
-      .then(function(node){
+      .then(function(result){
+        var node = result.value
         node.available = true
         node.active = true
-        return couch.peer.upsertAsync(key,node)
+        return couch.peer.upsertAsync(key,node,{cas: result.cas})
       })
       .then(function(){
         //Time to delete the downvote log

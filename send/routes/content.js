@@ -36,14 +36,15 @@ exports.static = function(req,res){
   debug('STATIC','checking for inventory',inventoryKey)
   couch.inventory.getAsync(inventoryKey)
     .then(function(result){
-      debug('STATIC','got file inventory, sending content',result)
+      var doc = result.value
+      debug('STATIC','got file inventory, sending content',doc)
       if(req.query.attach){
         res.header(
           'Content-Disposition',
           'attachment; filename=' + req.query.attach
         )
       }
-      res.sendFile(path.join(contentFolder,result.relativePath))
+      res.sendFile(path.join(contentFolder,doc.relativePath))
     })
     .catch(function(err){
       if(404 !== err.statusCode) throw err
@@ -89,6 +90,7 @@ exports.play = function(req,res){
               }
             )
             .then(function(result){
+              result = result.value
               debug('PLAY','got inventory result',token,result)
               inventory = result
               if(inventory && purchase &&

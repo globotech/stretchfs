@@ -98,7 +98,8 @@ var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
           throw new Error('skipped')
         }
         return couch.oose.getAsync(row)
-          .then(function(record){
+          .then(function(result){
+            var record = result.value
             //we need the new row
             var newKey = keyFunc(record)
             record._id = newKey
@@ -111,7 +112,8 @@ var migrateItems = function(name,itemKey,dbName,keyFunc,filterFunc){
                 }
                 else{
                   counter.moved++
-                  resolve(couch[dbName].upsertAsync(newKey,record))
+                  resolve(couch[dbName].upsertAsync(newKey,record,
+                    {cas: result.cas}))
                 }
               })
             })

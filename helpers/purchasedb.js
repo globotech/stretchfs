@@ -54,6 +54,7 @@ PurchaseDb.prototype.get = function(token){
     return couch.getAsync(token)
   })
     .then(function(result){
+      result = result.value
       debug(token,'get result',result)
       return result
     })
