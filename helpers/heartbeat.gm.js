@@ -141,8 +141,7 @@ var Heartbeat = function(type,name){
         }
         return couch.heartbeat.upsertAsync(myDownKey,{date:Date.now()})
       },function(err){
-        if(!err.statusCode) throw err
-        if(404 !== err.statusCode) throw err
+        if(13 !== err.code) throw err
         currentVoteLog = []
         return couch.heartbeat.upsertAsync(myDownKey,{date:Date.now()})
       }).then(function(myVote){
