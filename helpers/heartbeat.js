@@ -343,22 +343,10 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
   })
   var downKey = couch.schema.downVote(systemKey)
   debug('Getting peer information',key)
-  return couch.peer.getAsync(key)
-    .then(
-      function(peer){
-        debug('Got peer information back',peer)
-        peer.available = true
-        peer.active = true
-        return couch.peer.upsertAsync(key,peer)
-          .catch(function(err){
-            debug('failed to mark peer up',err)
-          })
-      },
-      function(err){
-        debug('Got an error getting peer information',err)
-        throw new Error('Could not get peer information, cannot mark myself up')
-      }
-    )
+  return couch.peer.upsertAsync(key,{active: true, available: true})
+    .catch(function(err){
+      debug('failed to mark peer up',err)
+    })
     .then(function(){
       //Time to delete the downvote log
       var qstring = 'DELETE FROM ' +
