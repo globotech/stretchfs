@@ -17,7 +17,7 @@ exports.storeList = function(prism){
   redis.incr(redis.schema.counter('prism','storeBalance:storeList'))
   var storeKey = couch.schema.store(prism)
   debug(storeKey,'getting store list')
-  var qstring = 'SELECT * FROM ' +
+  var qstring = 'SELECT b.* FROM ' +
     couch.getName(couch.type.PEER,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)

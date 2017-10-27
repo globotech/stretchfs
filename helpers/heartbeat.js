@@ -103,7 +103,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   //get down votes that have already been set for this host
   return createDownVote()
     .then(function(){
-      var qstring = 'SELECT * FROM ' +
+      var qstring = 'SELECT b.* FROM ' +
         couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
@@ -291,7 +291,7 @@ var runVotePrune = function(systemKey,systemType){
     if(vote.systemType && vote.systemType !== systemType) return false
     return (voteExpiresAfter <= currentTimestamp)
   }
-  var qstring = 'SELECT * FROM ' +
+  var qstring = 'SELECT b.* FROM ' +
     couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)

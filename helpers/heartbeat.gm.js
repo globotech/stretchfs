@@ -125,7 +125,7 @@ var Heartbeat = function(type,name){
         //got the node
         if(!(node.available && node.active)) throw new Error('Already down')
         hostInfo = node
-        var qstring = 'SELECT * FROM ' +
+        var qstring = 'SELECT b.* FROM ' +
           couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
           'WHERE META(b).id LIKE $1'
         var query = couch.N1Query.fromString(qstring)

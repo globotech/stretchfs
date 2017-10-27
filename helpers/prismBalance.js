@@ -18,7 +18,7 @@ exports.peerList = function(){
   debug('Querying for peer list')
   return P.all([
     (function(){
-      var qstring = 'SELECT * FROM ' +
+      var qstring = 'SELECT b.* FROM ' +
         couch.getName(couch.type.PEER,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
@@ -33,7 +33,7 @@ exports.peerList = function(){
         })
     }()),
     (function(){
-      var qstring = 'SELECT * FROM ' +
+      var qstring = 'SELECT b.* FROM ' +
         couch.getName(couch.type.PEER,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
@@ -66,7 +66,7 @@ exports.peerList = function(){
 exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couch.schema.prism()
-  var qstring = 'SELECT * FROM ' +
+  var qstring = 'SELECT b.* FROM ' +
     couch.getName(couch.type.PEER,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
@@ -181,7 +181,7 @@ exports.contentExists = function(hash){
     size: 0,
     map: []
   }
-  var qstring = 'SELECT * FROM ' +
+  var qstring = 'SELECT b.* FROM ' +
     couch.getName(couch.type.INVENTORY,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
