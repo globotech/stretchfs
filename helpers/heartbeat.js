@@ -186,7 +186,7 @@ var runHeartbeat = function(systemKey,systemType){
           ' b WHERE META(b).id LIKE $1'
         var query = couch.N1Query.fromString(qstring)
         downKey = downKey + '%'
-        return couch.purchase.queryAsync(query,[downKey])
+        return couch.heartbeat.queryAsync(query,[downKey])
       })
       .then(function(result){
         debug('deleted ' + result.length + ' records')
@@ -366,7 +366,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
         ' b WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       downKey = downKey + '%'
-      return couch.purchase.queryAsync(query,[downKey])
+      return couch.heartbeat.queryAsync(query,[downKey])
     })
     .then(function(result){
       debug('deleted ' + result.length + ' records')
