@@ -596,8 +596,6 @@ exports.deliver = function(req,res){
    * @return {string}
    */
   var makeUrl = function(req,store,purchase){
-    var query = req.url.indexOf('?') >= 0 ?
-      req.url.substr(req.url.indexOf('?')+1) : null
     var proto = req.protocol
     if(req.get('X-Forwarded-Protocol')){
       proto = 'https' === req.get('X-Forwarded-Protocol') ? 'https' : 'http'
@@ -608,8 +606,7 @@ exports.deliver = function(req,res){
     } else if('ipv6' === addressType){
       host = (store.host6 || store.host) + ':[' + store.port + ']'
     }
-    return proto + '://' + host +
-      '/play/' + token + '/video.' + purchase.ext + (query ? '?' + query : '')
+    return proto + '://' + host + '/play/' + token + '/video.' + purchase.ext
   }
   /**
    * Validate request
@@ -621,15 +618,15 @@ exports.deliver = function(req,res){
       valid: true,
       reason: null
     }
-    //if(purchase.ip !== req.ip){
-    //  result.valid = false
-    //  result.reason = 'Invalid request'
-    //}
+    if(purchase.ip !== req.ip){
+      result.valid = false
+      result.reason = 'Invalid request'
+    }
     var validReferrer = false
     var referrer = req.get('Referrer')
     if(!referrer || 'string' !== typeof referrer){
       result.valid = false
-      result.reason = 'Invalid request (no referrer)'
+      result.reason = 'Invalid request'
     }
     if(!result.valid) return result
     for(var i = 0; i < purchase.referrer.length; i++){
