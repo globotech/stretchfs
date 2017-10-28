@@ -3,14 +3,13 @@ var P = require('bluebird')
 var oose = require('oose-sdk')
 
 var list = require('../../helpers/list')
-var sequelize = require('../../helpers/sequelize')()
+var couch = require('../../helpers/couchbase')
 var UserError = oose.UserError
 
-var Master = sequelize.models.Master
-var Prism = sequelize.models.Prism
-var Store = sequelize.models.Store
-
 var config = require('../../config')
+
+//open couch buckets
+var couchPeer = couch.peer()
 
 
 /**

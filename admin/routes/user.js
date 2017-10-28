@@ -1,12 +1,9 @@
 'use strict';
 var oose = require('oose-sdk')
 
-var sequelize = require('../../helpers/sequelize')()
+var couch = require('../../helpers/couchbase')
 var list = require('../../helpers/list')
 var UserError = oose.UserError
-
-var User = sequelize.models.User
-var UserSession = sequelize.models.UserSession
 
 
 /**

@@ -11,12 +11,12 @@ var worker = require('infant').worker
 var morgan = require('morgan')
 var RedisStore = require('connect-redis')(expressSession)
 
-var sequelize = require('../helpers/sequelize')()
-
 var app = express()
 var config = require('../config')
 var server = http.createServer(app)
 var routes = require('./routes')
+
+var couch = require('../helpers/couchbase')
 
 //make some promises
 P.promisifyAll(server)
@@ -145,10 +145,9 @@ app.get('/',routes.index)
  * @param {function} done
  */
 exports.start = function(done){
-  sequelize.doConnect()
-    .then(function(){
-      return server.listenAsync(+config.admin.port,config.admin.host)
-    }).then(done).catch(function(err){
+  server.listenAsync(+config.admin.port,config.admin.host)
+    .then(done)
+    .catch(function(err){
       done(err)
     })
 }
@@ -159,10 +158,10 @@ exports.start = function(done){
  * @param {function} done
  */
 exports.stop = function(done){
+  //close couch buckets
+  couch.disconnect()
   //dont wait for this since it will take to long and we are stopping now
   server.close()
-  //close our db connection
-  sequelize.close()
   //just return now
   done()
 }

@@ -103,7 +103,9 @@ client.getName = function(database,escape){
  */
 client.disconnect = function(){
   for(var bucket in buckets){
-    bucket.disconnect()
+    if(bucket && bucket.disconnect && 'function' === typeof bucket.disconnect){
+      bucket.disconnect()
+    }
   }
   return true
 }

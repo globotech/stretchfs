@@ -1,9 +1,7 @@
 'use strict';
 var list = require('../../helpers/list')
 var oose = require('oose-sdk')
-var sequelize = require('../../helpers/sequelize')()
-
-var Staff = sequelize.models.Staff
+var couch = require('../../helpers/couchbase')
 
 var UserError = oose.UserError
 
