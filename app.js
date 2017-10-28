@@ -7,7 +7,6 @@ var child = Child.parent
 var admin = child('./admin')
 var prism = child('./prism')
 var store = child('./store')
-var send = child('./send')
 
 var config = require('./config')
 var logger = require('./helpers/logger')
@@ -70,22 +69,6 @@ if(config.store.enabled){
     },
     function(next){
       store.stop(next)
-    }
-  )
-}
-
-
-/**
- * Send
- */
-if(config.send.enabled){
-  lifecycle.add(
-    'send',
-    function(next){
-      send.start(next)
-    },
-    function(next){
-      send.stop(next)
     }
   )
 }
