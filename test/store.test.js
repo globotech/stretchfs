@@ -11,6 +11,8 @@ var rmfr = require('rmfr')
 var hashStream = require('sha1-stream')
 
 var api = require('../helpers/api')
+var couch = require('../helpers/couchbase')
+var purchasedb = require('../helpers/purchasedb')
 
 var content = oose.mock.content
 
@@ -202,6 +204,80 @@ describe('store',function(){
         })
         .finally(function(){
           fs.writeFileSync(testFile,'The fox is brown')
+        })
+    })
+  })
+  //content
+  describe('send:content',function(){
+    //get tokens
+    var inventoryKey = couch.schema.inventory(content.hash,'prism1','store5')
+    var purchaseToken = purchasedb.generate()
+    var badPurchaseToken = purchasedb.generate()
+    before(function(){
+      //create inventory record
+      return couch.inventory.upsertAsync(inventoryKey,{
+        hash: content.hash,
+        mimeExtension: content.ext,
+        mimeType: content.type,
+        prism: 'prism1',
+        store: 'store5',
+        relativePath: content.relativePath,
+        size: content.data.length,
+        createdAt: +(new Date())
+      })
+      //make a purchase against this
+        .then(function(){
+          return purchasedb.create(purchaseToken,{
+            hash: content.hash,
+            expirationDate: (+(new Date()) + 72000), //2 hours
+            ext: content.ext,
+            referrer: 'localhost,127.0.0.1'
+          })
+        })
+    })
+    after(function(){
+      //delete purchase record
+      return purchasedb.remove(purchaseToken)
+      //delete inventory record
+        .then(function(result){
+          return couch.inventory.removeAsync(result._id)
+        })
+
+    })
+    it('should 404 on bad static content',function(){
+      return client.getAsync(
+        client.url('/static/' + content.badHash + '/' + content.name)
+      )
+        .spread(function(result,body){
+          expect(body).to.equal('404 Not Found')
+          expect(result.statusCode).to.equal(404)
+        })
+    })
+    it('should 200 on good static content',function(){
+      return client.getAsync(
+        client.url('/static/' + content.hash + '/' + content.name)
+      )
+        .spread(function(result,body){
+          expect(body).to.equal('The fox is brown')
+          expect(result.statusCode).to.equal(200)
+        })
+    })
+    it('should not play content without purchases',function(){
+      return client.getAsync(
+        client.url('/play/' + badPurchaseToken + '/video.mp4')
+      )
+        .spread(function(result,body){
+          expect(body).to.equal('404 Not Found')
+          expect(result.statusCode).to.equal(404)
+        })
+    })
+    it('should play content with purchases',function(){
+      return client.getAsync(
+        client.url('/play/' + purchaseToken + '/video.mp4')
+      )
+        .spread(function(result,body){
+          expect(body).to.equal('The fox is brown')
+          expect(result.statusCode).to.equal(200)
         })
     })
   })

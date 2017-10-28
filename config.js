@@ -155,6 +155,15 @@ config.$load({
     name: 'store1',
     port: 5972,
     host: null,
+    /*
+    listen: [
+      {port: 80, host: null},
+      //use your own cert
+      {port: 443, host: null, sslKey: '/key', sslCert: '/cert'},
+      //or use the default oose cert
+      {port: 443, host: null, ssl: true}
+    ],
+    */
     username: 'oose',
     password: 'oose',
     workers: {
@@ -165,27 +174,6 @@ config.$load({
     inventoryThrottle: 100, //ms between requests
     purchasePruneConcurrency: 512,
     verifyExpiration: 15552000000//ms  (180 days = 7776000000)
-  },
-  //send system
-  send: {
-    enabled: false,
-    prism: 'prism1',
-    name: 'store1',
-    port: 5973,
-    host: null,
-    /*
-    listen: [
-      {port: 80, host: null},
-      //use your own cert
-      {port: 443, host: null, sslKey: '/key', sslCert: '/cert'},
-      //or use the default oose cert
-      {port: 443, host: null, ssl: true}
-    ],
-    */
-    workers: {
-      count: 1,
-      maxConnections: 10000
-    }
   },
   //shredder
   shredder: {
