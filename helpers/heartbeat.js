@@ -146,7 +146,7 @@ var peerListFromCache = function(){
         return prismBalance.peerList()
           .then(function(result){
             peerList = result
-            return redis.setAsync(key,peerList.toJSON())
+            return redis.setAsync(key,JSON.stringify(peerList))
           })
           .then(function(){
             return redis.expireAsync(key,config.heartbeat.peerListExpire)

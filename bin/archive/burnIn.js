@@ -7,8 +7,8 @@ var ProgressBar = require('progress')
 
 var UserError = oose.UserError
 
-var config = require('../config')
-var logger = require('../helpers/logger')
+var config = require('../../config')
+var logger = require('../../helpers/logger')
 
 var disks = []
 var progress = {}
