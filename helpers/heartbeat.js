@@ -155,7 +155,7 @@ var peerListFromCache = function(){
             return peerList
           })
       } else {
-        return result
+        return JSON.parse(result)
       }
     })
 }
