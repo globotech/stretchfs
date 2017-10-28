@@ -7,7 +7,7 @@ var api = require('../helpers/api')
 var couch = require('./couchbase')
 var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
-var redis = require('../helpers/redis')
+var redis = require('../helpers/redis')()
 
 var config = require('../config')
 
