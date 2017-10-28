@@ -29,11 +29,11 @@ config.$load({
   heartbeat: {
     systemKey: null,
     systemType: null,
-    retries: 8,
+    retries: 4,
     concurrency: 2, //number of simultaneous connections and queries
     startDelay: 500, //ms default: 30 second start delay
     frequency: 30000, //ms static frequency; duration and shift added to this
-    votePruneFrequency: 60000, //ms
+    votePruneFrequency: 300000, //ms
     voteLife: 60000, //ms vote hold down time (no pings during this window)
     pingResponseTimeout: 2000, //ms
     peerListExpire: 60000 //cache the peer list for this long ms
