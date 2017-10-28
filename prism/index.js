@@ -42,7 +42,7 @@ if(require.main === module){
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
-              if(13 !== err.code) throw err
+              if(!err || !err.code || 13 !== err.code) throw err
               //now register ourselves or mark ourselves available
               return couch.peer.upsertAsync(prismKey,{
                 name: config.prism.name,

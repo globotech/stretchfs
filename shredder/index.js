@@ -35,7 +35,7 @@ if(require.main === module){
             return nano.shredder.insertAsync(doc,workerKey)
           },//if we dont exist lets make sure thats why and create ourselves
           function(err){
-            if(404 !== err.statusCode) throw err
+            if(!err || !err.code || 13 !== err.code) throw err
             //now register ourselves or mark ourselves available
             return nano.shredder.insertAsync({
                 name: config.worker.name,

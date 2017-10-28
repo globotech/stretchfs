@@ -47,7 +47,7 @@ exports.static = function(req,res){
       res.sendFile(path.join(contentFolder,doc.relativePath))
     })
     .catch(function(err){
-      if(404 !== err.statusCode) throw err
+      if(!err || !err.code || 13 !== err.code) throw err
       res.status(404)
       res.send('404 Not Found')
     })
@@ -85,7 +85,7 @@ exports.play = function(req,res){
               //purchase not found
               function(err){
                 debug('PLAY','no purchase found',token,err.message)
-                if(404 !== err.statusCode) throw err
+                if(!err || !err.code || 13 !== err.code) throw err
                 return false
               }
             )

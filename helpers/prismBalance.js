@@ -198,7 +198,7 @@ exports.contentExists = function(hash){
           return result.value
         })
         .catch(function(err){
-          if(404 !== err.statusCode) throw err
+          if(!err || !err.code || 13 !== err.code) throw err
         })
     })
     .then(function(inventoryList){
