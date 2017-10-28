@@ -117,10 +117,11 @@ module.exports = function(done){
         debug('repaired link path for',filePath)
         fs.symlinkSync(filePath,linkPath)
       }
-      var ext = relativePath.match(/\.(.+)$/)[0]
       var hash = relativePath.replace(/[\\\/]/g,'').replace(/\..+$/,'')
+      var ext = relativePath.match(/\.(.+)$/)
+      if(ext && ext[0]) ext = ext[0]
       //skip invalid inventory entries
-      if(!hash.match(/^[a-f0-9]{40}$/i)){
+      if(!hash.match(/^[a-f0-9]{40}$/i) || !ext || !ext[0]){
         counter.invalid++
         debug(hash,'invalid, resuming stream')
       }
