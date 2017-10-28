@@ -19,8 +19,8 @@ var sslOptions = {
 var server = https.createServer(sslOptions,app)
 //if the config calls for additional servers set them up now
 var listenServer = []
-if(config.send.listen && config.send.listen.length){
-  config.send.listen.forEach(function(cfg){
+if(config.store.listen && config.store.listen.length){
+  config.store.listen.forEach(function(cfg){
     var ssl = null
     if(true === cfg.ssl) ssl = sslOptions
     if(cfg.sslKey && cfg.sslCert){
