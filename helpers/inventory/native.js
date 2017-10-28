@@ -11,6 +11,9 @@ var logger = require('../logger')
 
 var config = require('../../config')
 
+//open couch buckets
+var couchInventory = couch.inventory()
+
 
 /**
  * Scan Store Inventory
@@ -87,7 +90,7 @@ module.exports = function(done){
       //since nodes
       var inventoryKey = couch.schema.inventory(
         hash,config.store.prism,config.store.name)
-      couch.inventory.getAsync(inventoryKey)
+      couchInventory.getAsync(inventoryKey)
         .then(
           function(doc){
             doc = doc.value
@@ -106,7 +109,7 @@ module.exports = function(done){
             }
             debug(hash,'creating inventory record',doc)
             counter.created++
-            return couch.inventory.upsertAsync(inventoryKey,doc)
+            return couchInventory.upsertAsync(inventoryKey,doc)
           }
         )
         .then(function(){

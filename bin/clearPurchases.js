@@ -19,7 +19,8 @@ var runInterval = function(done){
     ' b WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   purchaseKey = purchaseKey + '%'
-  couch.purchase.queryAsync(query,[purchaseKey])
+  var couchPurchase = couch.purchase()
+  couchPurchase.queryAsync(query,[purchaseKey])
     .then(function(result){
       var deleted = result.length
       logger.log('info','Deletion complete, ' + deleted + ' records removed')
@@ -31,6 +32,7 @@ var runInterval = function(done){
       done(err)
     })
     .finally(function(){
+      couch.disconnect()
       logger.log('info','Purchase clearing complete')
       process.exit()
     })

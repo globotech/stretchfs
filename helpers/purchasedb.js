@@ -29,7 +29,7 @@ var couchWrap = function(token){
   var year = +token.slice(1,5)
   if(year !== now.getFullYear() && year !== (now.getFullYear() -1))
     return null
-  return couchbase.purchase
+  return couchbase.purchase()
 }
 
 

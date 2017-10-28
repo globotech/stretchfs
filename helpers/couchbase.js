@@ -10,6 +10,8 @@ var logger = require('./logger')
 
 var config = require('../config')
 
+var buckets = {}
+
 
 /**
  * Connect to Couchbase
@@ -23,6 +25,17 @@ var connectCouchbase = function(conf){
 }
 var cluster = connectCouchbase(config.couch)
 
+var client = {
+  cluster: cluster,
+  type: {
+    HEARTBEAT: 'heartbeat',
+    INVENTORY: 'inventory',
+    JOB: 'job',
+    PEER: 'peer',
+    PURCHASE: 'purchase'
+  }
+}
+
 
 /**
  * Open Couchbase bucket
@@ -30,9 +43,10 @@ var cluster = connectCouchbase(config.couch)
  * @param {string} secret
  * @return {object}
  */
-var openBucket = function(name,secret){
+client.openBucket = function(name,secret){
   debug('opening bucket',name,secret)
-  return P.promisifyAll(cluster.openBucket(name,secret,function(err){
+  if(buckets[name]) return buckets[name]
+  buckets[name] = P.promisifyAll(cluster.openBucket(name,secret,function(err){
     if('undefined' === typeof err){
       debug('connected to',name)
       return
@@ -44,19 +58,21 @@ var openBucket = function(name,secret){
       name + ' with secret ' + secret + ' ' + err
     )
     console.trace()
-    process.exit(2)
   }))
+  return buckets[name]
 }
 
-var client = {
-  cluster: cluster,
-  type: {
-    HEARTBEAT: 'heartbeat',
-    INVENTORY: 'inventory',
-    JOB: 'job',
-    PEER: 'peer',
-    PURCHASE: 'purchase'
-  }
+
+/**
+ * Close open bucket and make the next call reopen it
+ * @param {string} name
+ * @return {boolean}
+ */
+client.closeBucket = function(name){
+  if(!buckets[name]) return false
+  buckets[name].disconnect()
+  delete buckets[name]
+  return true
 }
 
 
@@ -78,6 +94,18 @@ client.getName = function(database,escape){
   var name = config.couch.bucket[database].name
   if(true === escape) name = '`' + name + '`'
   return name
+}
+
+
+/**
+ * Disconnect any open buckets
+ * @return {boolean}
+ */
+client.disconnect = function(){
+  for(var bucket in buckets){
+    bucket.disconnect()
+  }
+  return true
 }
 
 
@@ -110,52 +138,62 @@ client.init = function(couch){
 
 /**
  * Setup the Heartbeat DB
- * @type {object}
+ * @return {Object}
  */
-client.heartbeat = openBucket(
-  config.couch.bucket.heartbeat.name,
-  config.couch.bucket.heartbeat.secret
-)
+client.heartbeat = function(){
+  return client.openBucket(
+    config.couch.bucket.heartbeat.name,
+    config.couch.bucket.heartbeat.secret
+  )
+}
 
 
 /**
  * Setup the Inventory DB
- * @type {object}
+ * @return {Object}
  */
-client.inventory = openBucket(
-  config.couch.bucket.inventory.name,
-  config.couch.bucket.inventory.secret
-)
+client.inventory = function(){
+  return client.openBucket(
+    config.couch.bucket.inventory.name,
+    config.couch.bucket.inventory.secret
+  )
+}
 
 
 /**
  * Setup the Job DB
- * @type {object}
+ * @return {Object}
  */
-client.job = openBucket(
-  config.couch.bucket.job.name,
-  config.couch.bucket.job.secret
-)
+client.job = function(){
+  return client.openBucket(
+    config.couch.bucket.job.name,
+    config.couch.bucket.job.secret
+  )
+}
 
 
 /**
  * Setup the Peer DB
- * @type {object}
+ * @return {Object}
  */
-client.peer = openBucket(
-  config.couch.bucket.peer.name,
-  config.couch.bucket.peer.secret
-)
+client.peer = function(){
+  return client.openBucket(
+    config.couch.bucket.peer.name,
+    config.couch.bucket.peer.secret
+  )
+}
 
 
 /**
  * Setup the Purchase DB
- * @type {object}
+ * @return {Object}
  */
-client.purchase = openBucket(
-  config.couch.bucket.purchase.name,
-  config.couch.bucket.purchase.secret
-)
+client.purchase = function(){
+  return client.openBucket(
+    config.couch.bucket.purchase.name,
+    config.couch.bucket.purchase.secret
+  )
+}
 
 
 /**

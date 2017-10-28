@@ -6,6 +6,10 @@ var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 var logger = require('./logger')
 
+//open couch buckets
+var couchInventory = couch.inventory()
+var couchPeer = couch.peer()
+
 
 /**
  * Get list of prisms and cache the result
@@ -23,7 +27,7 @@ exports.peerList = function(){
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       prismKey = prismKey + '%'
-      return couch.peer.queryAsync(query,[prismKey])
+      return couchPeer.queryAsync(query,[prismKey])
         .then(function(result){
           return result
         })
@@ -38,7 +42,7 @@ exports.peerList = function(){
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       storeKey = storeKey + '%'
-      return couch.peer.queryAsync(query,[storeKey])
+      return couchPeer.queryAsync(query,[storeKey])
         .then(function(result){
           return result
         })
@@ -71,7 +75,7 @@ exports.prismList = function(){
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   prismKey = prismKey + '%'
-  return couch.peer.queryAsync(query,[prismKey])
+  return couchPeer.queryAsync(query,[prismKey])
     .then(function(result){
       return result
     })
@@ -89,9 +93,9 @@ exports.prismList = function(){
 exports.storeListByPrism = function(prism){
   redis.incr(redis.schema.counter('prism','prismBalance:storeListByPrism'))
   var storeKey = couch.schema.store(prism)
-  return couch.peer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
+  return couchPeer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
     .map(function(row){
-      return couch.peer.getAsync(row.key)
+      return couchPeer.getAsync(row.key)
     })
     .filter(function(row){
       row = row.value
@@ -185,7 +189,7 @@ exports.contentExists = function(hash){
     couch.getName(couch.type.INVENTORY,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
-  return couch.inventory.queryAsync(query,[existsKeyQ])
+  return couchInventory.queryAsync(query,[existsKeyQ])
     .then(function(result){
       debug(existsKey,'got inventory result',result)
       return result
@@ -193,7 +197,7 @@ exports.contentExists = function(hash){
     .map(function(row){
       debug(existsKey,'got record',row)
       count++
-      return couch.inventory.getAsync(row.key)
+      return couchInventory.getAsync(row.key)
         .then(function(result){
           return result.value
         })
@@ -212,14 +216,14 @@ exports.contentExists = function(hash){
           .map(function(row){
             debug(existsKey,'got inventory list record',row)
             return P.all([
-              couch.peer.getAsync(couch.schema.prism(row.prism))
+              couchPeer.getAsync(couch.schema.prism(row.prism))
                 .then(function(result){
                   return result.value
                 })
                 .catch(function(){
                   return {name:row.prism,available:false}
                 }),
-              couch.peer.getAsync(
+              couchPeer.getAsync(
                 couch.schema.store(row.prism,row.store))
                 .then(function(result){
                   return result.value

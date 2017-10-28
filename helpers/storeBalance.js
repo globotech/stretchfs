@@ -7,6 +7,9 @@ var NotFoundError = oose.NotFoundError
 var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 
+//open couch buckets
+var couchPeer = couch.peer()
+
 
 /**
  * Get list of stores by prism
@@ -22,7 +25,7 @@ exports.storeList = function(prism){
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   storeKey = storeKey + '%'
-  return couch.peer.queryAsync(query,[storeKey])
+  return couchPeer.queryAsync(query,[storeKey])
     .then(function(result){
       debug(storeKey,'got store list result',result)
       return result
@@ -61,7 +64,7 @@ exports.populateStores = function(stores){
     return stores
   })
     .map(function(store){
-      return couch.peer.getAsync(couch.schema.store(store))
+      return couchPeer.getAsync(couch.schema.store(store))
         .then(function(result){
           return result.value
         })

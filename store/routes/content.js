@@ -21,6 +21,10 @@ var config = require('../../config')
 var rootFolder = path.resolve(config.root)
 var contentFolder = path.resolve(rootFolder + '/content')
 
+//open couch buckets
+var couchInventory = couch.inventory()
+var couchPeer = couch.peer()
+
 //make some promises
 P.promisifyAll(fs)
 
@@ -44,7 +48,7 @@ var createInventory = function(fileDetail,verified){
   }
   if(verified) inventory.verifiedAt = verified
   debug(inventoryKey,'creating inventory record',inventory)
-  return couch.inventory.upsertAsync(inventoryKey,inventory)
+  return couchInventory.upsertAsync(inventoryKey,inventory)
     .then(function(result){
       inventory._rev = result.rev
       return inventory
@@ -60,7 +64,7 @@ var updateInventory = function(fileDetail,doc,verified){
   )
   doc.size = fileDetail.stat.size
   if(verified) doc.verifiedAt = verified
-  return couch.inventory.upsertAsync(doc._id,doc)
+  return couchInventory.upsertAsync(doc._id,doc)
     .then(function(result){
       doc._rev = result.rev
       return doc
@@ -78,7 +82,7 @@ var verifyFile = function(fileDetail,force){
     config.store.prism,
     config.store.name
   )
-  return couch.inventory.getAsync(inventoryKey)
+  return couchInventory.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result.value
@@ -103,10 +107,10 @@ var verifyFile = function(fileDetail,force){
     .then(function(){
       //validate the file, if it doesnt match remove it
       if(!fileDetail.exists){
-        return couch.inventory.getAsync(inventoryKey)
+        return couchInventory.getAsync(inventoryKey)
           .then(function(result){
             result = result.value
-            return couch.inventory.removeAsync(result._id)
+            return couchInventory.removeAsync(result._id)
           })
           .catch(function(err){
             if(!err || !err.code || 13 !== err.code){
@@ -121,12 +125,12 @@ var verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return couch.inventory.removeAsync(inventory._id)
+            return couchInventory.removeAsync(inventory._id)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
         //here we should get the inventory record, update it or create it
-        return couch.inventory.getAsync(inventoryKey)
+        return couchInventory.getAsync(inventoryKey)
           .then(
             function(result){
               result = result.value
@@ -224,7 +228,7 @@ exports.put = function(req,res){
       fileDetail = result
       //get existing existence record and add to it or create one
       debug(inventoryKey,'getting inventory record')
-      return couch.inventory.getAsync(inventoryKey)
+      return couchInventory.getAsync(inventoryKey)
     })
     .then(
       //record exists, extend it
@@ -247,10 +251,10 @@ exports.put = function(req,res){
       logger.log('error', 'Failed to upload content ' + err.message)
       logger.log('error', err.stack)
       fs.unlinkSync(dest)
-      couch.inventory.getAsync(inventoryKey)
+      couchInventory.getAsync(inventoryKey)
         .then(function(result){
           result = result.value
-          return couch.inventory.removeAsync(result._id)
+          return couchInventory.removeAsync(result._id)
         })
         .catch(function(err){
           logger.log('error', 'Failed to clean up broken inventory record ' +
@@ -351,10 +355,10 @@ exports.remove = function(req,res){
       //now remove the file
       return P.all([
         hashFile.remove(fileDetail.hash),
-        couch.inventory.getAsync(inventoryKey)
+        couchInventory.getAsync(inventoryKey)
           .then(function(result){
             result = result.value
-            return couch.inventory.removeAsync(result._id)
+            return couchInventory.removeAsync(result._id)
           })
           .catch(function(){
             //nothing
@@ -427,7 +431,7 @@ exports.detail = function(req,res){
   var hash = req.body.hash
   var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
-  couch.inventory.getAsync(inventoryKey)
+  couchInventory.getAsync(inventoryKey)
     .then(function(result){
       var record = result.value
       if(!record) throw new Error('File not found')
@@ -510,7 +514,7 @@ exports.send = function(req,res){
   var store = {}
   var fileDetail = {}
   var verifyDetail = {}
-  couch.peer.getAsync(storeKey)
+  couchPeer.getAsync(storeKey)
     .then(
       function(result){
         store = result.value
@@ -578,7 +582,7 @@ exports.static = function(req,res){
     config.send.store
   )
   debug('STATIC','checking for inventory',inventoryKey)
-  couch.inventory.getAsync(inventoryKey)
+  couchInventory.getAsync(inventoryKey)
     .then(function(result){
       var doc = result.value
       debug('STATIC','got file inventory, sending content',doc)
@@ -620,7 +624,7 @@ exports.play = function(req,res){
                 debug('PLAY','got purchase result',token,result)
                 purchase = result
                 //get inventory
-                return couch.inventory.getAsync(couch.schema.inventory(
+                return couchInventory.getAsync(couch.schema.inventory(
                   purchase.hash,
                   config.send.prism,
                   config.send.store

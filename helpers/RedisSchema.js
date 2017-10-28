@@ -60,15 +60,6 @@ RedisSchema.prototype.storeList = function(){
 
 
 /**
- * Heartbeat peer list Key
- * @return {string}
- */
-RedisSchema.prototype.heartbeatPeerList = function(){
-  return this.applyPrefix('heartbeatPeerList')
-}
-
-
-/**
  * Prism hits (for load balancing)
  * @param {string} token
  * @param {string} prism

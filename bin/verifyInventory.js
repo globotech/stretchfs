@@ -37,7 +37,8 @@ var verifyInventoryAsync = function(){
     valid: 0
   }
   debug('starting to verify',contentFolder)
-  return couch.inventory.viewAsync('inventory/byStore',{
+  var couchInventory = couch.inventory()
+  return couchInventory.viewAsync('inventory/byStore',{
     startkey: [config.store.name],
     endkey: [config.store.name,'\uffff']
   })
@@ -62,7 +63,7 @@ var verifyInventoryAsync = function(){
             counter.valid++
           } else {
             counter.invalid++
-            return couch.inventory.removeAsync(record._id)
+            return couchInventory.removeAsync(record._id)
               .catch(function(){
                 counter.warning++
               })
@@ -70,6 +71,7 @@ var verifyInventoryAsync = function(){
         })
     })
     .then(function(){
+      couch.disconnect()
       return counter
     })
 }

@@ -13,6 +13,8 @@ var cluster
 var heartbeat
 var storeKey = couch.schema.store(config.store.prism,config.store.name)
 
+var couchPeer = couch.peer()
+
 //make some promises
 P.promisifyAll(infant)
 
@@ -32,7 +34,7 @@ if(require.main === module){
       )
       heartbeat = infant.parent('../helpers/heartbeat')
       //check if our needed folders exist
-      couch.peer.getAsync(storeKey)
+      couchPeer.getAsync(storeKey)
         .then(
           //if we exist lets mark ourselves available
           function(result){
@@ -43,13 +45,13 @@ if(require.main === module){
             doc.port = config.store.port
             doc.available = true
             doc.active = true
-            return couch.peer.upsertAsync(storeKey,doc,{cas: result.cas})
+            return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err || !err.code || 13 !== err.code) throw err
             //now register ourselves or mark ourselves available
-            return couch.peer.upsertAsync(storeKey,{
+            return couchPeer.upsertAsync(storeKey,{
               prism: config.store.prism,
               name: config.store.name,
               host: config.store.host,
@@ -92,13 +94,14 @@ if(require.main === module){
     function(done){
       logger.log('info','Beginning store shutdown')
       //mark ourselves as down
-      couch.peer.getAsync(storeKey)
+      couchPeer.getAsync(storeKey)
         .then(function(result){
           var doc = result.value
           doc.available = false
-          return couch.peer.upsertAsync(storeKey,doc,{cas: result.cas})
+          return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
         })
         .then(function(){
+          couch.disconnect()
           if(!heartbeat) return
           return heartbeat.stopAsync()
         })

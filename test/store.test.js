@@ -16,6 +16,9 @@ var purchasedb = require('../helpers/purchasedb')
 
 var content = oose.mock.content
 
+//open couch buckets
+var couchInventory = couch.inventory()
+
 var config = require('../config')
 config.$load(require(__dirname + '/assets/store1.config.js'))
 
@@ -215,7 +218,7 @@ describe('store',function(){
     var badPurchaseToken = purchasedb.generate()
     before(function(){
       //create inventory record
-      return couch.inventory.upsertAsync(inventoryKey,{
+      return couchInventory.upsertAsync(inventoryKey,{
         hash: content.hash,
         mimeExtension: content.ext,
         mimeType: content.type,
@@ -240,7 +243,7 @@ describe('store',function(){
       return purchasedb.remove(purchaseToken)
       //delete inventory record
         .then(function(result){
-          return couch.inventory.removeAsync(result._id)
+          return couchInventory.removeAsync(result._id)
         })
 
     })

@@ -5,6 +5,9 @@ var logger = require('../../helpers/logger')
 
 var config = require('../../config')
 
+//open couch buckets
+var couchInventory = couch.inventory()
+
 
 /**
  * Map a purchase token to a usable URI
@@ -20,7 +23,7 @@ exports.uri = function(req,res){
       .then(function(result){
         purchase = result
         //get inventory
-        return couch.inventory.getAsync(couch.schema.inventory(
+        return couchInventory.getAsync(couch.schema.inventory(
           purchase.hash,
           config.store.prism,
           config.store.name

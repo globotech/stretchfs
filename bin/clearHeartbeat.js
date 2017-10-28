@@ -19,7 +19,8 @@ var runInterval = function(done){
     ' b WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   hbKey = hbKey + '%'
-  couch.heartbeat.queryAsync(query,[hbKey])
+  var couchHeartbeat = couch.heartbeat()
+  couchHeartbeat.queryAsync(query,[hbKey])
     .then(function(result){
       var deleted = result.length
       logger.log('info','Deletion complete, ' + deleted + ' records removed')
@@ -31,6 +32,7 @@ var runInterval = function(done){
       done(err)
     })
     .finally(function(){
+      couch.disconnect()
       logger.log('info','Heartbeat clearing complete')
       process.exit()
     })

@@ -22,6 +22,11 @@ var UserError = oose.UserError
 
 var config = require('../../config')
 
+//open couch buckets
+var couchHeartbeat = couch.heartbeat()
+var couchInventory = couch.inventory()
+var couchPeer = couch.peer()
+
 
 /**
  * Rewrite hash name
@@ -184,7 +189,7 @@ exports.before = function(that){
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couch.inventory.queryAsync(query,[key])
+      return couchInventory.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.prism()
@@ -193,7 +198,7 @@ exports.before = function(that){
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couch.peer.queryAsync(query,[key])
+      return couchPeer.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.store()
@@ -202,7 +207,7 @@ exports.before = function(that){
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couch.peer.queryAsync(query,[key])
+      return couchPeer.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.downVote()
@@ -211,7 +216,7 @@ exports.before = function(that){
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couch.heartbeat.queryAsync(query,[key])
+      return couchHeartbeat.queryAsync(query,[key])
     })
     .then(function(){
       return P.all([
@@ -243,7 +248,7 @@ exports.after = function(that){
   logger.log('info','Stopping mock cluster...')
   var clconf = exports.clconf
   var removePeerEntry = function(peerKey){
-    return couch.peer.removeAsync(peerKey)
+    return couchPeer.removeAsync(peerKey)
   }
   return P.all([
     exports.server.send4.stopAsync(),
