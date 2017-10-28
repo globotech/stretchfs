@@ -104,6 +104,7 @@ config.$load({
     enabled: false,
     ghost: false, //when enabled will not register to peer db
     name: 'prism1',
+    accessLog: false,
     port: 5971,
     host: null,
     /*
@@ -153,6 +154,7 @@ config.$load({
     enabled: false,
     prism: 'prism1',
     name: 'store1',
+    accessLog: false,
     port: 5972,
     host: null,
     /*
@@ -199,29 +201,6 @@ config.$load({
       count: 1,
       maxConnections: 10000
     }
-  },
-  //clonetool utility
-  clonetool: {
-    //desired is the default desired number of copies
-    desired: 2,
-    //hashes in this list will never be modified without force action
-    hashWhitelist: [],
-    //stores in this list will never have any hashes deleted in automodes
-    //  NOTE: --drop WILL STILL WORK as it is forced
-    storeProtected: []
-  },
-  //stats utility
-  stats: {
-    //stats can/should use a different db+server than the core services
-    redis: {
-      host: '127.0.0.1',
-      port: 6379,
-      db: 15,
-      prefix: 'oose',
-      options: {}
-    },
-    life: 86400, //1 day
-    afterlife: 604800  //1 week
   }
 })
 

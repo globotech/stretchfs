@@ -46,6 +46,12 @@ var routes = require('./routes')
 //make some promises
 P.promisifyAll(server)
 
+//access logging
+if(config.store.accessLog){
+  var morgan = require('morgan')
+  app.use(morgan('combined'))
+}
+
 //setup
 app.use(bodyParser.json({limit: '100mb'}))
 
