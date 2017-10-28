@@ -7,6 +7,7 @@ var api = require('../helpers/api')
 var couch = require('./couchbase')
 var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
+var redis = require('../helpers/redis')
 
 var config = require('../config')
 
@@ -36,6 +37,7 @@ var config = require('../config')
 var heartbeatTimeout = null
 var pruneTimeout = null
 var voteLog = {}
+var myDownVotes = {}
 
 //setup our identity
 var setupProgram = function(){
@@ -92,13 +94,15 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   var myDownKey = couch.schema.downVote(peer.name,systemKey)
   debug('DOWN VOTE: ' + key)
   var createDownVote = function(){
-    return couch.heartbeat.upsertAsync(myDownKey,{
+    var downVote = {
       peer: peer,
       systemKey: systemKey,
       systemType: systemType,
       reason: reason,
       timestamp: +(new Date())
-    })
+    }
+    myDownVotes[myDownKey] = downVote
+    return couch.heartbeat.upsertAsync(myDownKey,downVote)
   }
   //get down votes that have already been set for this host
   return createDownVote()
@@ -124,6 +128,35 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
     .catch(function(err){
       console.log(err)
       logger.log('error', 'Failed to cast down vote: ' + err.message)
+    })
+}
+
+
+/**
+ * Cache the peer list for quicker access
+ * @return {P}
+ */
+var peerListFromCache = function(){
+  var key = redis.schema.heartbeatPeerList()
+  return redis.getAsync(key)
+    .then(function(result){
+      if(!result){
+        //build cache
+        var peerList = {}
+        return prismBalance.peerList()
+          .then(function(result){
+            peerList = result
+            return redis.setAsync(key,peerList.toJSON())
+          })
+          .then(function(){
+            return redis.expireAsync(key,config.heartbeat.peerListExpire)
+          })
+          .then(function(){
+            return peerList
+          })
+      } else {
+        return result
+      }
     })
 }
 
@@ -187,6 +220,8 @@ var runHeartbeat = function(systemKey,systemType){
           ' b WHERE META(b).id LIKE $1'
         var query = couch.N1Query.fromString(qstring)
         downKey = downKey + '%'
+        //remove local downvote
+        delete myDownVotes[downKey]
         return couch.heartbeat.queryAsync(query,[downKey])
       })
       .then(function(result){
@@ -197,7 +232,7 @@ var runHeartbeat = function(systemKey,systemType){
         logger.log('error', 'Failed to restore peer: ' + err.message)
       })
   }
-  return prismBalance.peerList()
+  return peerListFromCache()
     .then(function(result){
       peerCount = result.length
       debug('Found peers',result.length)
@@ -206,17 +241,12 @@ var runHeartbeat = function(systemKey,systemType){
     .map(function(peer){
       //check for down votes for this peer from us
       var downKey = couch.schema.downVote(peer.name,systemKey)
-      return couch.heartbeat.getAsync(downKey)
-        .then(
-          function(result){
-            peer.existingDownVote = result.value
-            return peer
-          },
-          function(){
-            peer.existingDownVote = false
-            return peer
-          }
-        )
+      if(myDownVotes[downKey]){
+        peer.existingDownVote = myDownVotes[downKey]
+      } else {
+        peer.existingDownVote = false
+      }
+      return peer
     })
     //MAIN PING LOOP
     .map(function(peer){

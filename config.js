@@ -30,12 +30,13 @@ config.$load({
     systemKey: null,
     systemType: null,
     retries: 8,
-    concurrency: 8, //number of simultaneous connections and queries
-    startDelay: 60000, //ms default: 30 second start delay
-    frequency: 5000, //ms static frequency; duration and shift added to this
+    concurrency: 2, //number of simultaneous connections and queries
+    startDelay: 500, //ms default: 30 second start delay
+    frequency: 30000, //ms static frequency; duration and shift added to this
     votePruneFrequency: 60000, //ms
     voteLife: 60000, //ms vote hold down time (no pings during this window)
-    pingResponseTimeout: 2000 //ms
+    pingResponseTimeout: 2000, //ms
+    peerListExpire: 60000 //cache the peer list for this long ms
   },
   //databases
   redis: {
