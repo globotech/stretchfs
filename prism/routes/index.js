@@ -52,3 +52,10 @@ exports.content = require('./content')
  * @type {object}
  */
 exports.user = require('./user')
+
+
+/**
+ * Job routes
+ * @type {object}
+ */
+exports.job = require('./job')
