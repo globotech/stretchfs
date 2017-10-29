@@ -11,6 +11,7 @@ var logger = require('./logger')
 var config = require('../config')
 
 var buckets = {}
+var dsn = ''
 
 
 /**
@@ -19,7 +20,8 @@ var buckets = {}
  * @return {object}
  */
 var connectCouchbase = function(conf){
-  var dsn = (conf.protocol || 'couchbase://') + (conf.host || '127.0.0.1')
+  dsn = (conf.protocol || 'couchbase://') +
+    (conf.host || '127.0.0.1') + ':' + (conf.port || '8091')
   debug('connecting to couchbase',dsn)
   return P.promisifyAll(new couchbase.Cluster(dsn))
 }
@@ -54,7 +56,7 @@ client.openBucket = function(name,secret){
     debug('couchbase connect error',err)
     logger.log(
       'error',
-      'Failed to connect to Couchbase bucket ' +
+      'Failed to connect to Couchbase bucket ' + dsn + ' ' +
       name + ' with secret ' + secret + ' ' + err
     )
     console.trace()
