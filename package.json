@@ -53,7 +53,7 @@
     "morgan": "^1.8.2",
     "node-password": "^1.0.2",
     "object-manage": "^1.0.0",
-    "oose-sdk": "^2.2.2",
+    "oose-sdk": "2.2.2",
     "pretty-bytes": "^4.0.2",
     "procfs-stats": "^1.0.2",
     "progress": "^2.0.0",
