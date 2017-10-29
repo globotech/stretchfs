@@ -213,21 +213,14 @@ describe('store',function(){
   //content
   describe('send:content',function(){
     //get tokens
-    var inventoryKey = couch.schema.inventory(content.hash,'prism1','store5')
     var purchaseToken = purchasedb.generate()
     var badPurchaseToken = purchasedb.generate()
     before(function(){
-      //create inventory record
-      return couchInventory.upsertAsync(inventoryKey,{
-        hash: content.hash,
-        mimeExtension: content.ext,
-        mimeType: content.type,
-        prism: 'prism1',
-        store: 'store5',
-        relativePath: content.relativePath,
-        size: content.data.length,
-        createdAt: +(new Date())
-      })
+      return promisePipe(
+        fs.createReadStream(content.file),
+        client.put(
+          client.url('/content/put/') + content.hash + '.' + content.ext)
+      )
       //make a purchase against this
         .then(function(){
           return purchasedb.create(purchaseToken,{
@@ -242,14 +235,19 @@ describe('store',function(){
       //delete purchase record
       return purchasedb.remove(purchaseToken)
       //delete inventory record
-        .then(function(result){
-          return couchInventory.removeAsync(result._id)
+        .then(function(){
+          return client.postAsync({
+            url: client.url('/content/remove'),
+            json: {hash: content.hash}
+          })
         })
-
+        .spread(function(res,body){
+          expect(body.success).to.equal('File removed')
+        })
     })
     it('should 404 on bad static content',function(){
       return client.getAsync(
-        client.url('/static/' + content.badHash + '/' + content.name)
+        client.url('/static/' + content.sha1Bogus + '/' + content.name)
       )
         .spread(function(result,body){
           expect(body).to.equal('404 Not Found')

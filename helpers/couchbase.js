@@ -175,6 +175,18 @@ client.job = function(){
 
 
 /**
+ * Setup the OOSE DB
+ * @return {Object}
+ */
+client.oose = function(){
+  return client.openBucket(
+    config.couch.bucket.oose.name,
+    config.couch.bucket.oose.secret
+  )
+}
+
+
+/**
  * Setup the Peer DB
  * @return {Object}
  */

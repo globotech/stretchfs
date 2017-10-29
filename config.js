@@ -64,6 +64,10 @@ config.$load({
         name: 'oose-inventory',
         secret: ''
       },
+      oose: {
+        name: 'oose',
+        secret: ''
+      },
       peer: {
         name: 'oose-peer',
         secret: ''

@@ -74,8 +74,8 @@ process.env.REQUEST_TIMEOUT = 10000
  */
 exports.user = {
   session: {},
-  username: 'oose',
-  password: 'blah1234'
+  name: 'localhost',
+  secret: 'bigpassword'
 }
 
 
@@ -122,11 +122,7 @@ exports.clconf = {
   store1: exports.getConfig(__dirname + '/../assets/store1.config.js'),
   store2: exports.getConfig(__dirname + '/../assets/store2.config.js'),
   store3: exports.getConfig(__dirname + '/../assets/store3.config.js'),
-  store4: exports.getConfig(__dirname + '/../assets/store4.config.js'),
-  send1: exports.getConfig(__dirname + '/../assets/send1.config.js'),
-  send2: exports.getConfig(__dirname + '/../assets/send2.config.js'),
-  send3: exports.getConfig(__dirname + '/../assets/send3.config.js'),
-  send4: exports.getConfig(__dirname + '/../assets/send4.config.js')
+  store4: exports.getConfig(__dirname + '/../assets/store4.config.js')
 }
 
 
@@ -152,18 +148,6 @@ exports.server = {
   }),
   store4: infant.parent('../../store',{
     fork: {env: exports.makeEnv(__dirname + '/../assets/store4.config.js')}
-  }),
-  send1: infant.parent('../../send',{
-    fork: {env: exports.makeEnv(__dirname + '/../assets/send1.config.js')}
-  }),
-  send2: infant.parent('../../send',{
-    fork: {env: exports.makeEnv(__dirname + '/../assets/send2.config.js')}
-  }),
-  send3: infant.parent('../../send',{
-    fork: {env: exports.makeEnv(__dirname + '/../assets/send3.config.js')}
-  }),
-  send4: infant.parent('../../send',{
-    fork: {env: exports.makeEnv(__dirname + '/../assets/send4.config.js')}
   })
 }
 
@@ -225,11 +209,7 @@ exports.before = function(that){
         exports.server.store1.startAsync(),
         exports.server.store2.startAsync(),
         exports.server.store3.startAsync(),
-        exports.server.store4.startAsync(),
-        exports.server.send1.startAsync(),
-        exports.server.send2.startAsync(),
-        exports.server.send3.startAsync(),
-        exports.server.send4.startAsync()
+        exports.server.store4.startAsync()
       ])
     })
     .then(function(){
@@ -251,10 +231,6 @@ exports.after = function(that){
     return couchPeer.removeAsync(peerKey)
   }
   return P.all([
-    exports.server.send4.stopAsync(),
-    exports.server.send3.stopAsync(),
-    exports.server.send2.stopAsync(),
-    exports.server.send1.stopAsync(),
     exports.server.store4.stopAsync(),
     exports.server.store3.stopAsync(),
     exports.server.store2.stopAsync(),
@@ -274,27 +250,7 @@ exports.after = function(that){
         removePeerEntry(couch.schema.store(
           clconf.store3.store.prism,clconf.store3.store.name)),
         removePeerEntry(couch.schema.store(
-          clconf.store4.store.prism,clconf.store4.store.name)),
-        removePeerEntry(couch.schema.send(
-          clconf.send1.send.prism,
-          clconf.send1.send.store,
-          clconf.send1.send.name
-        )),
-        removePeerEntry(couch.schema.send(
-          clconf.send2.send.prism,
-          clconf.send2.send.store,
-          clconf.send2.send.name
-        )),
-        removePeerEntry(couch.schema.send(
-          clconf.send3.send.prism,
-          clconf.send3.send.store,
-          clconf.send3.send.name
-        )),
-        removePeerEntry(couch.schema.send(
-          clconf.send4.send.prism,
-          clconf.send4.send.store,
-          clconf.send4.send.name
-        ))
+          clconf.store4.store.prism,clconf.store4.store.name))
       ])
     })
     .then(function(){
@@ -368,7 +324,7 @@ exports.checkPublic = function(prism){
         throw new Error('Should have thrown an error for no username')
       })
       .catch(UserError,function(err){
-        expect(err.message).to.equal('Invalid username or password')
+        expect(err.message).to.equal('Invalid name or secret')
       })
   }
 }
@@ -417,8 +373,8 @@ exports.prismLogin = function(prism){
     return client.postAsync({
       url: client.url('/user/login'),
       json: {
-        username: exports.user.username,
-        password: exports.user.password
+        name: exports.user.name,
+        secret: exports.user.secret
       },
       localAddress: '127.0.0.1'
     })
@@ -839,9 +795,10 @@ exports.contentDeliver = function(prism,localAddress,referrer){
 exports.contentReceive = function(prism){
   return function(){
     var client = api.setupAccess('prism',prism.prism)
+    var url = client.url(
+      '/static/' + content.hash + '/' + content.filename + '?addressType=ip')
     var options = {
-      url: client.url(
-        '/static/' + content.hash + '/' + content.filename + '?addressType=ip'),
+      url: url,
       query: {
         addressType: 'ipv4'
       },

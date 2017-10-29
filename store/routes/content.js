@@ -49,14 +49,16 @@ var createInventory = function(fileDetail,verified){
   if(verified) inventory.verifiedAt = verified
   debug(inventoryKey,'creating inventory record',inventory)
   return couchInventory.upsertAsync(inventoryKey,inventory)
-    .then(function(result){
-      inventory._rev = result.rev
+    .then(function(){
+      inventory._id = inventoryKey
       return inventory
     })
 }
 
-var updateInventory = function(fileDetail,doc,verified){
+var updateInventory = function(fileDetail,inventoryKey,doc,verified){
   if('undefined' === typeof verified) verified = false
+  var cas = doc.cas
+  doc = doc.value
   doc.mimeExtension = fileDetail.ext
   doc.mimeType = mime.lookup(fileDetail.ext)
   doc.relativePath = hashFile.toRelativePath(
@@ -64,9 +66,9 @@ var updateInventory = function(fileDetail,doc,verified){
   )
   doc.size = fileDetail.stat.size
   if(verified) doc.verifiedAt = verified
-  return couchInventory.upsertAsync(doc._id,doc)
-    .then(function(result){
-      doc._rev = result.rev
+  return couchInventory.upsertAsync(inventoryKey,doc,{cas: cas})
+    .then(function(){
+      doc._id = inventoryKey
       return doc
     })
 }
@@ -107,11 +109,7 @@ var verifyFile = function(fileDetail,force){
     .then(function(){
       //validate the file, if it doesnt match remove it
       if(!fileDetail.exists){
-        return couchInventory.getAsync(inventoryKey)
-          .then(function(result){
-            result = result.value
-            return couchInventory.removeAsync(result._id)
-          })
+        return couchInventory.removeAsync(inventoryKey)
           .catch(function(err){
             if(!err || !err.code || 13 !== err.code){
               logger.log('error',
@@ -125,7 +123,7 @@ var verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return couchInventory.removeAsync(inventory._id)
+            return couchInventory.removeAsync(inventoryKey)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
@@ -133,8 +131,7 @@ var verifyFile = function(fileDetail,force){
         return couchInventory.getAsync(inventoryKey)
           .then(
             function(result){
-              result = result.value
-              return updateInventory(fileDetail,result,verifiedAt)
+              return updateInventory(fileDetail,inventoryKey,result,verifiedAt)
             },
             //record does not exist, create it
             function(err){
@@ -233,9 +230,9 @@ exports.put = function(req,res){
     .then(
       //record exists, extend it
       function(result){
-        var doc = result.value
+        var doc = result
         debug(inventoryKey,'got inventory record',doc)
-        return updateInventory(fileDetail,doc)
+        return updateInventory(fileDetail,inventoryKey,doc)
       },
       //record does not exist, create it
       function(err){
@@ -251,19 +248,17 @@ exports.put = function(req,res){
       logger.log('error', 'Failed to upload content ' + err.message)
       logger.log('error', err.stack)
       fs.unlinkSync(dest)
-      couchInventory.getAsync(inventoryKey)
-        .then(function(result){
-          result = result.value
-          return couchInventory.removeAsync(result._id)
+      return couchInventory.removeAsync(inventoryKey)
+        .then(function(){
+          redis.incr(redis.schema.counterError('store','content:put'))
+          res.status(500)
+          res.json({error: err})
         })
         .catch(function(err){
           logger.log('error', 'Failed to clean up broken inventory record ' +
             err.message)
           logger.log('error', err.stack)
         })
-      redis.incr(redis.schema.counterError('store','content:put'))
-      res.status(500)
-      res.json({error: err})
     })
 }
 
@@ -355,14 +350,7 @@ exports.remove = function(req,res){
       //now remove the file
       return P.all([
         hashFile.remove(fileDetail.hash),
-        couchInventory.getAsync(inventoryKey)
-          .then(function(result){
-            result = result.value
-            return couchInventory.removeAsync(result._id)
-          })
-          .catch(function(){
-            //nothing
-          })
+        couchInventory.removeAsync(inventoryKey)
       ])
     })
     .then(function(){
@@ -534,7 +522,10 @@ exports.send = function(req,res){
     })
     .then(function(result){
       verifyDetail = result
-      if('ok' !== result.status) throw new Error('Verify failed')
+      if('ok' !== result.status){
+        console.log('Verify failed',result)
+        throw new Error('Verify failed')
+      }
       var rs = fs.createReadStream(
         hashFile.toPath(fileDetail.hash,fileDetail.ext))
       return promisePipe(
@@ -578,8 +569,8 @@ exports.static = function(req,res){
   debug('STATIC','got file static request',hash)
   var inventoryKey = couch.schema.inventory(
     hash,
-    config.send.prism,
-    config.send.store
+    config.store.prism,
+    config.store.name
   )
   debug('STATIC','checking for inventory',inventoryKey)
   couchInventory.getAsync(inventoryKey)
@@ -626,8 +617,8 @@ exports.play = function(req,res){
                 //get inventory
                 return couchInventory.getAsync(couch.schema.inventory(
                   purchase.hash,
-                  config.send.prism,
-                  config.send.store
+                  config.store.prism,
+                  config.store.name
                 ))
               },
               //purchase not found

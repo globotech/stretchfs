@@ -23,10 +23,6 @@ describe('e2e',function(){
       it('store2 should be up',e2e.checkUp('store',e2e.clconf.store2))
       it('store3 should be up',e2e.checkUp('store',e2e.clconf.store3))
       it('store4 should be up',e2e.checkUp('store',e2e.clconf.store4))
-      it('send1 should be up',e2e.checkUp('send',e2e.clconf.send1))
-      it('send2 should be up',e2e.checkUp('send',e2e.clconf.send2))
-      it('send3 should be up',e2e.checkUp('send',e2e.clconf.send3))
-      it('send4 should be up',e2e.checkUp('send',e2e.clconf.send4))
     })
     describe('authentication',function(){
       it('should not require authentication for public functions',
@@ -76,9 +72,9 @@ describe('e2e',function(){
         e2e.contentStatic(e2e.clconf.prism1))
       it('should deliver static content on prism2',
         e2e.contentStatic(e2e.clconf.prism2))
-      it('should receive content from send on prism1',
+      it('should receive content from store on prism1',
         e2e.contentReceive(e2e.clconf.prism1))
-      it('should receive content from send on prism2',
+      it('should receive content from stroe on prism2',
         e2e.contentReceive(e2e.clconf.prism2))
       it('should deny static content that must be purchased',function(){
         return e2e.contentStatic(e2e.clconf.prism1,'127.0.0.1','mp4')()

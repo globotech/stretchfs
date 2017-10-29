@@ -618,10 +618,10 @@ exports.deliver = function(req,res){
       valid: true,
       reason: null
     }
-    if(purchase.ip !== req.ip){
-      result.valid = false
-      result.reason = 'Invalid request'
-    }
+    //if(purchase.ip !== req.ip){
+    //  result.valid = false
+    //  result.reason = 'Invalid request'
+    //}
     var validReferrer = false
     var referrer = req.get('Referrer')
     if(!referrer || 'string' !== typeof referrer){
@@ -666,7 +666,8 @@ exports.deliver = function(req,res){
       //we have a purchase so now... we need to pick a store....
       return storeBalance.winnerFromExists(token,purchase.inventory,[],true)
         .then(function(winner){
-          res.redirect(302,makeUrl(req,winner,purchase))
+          var url = makeUrl(req,winner,purchase)
+          res.redirect(302,url)
         })
     })
     .catch(SyntaxError,function(err){
@@ -748,9 +749,9 @@ exports.contentStatic = function(req,res){
       }
       var host = result.name + '.' + config.domain
       if('ip' === addressType || 'ipv4' === addressType){
-        host = result.host + ':' + (+result.port +1)
+        host = result.host + ':' + result.port
       } else if('ipv6' === addressType){
-        host = (result.host6 || result.host) + ':[' + (+result.port +1) + ']'
+        host = (result.host6 || result.host) + ':[' + result.port + ']'
       }
       var url = proto + '://' + host +
         '/static/' + existsRecord.hash + '/' + filename

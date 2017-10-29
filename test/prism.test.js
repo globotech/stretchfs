@@ -14,8 +14,8 @@ P.promisifyAll(request)
 
 var user = {
   session: {},
-  username: 'test',
-  password: ''
+  name: 'localhost',
+  secret: 'bigpassword'
 }
 
 
@@ -56,13 +56,14 @@ describe('prism',function(){
         .postAsync({
           url: client.url('/user/login'),
           json: {
-            username: config.couch.options.auth.username,
-            password: config.couch.options.auth.password
+            name: user.name,
+            secret: user.secret
           }
         })
         .spread(function(res,body){
           if(!body.session) throw new Error('No session created')
           user.session = body.session
+          expect(body.message).to.equal('Login successful')
           expect(body.success).to.equal('User logged in')
           expect(body.session).to.be.an('Object')
         })

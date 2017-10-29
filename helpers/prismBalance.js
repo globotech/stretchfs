@@ -185,10 +185,11 @@ exports.contentExists = function(hash){
     size: 0,
     map: []
   }
-  var qstring = 'SELECT b.* FROM ' +
+  var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
     couch.getName(couch.type.INVENTORY,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
+  query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   return couchInventory.queryAsync(query,[existsKeyQ])
     .then(function(result){
       debug(existsKey,'got inventory result',result)
@@ -197,7 +198,7 @@ exports.contentExists = function(hash){
     .map(function(row){
       debug(existsKey,'got record',row)
       count++
-      return couchInventory.getAsync(row.key)
+      return couchInventory.getAsync(row._id)
         .then(function(result){
           return result.value
         })
@@ -238,9 +239,10 @@ exports.contentExists = function(hash){
           })
           .then(function(result){
             var map = result.map(function(val){
-              var avail = ((val[0].available) ? '+' : '-') +
-                          ((val[1].available) ? '+' : '-')
-              return val[0].name + ':' + val[1].name + avail
+              //var avail = ((val[0].available) ? '+' : '-') +
+              //            ((val[1].available) ? '+' : '-')
+              //return val[0].name + ':' + val[1].name + avail
+              return val[0].name + ':' + val[1].name
             })
             var record = {
               hash: inventoryList[0].hash,

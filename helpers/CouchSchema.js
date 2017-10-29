@@ -201,6 +201,26 @@ CouchSchema.prototype.inventory = function(hash,prism,store){
 
 
 /**
+ * OOSE User
+ * @param {string} name
+ * @return {string}
+ */
+CouchSchema.prototype.ooseUser = function(name){
+  return this.applyPrefix('user:' + name)
+}
+
+
+/**
+ * OOSE Token
+ * @param {string} token
+ * @return {string}
+ */
+CouchSchema.prototype.ooseToken = function(token){
+  return this.applyPrefix('token:' + token)
+}
+
+
+/**
  * Export Object
  * @type {CouchSchema}
  */
