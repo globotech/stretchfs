@@ -28,10 +28,10 @@ before_script:
   - sleep 5
   - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=root --cluster-init-password=password --cluster-init-ramsize=1024
   # Setup buckets
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose --bucket-password= --bucket-type=couchbase --bucket-ramsize=128 --wait
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-hearbeat --bucket-password= --bucket-type=couchbase --bucket-ramsize=128 --wait
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-inventory --bucket-password= --bucket-type=couchbase --bucket-ramsize=128 --wait
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-job --bucket-password= --bucket-type=couchbase --bucket-ramsize=128 --wait
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-peer --bucket-password= --bucket-type=couchbase --bucket-ramsize=128 --wait
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-purchase --bucket-password= --bucket-type=couchbase --bucket-ramsize=128 --wait
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-hearbeat --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-inventory --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-job --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-peer --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-purchase --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
   - sleep 5
