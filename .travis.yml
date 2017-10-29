@@ -26,11 +26,11 @@ before_script:
   - sudo service couchbase-server start
   # Init cluster
   - sleep 5
-  - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=oose --cluster-init-password=oose --cluster-init-ramsize=1024
+  - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=root --cluster-init-password=password --cluster-init-ramsize=1024
   # Setup buckets
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u oose -p oose --bucket=oose --bucket-type=couchbase --bucket-ramsize=128
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u oose -p oose --bucket=oose-hearbeat --bucket-type=couchbase --bucket-ramsize=128
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u oose -p oose --bucket=oose-inventory --bucket-type=couchbase --bucket-ramsize=128
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u oose -p oose --bucket=oose-job --bucket-type=couchbase --bucket-ramsize=128
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u oose -p oose --bucket=oose-peer --bucket-type=couchbase --bucket-ramsize=128
-  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u oose -p oose --bucket=oose-purchase --bucket-type=couchbase --bucket-ramsize=128
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose --bucket-type=couchbase --bucket-ramsize=128
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-hearbeat --bucket-type=couchbase --bucket-ramsize=128
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-inventory --bucket-type=couchbase --bucket-ramsize=128
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-job --bucket-type=couchbase --bucket-ramsize=128
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-peer --bucket-type=couchbase --bucket-ramsize=128
+  - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-purchase --bucket-type=couchbase --bucket-ramsize=128
