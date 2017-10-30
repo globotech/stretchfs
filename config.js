@@ -51,6 +51,7 @@ config.$load({
     host: '127.0.0.1',
     port: '8091',
     prefix: '',
+    connectionTimeout: 60000,
     operationTimeout: 30000,
     bucket: {
       heartbeat: {

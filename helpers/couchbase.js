@@ -15,6 +15,16 @@ var dsn = ''
 
 
 /**
+ * Couchbase connection timeout
+ * @type {number}
+ */
+couchbase.BucketImpl.connectionTimeout = config.couch.connectionTimeout || 60000
+
+
+couchbase.BucketImpl.operationTimeout = config.couch.operationTimeout || 30000
+
+
+/**
  * Connect to Couchbase
  * @param {object} conf
  * @return {object}
