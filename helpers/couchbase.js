@@ -79,12 +79,11 @@ client.openBucketAsync = function(name,secret){
       if('undefined' === typeof err){
         debug('connected to',name)
         resolve(buckets[name])
-      } else {
-        debug('couchbase connect error',err)
-        logger.log('error', 'Failed to connect to Couchbase bucket ' + dsn +
-          ' ' + name + ' with secret ' + secret + ' ' + err)
-        reject(err)
       }
+      debug('couchbase connect error',err)
+      logger.log('error', 'Failed to connect to Couchbase bucket ' + dsn + ' ' +
+        name + ' with secret ' + secret + ' ' + err)
+      reject(err)
     }))
   })
 }
@@ -144,7 +143,7 @@ client.disconnect = function(){
  * @return {P}
  */
 client.getManager = function(bucket){
-  return P.promisifyAll(bucket.manager())
+  return P.promisifyAll(bucket().manager())
 }
 
 
@@ -155,32 +154,16 @@ client.getManager = function(bucket){
  */
 client.init = function(couch){
   var opts = {ignoreIfExists: true}
-  return P.all([
-    couch.heartbeat(true)
-      .then(function(bucket){
-        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
-      }),
-    couch.inventory(true)
-      .then(function(bucket){
-        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
-      }),
-    couch.job(true)
-      .then(function(bucket){
-        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
-      }),
-    couch.oose(true)
-      .then(function(bucket){
-        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
-      }),
-    couch.peer(true)
-      .then(function(bucket){
-        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
-      }),
-    couch.purchase(true)
-      .then(function(bucket){
-        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
-      })
-  ])
+  return P.try(function(){
+    return client.type
+  })
+    .each(function(name){
+      debug('Initializing bucket',name)
+      return couch.getManager(couch[name]).createPrimaryIndexAsync(opts)
+        .then(function(result){
+          debug('Initialization complete',name,result)
+        })
+    })
 }
 
 
@@ -200,12 +183,10 @@ client.heartbeat = function(async){
 
 /**
  * Setup the Inventory DB
- * @param {boolean} async
  * @return {Object}
  */
-client.inventory = function(async){
-  var fn = async === true ? 'openBucketAsync' : 'openBucket'
-  return client[fn](
+client.inventory = function(){
+  return client.openBucket(
     config.couch.bucket.inventory.name,
     config.couch.bucket.inventory.secret
   )
@@ -214,12 +195,10 @@ client.inventory = function(async){
 
 /**
  * Setup the Job DB
- * @param {boolean} async
  * @return {Object}
  */
-client.job = function(async){
-  var fn = async === true ? 'openBucketAsync' : 'openBucket'
-  return client[fn](
+client.job = function(){
+  return client.openBucket(
     config.couch.bucket.job.name,
     config.couch.bucket.job.secret
   )
@@ -228,12 +207,10 @@ client.job = function(async){
 
 /**
  * Setup the OOSE DB
- * @param {boolean} async
  * @return {Object}
  */
-client.oose = function(async){
-  var fn = async === true ? 'openBucketAsync' : 'openBucket'
-  return client[fn](
+client.oose = function(){
+  return client.openBucket(
     config.couch.bucket.oose.name,
     config.couch.bucket.oose.secret
   )
@@ -242,12 +219,10 @@ client.oose = function(async){
 
 /**
  * Setup the Peer DB
- * @param {boolean} async
  * @return {Object}
  */
-client.peer = function(async){
-  var fn = async === true ? 'openBucketAsync' : 'openBucket'
-  return client[fn](
+client.peer = function(){
+  return client.openBucket(
     config.couch.bucket.peer.name,
     config.couch.bucket.peer.secret
   )
@@ -256,12 +231,10 @@ client.peer = function(async){
 
 /**
  * Setup the Purchase DB
- * @param {boolean} async
  * @return {Object}
  */
-client.purchase = function(async){
-  var fn = async === true ? 'openBucketAsync' : 'openBucket'
-  return client[fn](
+client.purchase = function(){
+  return client.openBucket(
     config.couch.bucket.purchase.name,
     config.couch.bucket.purchase.secret
   )
