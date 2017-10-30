@@ -3,7 +3,7 @@
 var couch = require('../helpers/couchbase')
 
 console.log('Beginning initialization of Couchbase')
-couch.init(couch)
+couch.init()
   .then(function(){
     console.log('Init complete')
   })

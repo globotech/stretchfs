@@ -125,17 +125,22 @@ client.getManager = function(bucket){
 
 /**
  * Initialize couchbase in a harmless repeatable way
- * @param {object} couch
  * @return {P}
  */
-client.init = function(couch){
+client.init = function(){
   var opts = {ignoreIfExists: true}
   return P.try(function(){
-    return client.type
+    var types = []
+    for(var type in client.type){
+      if(client.type.hasOwnProperty(type)){
+        types.push(client.type[type])
+      }
+    }
+    return types
   })
     .each(function(name){
       debug('Initializing bucket',name)
-      return couch.getManager(couch[name]).createPrimaryIndexAsync(opts)
+      return client.getManager(client[name]).createPrimaryIndexAsync(opts)
         .then(function(result){
           debug('Initialization complete',name,result)
         })
