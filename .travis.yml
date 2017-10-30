@@ -17,7 +17,7 @@ before_script:
   - sudo dpkg -i couchbase-server-community_4.5.1-ubuntu14.04_amd64.deb
   - sudo service couchbase-server start
   # Init cluster
-  - sleep 5
+  - sleep 2
   - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=root --cluster-init-password=password --cluster-init-ramsize=1024
   # Setup buckets
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
@@ -26,7 +26,7 @@ before_script:
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-job --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-peer --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-purchase --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
-  - sleep 5
-  # Init couchbase
-  - node oose/bin/initCouchbase.js
   - sleep 2
+  # Init couchbase
+  - node bin/initCouchbase.js
+  - sleep 1
