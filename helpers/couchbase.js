@@ -53,13 +53,11 @@ client.openBucket = function(name,secret){
       debug('connected to',name)
       return
     }
-    debug('couchbase connect error',err)
     logger.log(
       'error',
       'Failed to connect to Couchbase bucket ' + dsn + ' ' +
-      name + ' with secret ' + secret + ' ' + err
+      name + ' with secret ' + secret + ' ' + err.message
     )
-    console.trace()
   }))
   //set the operation timeout higher than the default
   buckets[name].operationTimeout = config.couch.operationTimeout || 30000

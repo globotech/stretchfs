@@ -5,7 +5,7 @@ node_js:
 services:
   - redis
 env:
-  - TRAVIS=travis DEBUG=oose:couchbase
+  - TRAVIS=travis
 before_script:
   # LibCouchbase
   - sudo wget -O /etc/apt/sources.list.d/couchbase.list http://packages.couchbase.com/ubuntu/couchbase-ubuntu1404.list
@@ -29,4 +29,5 @@ before_script:
   - sleep 2
   # Init couchbase
   - node bin/initCouchbase.js
+  - node bin/createUser.js localhost bigpassword
   - sleep 1
