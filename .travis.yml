@@ -18,7 +18,7 @@ before_script:
   - sudo service couchbase-server start
   # Init cluster
   - sleep 2
-  - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=root --cluster-init-password=password --cluster-init-ramsize=1024 --cluster-index-ramsize=128 --cluster-fts-ramsize=128 --services=data,index,query,fts
+  - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=root --cluster-init-password=password --cluster-init-ramsize=1024 --cluster-index-ramsize=256 --cluster-fts-ramsize=256 --services=data,index,query,fts
   # Setup buckets
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
   - /opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1:8091 -u root -p password --bucket=oose-heartbeat --bucket-password=password --bucket-type=couchbase --bucket-ramsize=128 --wait
