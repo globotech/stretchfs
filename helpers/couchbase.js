@@ -62,8 +62,7 @@ client.openBucket = function(name,secret){
     console.trace()
   }))
   //set the operation timeout higher than the default
-  buckets[name].operationTimeout = config.couch.bucket[name].operationTimeout ||
-    config.couch.operationTimeout || 30000
+  buckets[name].operationTimeout = config.couch.operationTimeout || 30000
   return buckets[name]
 }
 

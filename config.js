@@ -55,33 +55,27 @@ config.$load({
     bucket: {
       heartbeat: {
         name: 'oose-heartbeat',
-        secret: '',
-        operationTimeout: null
+        secret: ''
       },
       job: {
         name: 'oose-job',
-        secret: '',
-        operationTimeout: null
+        secret: ''
       },
       inventory: {
         name: 'oose-inventory',
-        secret: '',
-        operationTimeout: null
+        secret: ''
       },
       oose: {
         name: 'oose',
-        secret: '',
-        operationTimeout: null
+        secret: ''
       },
       peer: {
         name: 'oose-peer',
-        secret: '',
-        operationTimeout: null
+        secret: ''
       },
       purchase: {
         name: 'oose-purchase',
-        secret: '',
-        operationTimeout: null
+        secret: ''
       }
     }
   },
