@@ -104,7 +104,7 @@ module.exports = function(done){
               prism: config.store.prism,
               hash: hash,
               mimeExtension: ext,
-              mimeType: mime.lookup(ext),
+              mimeType: mime.getType(ext),
               relativePath: relativePath
             }
             debug(hash,'creating inventory record',doc)

@@ -12,7 +12,7 @@ var interval
 var handler = require('./handler')
 var job = require('./helpers/job')
 var jobsProcessing = {}
-var nano = require('../helpers/couchdb')
+var couch = require('../helpers/couchbase')
 var maxExecutionTime
 var dispatch = require('./dispatch')
 
@@ -73,7 +73,7 @@ var abortProcessingJobs = function(){
  * @return {P}
  */
 var superviseJobAbort = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'queued_abort_ready', include_docs: true}
@@ -107,7 +107,7 @@ var superviseJobAbort = function(){
  * @return {P}
  */
 var superviseJobProcessing = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'processing', include_docs: true}
@@ -180,7 +180,7 @@ var superviseJobError = function(){
  * @return {P}
  */
 var superviseJobComplete = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'complete', include_docs: true}
@@ -215,7 +215,7 @@ var superviseJobComplete = function(){
  * @return {P}
  */
 var superviseJobRemove = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'queued_remove', include_docs: true}
@@ -251,7 +251,7 @@ var superviseJobRemove = function(){
  * @return {P}
  */
 var superviseJobCleanup = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'queued_cleanup', include_docs: true}
@@ -287,7 +287,7 @@ var superviseJobCleanup = function(){
  * @return {P}
  */
 var superviseJobRetry = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'queued_retru_ready', include_docs: true}
@@ -316,7 +316,7 @@ var superviseJobRetry = function(){
  * @return {P}
  */
 var superviseJobStart = function(){
-  return nano.shredder.viewAsync(
+  return couch.shredder.viewAsync(
     'jobs',
     'by_status',
     {key: 'queued_start', include_docs: true}

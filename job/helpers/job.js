@@ -2,7 +2,7 @@
 var path = require('path')
 var Password = require('node-password').Password
 
-var nano = require('../../helpers/couchdb')
+var couch = require('../../helpers/couchbase')
 
 var config = require('../../config')
 
@@ -32,7 +32,7 @@ exports.folder = function(handle){
  * @return {P}
  */
 exports.getByHandle = function(handle){
-  return nano.shredder.getAsync(handle)
+  return couch.shredder.getAsync(handle)
     .then(function(jobRes){
       return jobRes
     },function(err){
@@ -48,7 +48,7 @@ exports.getByHandle = function(handle){
  */
 exports.save = function(jobInstance){
   if(!jobInstance.handle) jobInstance.handle = generateHandle()
-  return nano.shredder.insertAsync(jobInstance,jobInstance.handle)
+  return couch.shredder.insertAsync(jobInstance,jobInstance.handle)
     .then(function(result){
       jobInstance._rev = result.rev
       jobInstance._id = jobInstance.handle
@@ -63,7 +63,7 @@ exports.save = function(jobInstance){
  * @return {P}
  */
 exports.remove = function(jobInstance){
-  return nano.shredder.destroyAsync(jobInstance._id,jobInstance._rev)
+  return couch.shredder.destroyAsync(jobInstance._id,jobInstance._rev)
     .then(function(){
       return true
     })

@@ -14,39 +14,7 @@
     * `exists` A true or false statement whether the content exists
     * `count` Content count
     * `map` The location of the content in all prisms it exists on
-    
-### Content Exists Local
 
-* **URI** `/content/exists`
-* **METHOD** `POST`
-* **Session Required** no
-* **Params**
-    * `hash` - Content hash ID
-* **Response**
-    * `count` Content count
-    * `checkExists` True or False if Content Exists
-    * `map` The location of the content in all stores it exists on
-    
-### Invalidate Existence Cache Cluster Wide
-
-* **URI** `/content/exists/invalidate`
-* **METHOD** `POST`
-* **Session Required** no
-* **Params**
-    * `hash` - Content hash ID
-* **Response**
-    * `success` - Success message `Cleared`
-
-### Invalidate Existence Locally
-
-* **URI** `/content/exists/invalidate/local`
-* **METHOD** `POST`
-* **Session Required** no
-* **Params**
-    * `hash` - Content hash ID
-* **Response**
-    * `success` - Success message `Cleared`
-    
 ### Content Download
 
 * **URI** `/content/download`
@@ -89,7 +57,7 @@
 
 ### Purchase Create
 
-* **URI** `/purchase/create`
+* **URI** `/content/purchase`
 * **METHOD** `POST`
 * **Session Required** yes
 * **Params**
@@ -101,38 +69,10 @@
         * `token` The purchase token
         * `path` The path to the content
         * `map` The locations of the content in all prisms
-        
-### Purchase Find
-     
-* **URI** `/purchase/find`
-* **METHOD** `POST`
-* **Session Required** yes
-* **Params**
-    * `PURCHASE TOKEN` The token received in the purchase creation
-* **Response**
-    * Returns the purchase token (optionally, the preferred token can be requested)
-        * `ext` The purchased content extension
-        * `token` The purchase token
-        * `path` The path to the content
-        * `map` The locations of the content in all prisms
-        
-### Purchase Update
-     
-* **URI** `/purchase/update`
-* **METHOD** `POST`
-* **Session Required** yes
-* **Params**
-    * `PURCHASE TOKEN` The purchase token
-* **Response**
-    * Returns the purchase object reflecting any changes
-        * `ext` The purchased content extension
-        * `token` The purchase token
-        * `path` The path to the content
-        * `map` The locations of the content in all prisms
-        
+
 ### Purchase Remove
 
-* **URI** `/purchase/remove`
+* **URI** `/content/purchase/remove`
 * **METHOD** `POST`
 * **Session Required** yes
 * **Params**

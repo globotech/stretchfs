@@ -5,9 +5,9 @@ other installations.
 
 ## Prereqs
 
-* NodeJS - 0.10.x
-* Redis Server - 2.6.x
-* MySQL - 5.6.x (master only)
+* NodeJS - 8.x+ (NPM 5.4+)
+* Redis Server - 2.6+
+* Coucbase Server - 4.5.+
 
 ## Procedure
 
@@ -18,11 +18,6 @@ other installations.
 * Create `config.op<xxx>.js` file in `/opt/op<xxx>`
 * Create dt.json files for each instance (copy from others)
 * Visit each instance folder and run `ndt install` `ndt save`
-* Copy `/opt/oose/nginx/nginx.conf` to `/etc/nginx/nginx.conf` and edit
-* Create folder `/etc/nginx/oose`
-* Copy `/opt/oose/nginx/nginx.oose.conf` to `/etc/nginx/oose/om<xxx>.conf` and
-edit
-* `nginx -t` make sure it passes and `service nginx restart`
 
 This procedure could be expanded on later to be more in depth.
 

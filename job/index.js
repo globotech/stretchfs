@@ -4,8 +4,8 @@ var infant = require('infant')
 
 var cluster
 var config = require('../config')
-var nano = require('../helpers/couchdb')
-var workerKey = nano.schema.worker(config.worker.name)
+var couch = require('../helpers/couchbase')
+var workerKey = couch.schema.worker(config.worker.name)
 var supervisor
 
 //make some promises
@@ -24,7 +24,7 @@ if(require.main === module){
           maxConnections: config.worker.workers.maxConnections
         })
         //if we exist lets mark ourselves available
-        nano.shredder.getAsync(workerKey)
+        couch.shredder.getAsync(workerKey)
           .then(function(doc){
             doc.name = config.worker.name
             doc.host = config.worker.host
@@ -32,12 +32,12 @@ if(require.main === module){
             doc.available = true
             doc.active = true
             doc.lastStartedAt = new Date().toJSON()
-            return nano.shredder.insertAsync(doc,workerKey)
+            return couch.shredder.insertAsync(doc,workerKey)
           },//if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err || !err.code || 13 !== err.code) throw err
             //now register ourselves or mark ourselves available
-            return nano.shredder.insertAsync({
+            return couch.shredder.insertAsync({
                 name: config.worker.name,
                 host: config.worker.host,
                 port: config.worker.port,
@@ -66,10 +66,10 @@ if(require.main === module){
     },
     function(done){
       //stop the system
-      nano.shredder.getAsync(workerKey)
+      couch.shredder.getAsync(workerKey)
         .then(function(doc){
           doc.available = false
-          return nano.shredder.insertAsync(doc,workerKey)
+          return couch.shredder.insertAsync(doc,workerKey)
         }).then(function(){
           return P.all([
             cluster.stopAsync(),

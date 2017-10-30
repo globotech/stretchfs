@@ -3,6 +3,42 @@ OOSE [![Build Status](https://travis-ci.org/nullivex/oose.svg?branch=master)](ht
 
 Object Oriented Storage Engine
 
+## Description
+
+I want to take some time to explain what OOSE is and how we use it. OOSE in a
+short description, is a multi purpose, multi backed, multi OS, redundant,
+shared, sharded, cloud file system built on top of Node.JS with a
+kernel mentality.
+Now I will try to explain this in short amounts at a time.
+OOSE hashes (with SHA1 by default) files (not blocks, thus it is not a
+viable block level storage system) and stores them across zones which are
+headed up by Prisms. It is purpose built to drive file based CDNs and archival
+storage networks.
+Prisms are the main directors of the OOSE system below each prism is one or
+more Store nodes. Prisms represent a group of Store nodes and manages that
+group itself. OOSE is designed to handle fault tolerance across zones. This
+intends on Prisms and their entire group of stores going offline. Individual
+Store outages do not affect operations. Prism outages will reduce the available
+clone counts for content hosted in that zone.
+OOSE is based on the Google File System model however instead of blocking by
+64MB chunks, OOSE hashes entire files.
+What can OOSE be used for?
+OOSE is great for delivering videos. In fact, that is its primary purpose for
+existence. However, it is built as a multi purpose system that can host, save,
+and stream any type of file including static web pages.
+
+### Some other uses for OOSE
+* Archival storage or backup networks.
+* Network shared multimedia hosting.
+* Business video hosting for advertising.
+* Advertising video streaming.
+* Proprietary video streaming.
+* Large scale campus storage networks.
+* Large scale cloud storage networks.
+* High concurrency, high user, high performance file based CDNs.
+
+More to come for OOSE.
+
 ## Installation
 
 ```
@@ -18,10 +54,13 @@ First, setup a local config file like so.
 ```js
 'use strict';
 module.exports = {
-  store: {
+  admin: {
     enabled: true
   },
   prism: {
+    enabled: true
+  },
+  store: {
     enabled: true
   }
 }
@@ -43,12 +82,6 @@ The default test suite can be ran using npm
 $ npm test
 ```
 
-For development a more interactive test method might be best
-
-```
-$ mocha -R spec --watch
-```
-
 ## Debugging
 
 All debug logging now uses the [https://github.com/visionmedia/debug](debug)
@@ -64,37 +97,7 @@ From there follow the debug filtering rules defined
 
 ## Changelog
 
-### 3.4.0 (Planned)
-
-* Content upgrades, this will introduce a forwarding table into the inventory
-system that will allow content to forward itself until it finds the latest
-version of the file. This will make OOSE rewrite capable and instantly support
-version safe backups as the file inventory can forward and reverse sorted for
-revision changes.
-
-### 3.3.0 (Planned)
-
-* Introduce the idea of store profiles. This will involve chosing a media type
-that will translate into a metric we will use to determine the availability of
-a store, sot hat load can be properly managed on a disk to disk basis. This will
-also allow the idea of purpose built balancing. This should work naturally with
-the metric settings.
-
-### 3.2.0 (Planned)
-
-* Implement supervisor process, that will run per store and expose an additional
-API for managing content and carrying out tasks on its content.
-* Implement new balancing procedures into Prism that will take into account
-the stats gather with the statPush system implemented in 2.6
-
-### 3.1.0 (Proposed)
-
-* Implement stat tracking into the `send` system using redis
-* Start a separate process to push the stats from the store to a collection
-of receivers
-* Implement stat receiver into the prism which will digest and publish results
-
-### 3.0.0 (Development)
+### 3.0.0 [View Issues](https://bugs.nullivex.com/roadmap_page.php?version_id=5)
 
 * Introduce new send component to aid in dropping NGINX OpenResty from the OOSE
 standard build.
@@ -105,23 +108,20 @@ endpoint from Prism to Store to Send without the need for any third party web
 server software.
 * Merge patches of various 2.4 scripts.
 * Add logger helper to enable syslog formatting for logs.
-* Clonetool enriched with more upgrades/features/fixes
-* bin/createPurchasedb.js now maintains expiry of old databases
-  with option `-K <days>` (keep `n` days, default `10`) 
-* Added configuration option `clonetool.storeProtected` which is an Array of
-  store names that will not be subject to automatic deletions (such as reducing
-  counts with clonetool).  Default is an empty Array.
-* Added boolean `protected` to Peer record which when existing and `true` will
-  concatenate that store onto the list (if any) provided in the above
-  `clonetool.storeProtected` Array at runtime.
-* Replace couchdb with couchbase to provide a more consistent database model.
+* Clonetool dropped
+* bin/createPurchasedb.js dropped
+* Replace Couchdb with Couchbase to provide a more consistent database model.
  OOSE does is not compatible with eventual consistency which adds various
- failures that OOSE doesnt know how to handle properly and results in false
+ failures that OOSE does not know how to handle properly and results in false
  404s. These result from poor timing. The solution is to use couchbase which
  will provide OOSE with consistent results, better timing / scaling.
 * Drop nano / couchdb / cradle
-* Implement couchbase-promise helper
-* Update config to work with couchbase
+* Implement Couchbase helper
+* Update config to work with Couchbase
+* Update tests to work with Couchbase
+* Update Travis-CI to work with Couchbase
+* Merge Shredder 2.0 into OOSE renaming it to the OOSE Job system. OOSE will
+no longer depend on an outside source for compute jobs.
 
 ### 2.4.0
 
@@ -264,7 +264,7 @@ backward compatible with singular requests.
 * Bug fixes
 
 ### 0.5.6
- [Closed Issues](https://github.com/eSited/oose/issues?q=milestone%3A0.5.6+is%3Aclosed)
+ [View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.5.6+is%3Aclosed)
 * Fix inventory handling of stream for builds
 * Shredder workers now implement the helpers/child system
 * Fixes #134 related to hash update fails
@@ -294,7 +294,7 @@ logic handling to prevent failures under load and unstable network conditions
 * Inventory now runs in parallel with configurable concurrence
 
 ### 0.5.0
-[Closed Issues](https://github.com/eSited/oose/issues?q=milestone%3A0.5.0+is%3Aclosed)
+[View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.5.0+is%3Aclosed)
 * Removed mesh in favor of more exposed communications
 * Implemented multicast helper
 * Implemented axon for TCP p2p communication
@@ -310,14 +310,14 @@ logic handling to prevent failures under load and unstable network conditions
 * Introduction of unit testing, more test coverage to follow
 
 ### 0.4.0
-[Closed Issues](https://github.com/eSited/oose/issues?q=milestone%3A0.4.0+is%3Aclosed)
+[View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.4.0+is%3Aclosed)
 * Upgraded to Express 4 system wide
 * Upgraded to object-manage 0.8 system wide
 * Dropped restler in favor of request
 * Work in progress...
 
 ### 0.3.0
-[Closed Issues](https://github.com/eSited/oose/issues?q=milestone%3A0.3.0+is%3Aclosed)
+[View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.3.0+is%3Aclosed)
 * Fix next peer selection to be a list
 * Added start param support to export (MP4 pseudo streaming)
 * Added looking glass (lg) for cluster status

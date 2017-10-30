@@ -58,14 +58,12 @@ ipt_both -P FORWARD ACCEPT
 ipt_both -P OUTPUT ACCEPT
 echo "done"
 
-echo -n "Allow Outbound DNS... "
-ipt_both -A OUTPUT -p udp -o "$pubeth" --dport 53 -j ACCEPT
+echo -n "Allow DNS... "
 ipt_both -A INPUT -p udp -i "$pubeth" --sport 53 -j ACCEPT
 echo "done"
 
 echo -n "Allow Loopback... "
 ipt_both -A INPUT -i lo -j ACCEPT
-ipt_both -A OUTPUT -o lo -j ACCEPT
 echo "done"
 
 echo -n "Allow Inbound Ping... "
@@ -75,21 +73,9 @@ ipt_6 -A INPUT -p icmpv6 --icmpv6-type destination-unreachable -j ACCEPT
 ipt_6 -A INPUT -p icmpv6 --icmpv6-type packet-too-big -j ACCEPT
 ipt_6 -A INPUT -p icmpv6 --icmpv6-type time-exceeded -j ACCEPT
 ipt_6 -A INPUT -p icmpv6 --icmpv6-type parameter-problem -j ACCEPT
-ipt_4 -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type router-advertisement -m hl --hl-eq 255 -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type neighbor-solicitation -m hl --hl-eq 255 -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type neighbor-advertisement -m hl --hl-eq 255 -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type redirect -m hl --hl-eq 255 -j ACCEPT
 echo "done"
 
 echo -n "Allow Outbound Ping... "
-ipt_4 -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type echo-request -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type destination-unreachable -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type packet-too-big -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type time-exceeded -j ACCEPT
-ipt_6 -A OUTPUT -p icmpv6 --icmpv6-type parameter-problem -j ACCEPT
 ipt_4 -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
 ipt_6 -A INPUT -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 ipt_6 -A INPUT -p icmpv6 --icmpv6-type router-advertisement -m hl --hl-eq 255 -j ACCEPT
@@ -98,8 +84,6 @@ ipt_6 -A INPUT -p icmpv6 --icmpv6-type neighbor-advertisement -m hl --hl-eq 255 
 ipt_6 -A INPUT -p icmpv6 --icmpv6-type redirect -m hl --hl-eq 255 -j ACCEPT
 ipt_6 -A INPUT -p icmpv6 -j LOG --log-prefix ICMPv6
 ipt_6 -A INPUT -p icmpv6 -j DROP
-ipt_6 -A OUTPUT -p icmpv6 -j LOG --log-prefix ICMPv6
-ipt_6 -A OUTPUT -p icmpv6 -j DROP
 echo "done"
 
 echo -n "Allow Inbound SSH on ManagementIP(s)... "
@@ -135,34 +119,14 @@ ipt_both -A OUTPUT -o "$pubeth" -p tcp -m multiport --dports 5970,5971,5972 -m s
 ipt_both -A INPUT -i "$pubeth" -p tcp -m multiport --sports 5970,5971,5972 -m state --state ESTABLISHED -j ACCEPT
 echo "done"
 
-echo -n "Allow Inbound CouchDB... "
-ipt_both -A INPUT -i "$pubeth" -p tcp --dport 5984 -m state --state NEW,ESTABLISHED -j ACCEPT
-ipt_both -A OUTPUT -o "$pubeth"  -p tcp --sport 5984 -m state --state ESTABLISHED -j ACCEPT
-echo "done"
-
-echo -n "Allow Outbound CouchDB... "
-ipt_both -A OUTPUT -o "$pubeth" -p tcp --dport 5984 -m state --state NEW,ESTABLISHED -j ACCEPT
-ipt_both -A INPUT -i "$pubeth" -p tcp --sport 5984 -m state --state ESTABLISHED -j ACCEPT
-echo "done"
-
 echo -n "Allow Inbound Redis... "
 ipt_both -A INPUT -i "$pubeth" -p tcp --dport 6379 -m state --state NEW,ESTABLISHED -j ACCEPT
 ipt_both -A OUTPUT -o "$pubeth"  -p tcp --sport 6379 -m state --state ESTABLISHED -j ACCEPT
 echo "done"
 
-echo -n "Allow Outbound Redis... "
-ipt_both -A OUTPUT -o "$pubeth" -p tcp --dport 6379 -m state --state NEW,ESTABLISHED -j ACCEPT
-ipt_both -A INPUT -i "$pubeth" -p tcp --sport 6379 -m state --state ESTABLISHED -j ACCEPT
-echo "done"
-
 echo -n "Allow Inbound Zabbix... "
 ipt_both -A INPUT -i "$pubeth" -p tcp --dport 10050 -m state --state NEW,ESTABLISHED -j ACCEPT
 ipt_both -A OUTPUT -o "$pubeth" -p tcp --sport 10050 -m state --state ESTABLISHED -j ACCEPT
-echo "done"
-
-echo -n "Allow Outbound Zabbix... "
-ipt_both -A OUTPUT -o "$pubeth" -p tcp --dport 10050 -m state --state NEW,ESTABLISHED -j ACCEPT
-ipt_both -A INPUT -i "$pubeth" -p tcp --sport 10050 -m state --state ESTABLISHED -j ACCEPT
 echo "done"
 
 echo
@@ -174,17 +138,17 @@ read -p "Are you sure (y|n)? " -n 1 -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
   ipt_both -P INPUT DROP
   ipt_both -P FORWARD DROP
-  ipt_both -P OUTPUT DROP
+  ipt_both -P OUTPUT ACCEPT
 else
   echo "Aborting application"
   echo " To apply manually"
   echo "   iptables -P INPUT DROP"
   echo "   iptables -P FORWARD DROP"
-  echo "   iptables -P OUTPUT DROP"
+  echo "   iptables -P OUTPUT ACCEPT"
   if [[ $do_v6 ]]; then
     echo "   ip6tables -P INPUT DROP"
     echo "   ip6tables -P FORWARD DROP"
-    echo "   ip6tables -P OUTPUT DROP"
+    echo "   ip6tables -P OUTPUT ACCEPT"
   fi
   exit
 fi

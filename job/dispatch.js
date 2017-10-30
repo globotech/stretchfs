@@ -11,7 +11,7 @@ var request = require('request')
 var config = require('../config')
 var intervalID
 var UserError = shredder.UserError
-var nano = require('../helpers/couchdb')
+var couch = require('../helpers/couchbase')
 var handler = require('./handler')
 
 
@@ -86,7 +86,7 @@ var dispatchJobRemove = function(jobInstance){
     debug('Job removed')
     //This one is gone, so just delete the data registry
     if(!removing)
-      return nano.shredder.destroyAsync(jobInstance._id, jobInstance._rev)
+      return couch.shredder.destroyAsync(jobInstance._id, jobInstance._rev)
     return null
   })
 }
@@ -236,7 +236,7 @@ exports.workerStart = function(nJob){
 var findJobsByWorker = function(){
   debug(config.worker.name,'querying for jobs')
   //abort any jobs queued for abortion on this worker and category
-  return nano.shredder.viewAsync('jobs','by_worker', {
+  return couch.shredder.viewAsync('jobs','by_worker', {
     key: config.worker.name,
     include_docs: true
   })
@@ -254,13 +254,13 @@ var findJobsByWorker = function(){
  * @return {P}
  */
 var checkForAvailableJobs = function(){
-  return nano.shredder.viewAsync('jobs','available',{include_docs: true})
+  return couch.shredder.viewAsync('jobs','available',{include_docs: true})
     .then(function(doc){
       //I'll be working on the first one.
       if(doc.rows.length){
         var newJob = doc.rows[0].doc
         newJob.worker = config.worker.name
-        return nano.shredder.insertAsync(newJob)
+        return couch.shredder.insertAsync(newJob)
           .then(function(job){
             return job
           },function(){

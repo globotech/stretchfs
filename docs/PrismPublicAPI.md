@@ -31,16 +31,6 @@
 * **Response**
     * `success` - Success message `User logged out`
 
-### Password Reset
-
-* **URI** `/user/password/reset`
-* **METHOD** `POST`
-* **Session Required** yes
-* **Params** none
-* **RESPONSE** 
-    * `success` - Success message `User password reset`
-    * New Password
-  
 ### Session Validate
 
 * **URI** `/user/session/validate`
@@ -59,17 +49,6 @@
         * `updatedAt` The last time the Session was updated
         * `createdAt` The date and time the Session was created
 
-  
-### Session Update
-
-* **URI** `/user/session/update`
-* **METHOD** `POST`
-* **Session Required** yes
-* **Params** 
-    * `data` - Information that needs to be stored with the session
-* **Response** 
-    * `success` - Success message `Session updated`
-  
 ## Content Methods
 
 ### Content Details

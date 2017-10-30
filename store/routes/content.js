@@ -40,7 +40,7 @@ var createInventory = function(fileDetail,verified){
     store: config.store.name,
     hash: fileDetail.hash,
     mimeExtension: fileDetail.ext,
-    mimeType: mime.lookup(fileDetail.ext),
+    mimeType: mime.getType(fileDetail.ext),
     relativePath: hashFile.toRelativePath(
       fileDetail.hash,fileDetail.ext
     ),
@@ -60,7 +60,7 @@ var updateInventory = function(fileDetail,inventoryKey,doc,verified){
   var cas = doc.cas
   doc = doc.value
   doc.mimeExtension = fileDetail.ext
-  doc.mimeType = mime.lookup(fileDetail.ext)
+  doc.mimeType = mime.getType(fileDetail.ext)
   doc.relativePath = hashFile.toRelativePath(
     fileDetail.hash,fileDetail.ext
   )

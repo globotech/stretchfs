@@ -120,7 +120,7 @@ exports.upload = function(req,res){
       name: name,
       encoding: encoding,
       mimetype: mimetype,
-      ext: mime.extension(mimetype),
+      ext: mime.getExtension(mimetype),
       hash: null,
       hashType: data.hashType
     }
