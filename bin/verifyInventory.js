@@ -38,10 +38,13 @@ var verifyInventoryAsync = function(){
   }
   debug('starting to verify',contentFolder)
   var couchInventory = couch.inventory()
-  return couchInventory.viewAsync('inventory/byStore',{
-    startkey: [config.store.name],
-    endkey: [config.store.name,'\uffff']
-  })
+  var hbKey = couch.schema.downVote()
+  debug('requesting votes',hbKey)
+  var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
+    couch.getName(couch.type.INVENTORY,true) + ' AS b WHERE META(b).id LIKE $1'
+  var query = couch.N1Query.fromString(qstring)
+  var inventoryKey = '%' + config.store.name
+  return couchInventory.queryAsync(query,[inventoryKey])
     .then(function(result){
       var fileCount = result.length
       var progress = new ProgressBar(
