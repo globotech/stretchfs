@@ -56,7 +56,7 @@ client.openBucket = function(name,secret){
     logger.log(
       'error',
       'Failed to connect to Couchbase bucket ' + dsn + ' ' +
-      name + ' with secret ' + secret + ' ' + err.message
+      name + ' with secret ***** ' + err.message
     )
   }))
   //set the operation timeout higher than the default

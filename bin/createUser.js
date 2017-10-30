@@ -5,7 +5,7 @@ var couch = require('../helpers/couchbase')
 var name = process.argv[2]
 var secret = process.argv[3]
 
-console.log('Create user ' + name + ' with secret ' + secret)
+console.log('Create user ' + name)
 var couchOOSE = couch.oose()
 var userKey = couch.schema.ooseUser(name)
 var user = {
