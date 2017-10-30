@@ -144,6 +144,9 @@ client.init = function(){
         .then(function(result){
           debug('Initialization complete',name,result)
         })
+        .catch(function(err){
+          console.log('Couchbase bucket init error',err)
+        })
     })
 }
 
