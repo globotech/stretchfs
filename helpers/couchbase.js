@@ -119,7 +119,7 @@ client.disconnect = function(){
  * @return {P}
  */
 client.getManager = function(bucket){
-  return P.promisifyAll(bucket.manager())
+  return P.promisifyAll(bucket().manager())
 }
 
 
@@ -134,6 +134,7 @@ client.init = function(couch){
     couch.getManager(couch.heartbeat).createPrimaryIndexAsync(opts),
     couch.getManager(couch.inventory).createPrimaryIndexAsync(opts),
     couch.getManager(couch.job).createPrimaryIndexAsync(opts),
+    couch.getManager(couch.oose).createPrimaryIndexAsync(opts),
     couch.getManager(couch.peer).createPrimaryIndexAsync(opts),
     couch.getManager(couch.purchase).createPrimaryIndexAsync(opts)
   ])
