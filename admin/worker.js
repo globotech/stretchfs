@@ -4,6 +4,7 @@ var bodyParser = require('body-parser')
 var compress = require('compression')
 var cookieParser = require('cookie-parser')
 var flash = require('connect-flash')
+var electricity = require('electricity')
 var express = require('express')
 var expressSession = require('express-session')
 var http = require('http')
@@ -59,7 +60,7 @@ app.use(function(req,res,next){
   res.locals.flash = req.flash.bind(req)
   next()
 })
-app.use(express.static(__dirname + '/public'))
+app.use(electricity.static(__dirname + '/public'))
 
 app.use(function(req,res,next){
   //allow public routes
