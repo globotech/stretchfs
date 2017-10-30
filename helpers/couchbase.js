@@ -15,12 +15,16 @@ var dsn = ''
 
 
 /**
- * Couchbase connection timeout
+ * Couchbase connection timeout default
  * @type {number}
  */
 couchbase.BucketImpl.connectionTimeout = config.couch.connectionTimeout || 60000
 
 
+/**
+ * Couchbase operation timeout default
+ * @type {number}
+ */
 couchbase.BucketImpl.operationTimeout = config.couch.operationTimeout || 30000
 
 
@@ -69,8 +73,6 @@ client.openBucket = function(name,secret){
       name + ' with secret ***** ' + err.message
     )
   }))
-  //set the operation timeout higher than the default
-  buckets[name].operationTimeout = config.couch.operationTimeout || 30000
   return buckets[name]
 }
 
