@@ -30,4 +30,4 @@ before_script:
   # Init couchbase
   - node bin/initCouchbase.js
   - node bin/createUser.js localhost bigpassword
-  - sleep 1
+  - sleep 10
