@@ -66,30 +66,6 @@ client.openBucket = function(name,secret){
 
 
 /**
- * Open Couchbase bucket async (with promise)
- * @param {string} name
- * @param {string} secret
- * @return {P}
- */
-client.openBucketAsync = function(name,secret){
-  debug('opening bucket async',name,secret)
-  return new P(function(resolve,reject){
-    if(buckets[name]) return resolve(buckets[name])
-    buckets[name] = P.promisifyAll(cluster.openBucket(name,secret,function(err){
-      if('undefined' === typeof err){
-        debug('connected to',name)
-        resolve(buckets[name])
-      }
-      debug('couchbase connect error',err)
-      logger.log('error', 'Failed to connect to Couchbase bucket ' + dsn + ' ' +
-        name + ' with secret ' + secret + ' ' + err)
-      reject(err)
-    }))
-  })
-}
-
-
-/**
  * Close open bucket and make the next call reopen it
  * @param {string} name
  * @return {boolean}
@@ -169,12 +145,10 @@ client.init = function(couch){
 
 /**
  * Setup the Heartbeat DB
- * @param {boolean} async
  * @return {Object}
  */
-client.heartbeat = function(async){
-  var fn = async === true ? 'openBucketAsync' : 'openBucket'
-  return client[fn](
+client.heartbeat = function(){
+  return client.openBucket(
     config.couch.bucket.heartbeat.name,
     config.couch.bucket.heartbeat.secret
   )
