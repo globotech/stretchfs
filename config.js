@@ -51,30 +51,37 @@ config.$load({
     host: '127.0.0.1',
     port: '8091',
     prefix: '',
+    operationTimeout: 30000,
     bucket: {
       heartbeat: {
         name: 'oose-heartbeat',
-        secret: ''
+        secret: '',
+        operationTimeout: null
       },
       job: {
         name: 'oose-job',
-        secret: ''
+        secret: '',
+        operationTimeout: null
       },
       inventory: {
         name: 'oose-inventory',
-        secret: ''
+        secret: '',
+        operationTimeout: null
       },
       oose: {
         name: 'oose',
-        secret: ''
+        secret: '',
+        operationTimeout: null
       },
       peer: {
         name: 'oose-peer',
-        secret: ''
+        secret: '',
+        operationTimeout: null
       },
       purchase: {
         name: 'oose-purchase',
-        secret: ''
+        secret: '',
+        operationTimeout: null
       }
     }
   },
