@@ -66,6 +66,31 @@ client.openBucket = function(name,secret){
 
 
 /**
+ * Open Couchbase bucket async (with promise)
+ * @param {string} name
+ * @param {string} secret
+ * @return {P}
+ */
+client.openBucketAsync = function(name,secret){
+  debug('opening bucket async',name,secret)
+  return new P(function(resolve,reject){
+    if(buckets[name]) return resolve(buckets[name])
+    buckets[name] = P.promisifyAll(cluster.openBucket(name,secret,function(err){
+      if('undefined' === typeof err){
+        debug('connected to',name)
+        resolve(buckets[name])
+      } else {
+        debug('couchbase connect error',err)
+        logger.log('error', 'Failed to connect to Couchbase bucket ' + dsn +
+          ' ' + name + ' with secret ' + secret + ' ' + err)
+        reject(err)
+      }
+    }))
+  })
+}
+
+
+/**
  * Close open bucket and make the next call reopen it
  * @param {string} name
  * @return {boolean}
@@ -119,7 +144,7 @@ client.disconnect = function(){
  * @return {P}
  */
 client.getManager = function(bucket){
-  return P.promisifyAll(bucket().manager())
+  return P.promisifyAll(bucket.manager())
 }
 
 
@@ -131,22 +156,42 @@ client.getManager = function(bucket){
 client.init = function(couch){
   var opts = {ignoreIfExists: true}
   return P.all([
-    couch.getManager(couch.heartbeat).createPrimaryIndexAsync(opts),
-    couch.getManager(couch.inventory).createPrimaryIndexAsync(opts),
-    couch.getManager(couch.job).createPrimaryIndexAsync(opts),
-    couch.getManager(couch.oose).createPrimaryIndexAsync(opts),
-    couch.getManager(couch.peer).createPrimaryIndexAsync(opts),
-    couch.getManager(couch.purchase).createPrimaryIndexAsync(opts)
+    couch.heartbeat(true)
+      .then(function(bucket){
+        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
+      }),
+    couch.inventory(true)
+      .then(function(bucket){
+        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
+      }),
+    couch.job(true)
+      .then(function(bucket){
+        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
+      }),
+    couch.oose(true)
+      .then(function(bucket){
+        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
+      }),
+    couch.peer(true)
+      .then(function(bucket){
+        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
+      }),
+    couch.purchase(true)
+      .then(function(bucket){
+        return couch.getManager(bucket).createPrimaryIndexAsync(opts)
+      })
   ])
 }
 
 
 /**
  * Setup the Heartbeat DB
+ * @param {boolean} async
  * @return {Object}
  */
-client.heartbeat = function(){
-  return client.openBucket(
+client.heartbeat = function(async){
+  var fn = async === true ? 'openBucketAsync' : 'openBucket'
+  return client[fn](
     config.couch.bucket.heartbeat.name,
     config.couch.bucket.heartbeat.secret
   )
@@ -155,10 +200,12 @@ client.heartbeat = function(){
 
 /**
  * Setup the Inventory DB
+ * @param {boolean} async
  * @return {Object}
  */
-client.inventory = function(){
-  return client.openBucket(
+client.inventory = function(async){
+  var fn = async === true ? 'openBucketAsync' : 'openBucket'
+  return client[fn](
     config.couch.bucket.inventory.name,
     config.couch.bucket.inventory.secret
   )
@@ -167,10 +214,12 @@ client.inventory = function(){
 
 /**
  * Setup the Job DB
+ * @param {boolean} async
  * @return {Object}
  */
-client.job = function(){
-  return client.openBucket(
+client.job = function(async){
+  var fn = async === true ? 'openBucketAsync' : 'openBucket'
+  return client[fn](
     config.couch.bucket.job.name,
     config.couch.bucket.job.secret
   )
@@ -179,10 +228,12 @@ client.job = function(){
 
 /**
  * Setup the OOSE DB
+ * @param {boolean} async
  * @return {Object}
  */
-client.oose = function(){
-  return client.openBucket(
+client.oose = function(async){
+  var fn = async === true ? 'openBucketAsync' : 'openBucket'
+  return client[fn](
     config.couch.bucket.oose.name,
     config.couch.bucket.oose.secret
   )
@@ -191,10 +242,12 @@ client.oose = function(){
 
 /**
  * Setup the Peer DB
+ * @param {boolean} async
  * @return {Object}
  */
-client.peer = function(){
-  return client.openBucket(
+client.peer = function(async){
+  var fn = async === true ? 'openBucketAsync' : 'openBucket'
+  return client[fn](
     config.couch.bucket.peer.name,
     config.couch.bucket.peer.secret
   )
@@ -203,10 +256,12 @@ client.peer = function(){
 
 /**
  * Setup the Purchase DB
+ * @param {boolean} async
  * @return {Object}
  */
-client.purchase = function(){
-  return client.openBucket(
+client.purchase = function(async){
+  var fn = async === true ? 'openBucketAsync' : 'openBucket'
+  return client[fn](
     config.couch.bucket.purchase.name,
     config.couch.bucket.purchase.secret
   )
