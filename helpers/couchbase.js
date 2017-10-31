@@ -43,10 +43,10 @@ var cluster = connectCouchbase(config.couch)
 var client = {
   cluster: cluster,
   type: {
-    STAFF: 'staff',
     HEARTBEAT: 'heartbeat',
     INVENTORY: 'inventory',
     JOB: 'job',
+    OOSE: 'oose',
     PEER: 'peer',
     PURCHASE: 'purchase'
   }
@@ -231,18 +231,6 @@ client.purchase = function(){
   return client.openBucket(
     config.couch.bucket.purchase.name,
     config.couch.bucket.purchase.secret
-  )
-}
-
-
-/**
- * Setup the Staff DB
- * @return {Object}
- */
-client.staff = function(){
-  return client.openBucket(
-    config.couch.bucket.staff.name,
-    config.couch.bucket.staff.secret
   )
 }
 
