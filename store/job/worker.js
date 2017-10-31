@@ -1,21 +1,17 @@
 'use strict';
 var P = require('bluebird')
 var cp = require('child_process')
-var debug = require('debug')('shredder:worker:job')
+var debug = require('debug')('oose:job:worker')
 var fs = require('graceful-fs')
 var infant = require('infant')
 var promisePipe = require('promisepipe')
 var request = require('request')
 
-var config = require('../config')
-
-var logger = require('../helpers/logger')
+var config = require('../../config')
 
 //make some promises
-var requestP = P.promisify(request)
 P.promisifyAll(infant)
-P.promisifyAll(request,{multiArgs: true})
-P.promisifyAll(fs,{multiArgs: true})
+var requestP = P.promisify(request)
 
 //setup job environment
 var jobData = {}
@@ -31,7 +27,7 @@ var jobPIDs = []
 
 /**
  * Adds a job pid to pids.json file
- * @param {integer} pid
+ * @param {number} pid
  */
 var addJobPID = function(pid){
   if(jobPIDs.indexOf(pid) === -1){
@@ -43,7 +39,7 @@ var addJobPID = function(pid){
 
 /**
  * Removes a job pid to pids.json file
- * @param {integer} pid
+ * @param {number} pid
  */
 var removeJobPID = function(pid){
   var pos = jobPIDs.indexOf(pid)
@@ -63,6 +59,7 @@ var writeStatus = function(){
 
 //setup logging
 fs.writeFileSync(jobLog,'Created Log\n')
+//var logStream = fs.createWriteStream(jobLog)
 var log = fs.openSync(jobLog,'a')
 
 var errorHandler = function(err){
@@ -79,7 +76,7 @@ var errorHandler = function(err){
     writeStatus()
   }
   //send the error to the upstream log
-  logger.log('err',err.stack)
+  console.log(err.stack)
   //log to the job log
   fs.writeSync(log,err.stack + '\n')
   //kill the process with an erroneous status
@@ -196,7 +193,7 @@ var jobObtainResource = function(req){
       fs.writeSync(log,
         'Making intermediate resource request: ' + opts.url + '\n')
       return requestP(opts)
-          .spread(intermediateParse(item))
+        .spread(intermediateParse(item))
     })
     .then(function(){
       return populateJobDataObject(lastReq)
@@ -319,8 +316,7 @@ var jobProcessComplete = function(){
   jobStatus.frameTotal = jobStatus.stepTotal
   jobStatus.frameComplete = jobStatus.stepTotal
   writeStatus()
-  if(fs.existsSync(jobFolder + '/processing'))
-    fs.unlink(jobFolder + '/processing')
+  return fs.unlinkAsync(jobFolder + '/processing')
 }
 
 var jobProcess = function(){
@@ -339,7 +335,8 @@ var jobProcess = function(){
       fs.writeSync(log,'Job processing complete\n')
       fs.closeSync(log)
       debug('job process complete')
-    }).catch(function(e){
+    })
+    .catch(function(e){
       errorHandler(e)
     })
 }

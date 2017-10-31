@@ -92,6 +92,9 @@ app.post('/content/send',routes.content.send)
 app.post('/content/detail',routes.content.detail)
 app.post('/content/verify',routes.content.verify)
 
+//job functions (protect this one to prevent scanning)
+app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
+
 
 /**
 * Start oose store

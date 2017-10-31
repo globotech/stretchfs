@@ -62,7 +62,7 @@ client.openBucket = function(name,secret){
   debug('opening bucket',name,secret)
   if(buckets[name]) return buckets[name]
   buckets[name] = P.promisifyAll(cluster.openBucket(name,secret,function(err){
-    if('undefined' === typeof err){
+    if(!err){
       debug('connected to',name)
       return
     }
@@ -243,7 +243,7 @@ client.schema = new CouchSchema(config.couch.prefix)
 
 /**
  * Export N1Query object
- * @type {N1qlQuery}
+ * @type {N1Query}
  */
 client.N1Query = N1Query
 

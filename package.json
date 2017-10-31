@@ -66,6 +66,7 @@
     "redis": "^2.8.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
+    "rimraf-promise": "^2.0.0",
     "sha1-stream": "^0.2.1",
     "string": "^3.3.3",
     "systeminformation": "^3.32.1",

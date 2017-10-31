@@ -9,23 +9,34 @@ I want to take some time to explain what OOSE is and how we use it. OOSE in a
 short description, is a multi purpose, multi backed, multi OS, redundant,
 shared, sharded, cloud file system built on top of Node.JS with a
 kernel mentality.
+
+
 Now I will try to explain this in short amounts at a time.
 OOSE hashes (with SHA1 by default) files (not blocks, thus it is not a
 viable block level storage system) and stores them across zones which are
 headed up by Prisms. It is purpose built to drive file based CDNs and archival
 storage networks.
+
+
 Prisms are the main directors of the OOSE system below each prism is one or
 more Store nodes. Prisms represent a group of Store nodes and manages that
 group itself. OOSE is designed to handle fault tolerance across zones. This
 intends on Prisms and their entire group of stores going offline. Individual
 Store outages do not affect operations. Prism outages will reduce the available
 clone counts for content hosted in that zone.
+
+
 OOSE is based on the Google File System model however instead of blocking by
 64MB chunks, OOSE hashes entire files.
+
+
 What can OOSE be used for?
+
+
 OOSE is great for delivering videos. In fact, that is its primary purpose for
 existence. However, it is built as a multi purpose system that can host, save,
-and stream any type of file including static web pages.
+and stream any type of file.
+
 
 ### Some other uses for OOSE
 * Archival storage or backup networks.

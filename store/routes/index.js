@@ -58,6 +58,13 @@ exports.content = require('./content')
 
 
 /**
+ * Job routes
+ * @type {object}
+ */
+exports.job = require('./job')
+
+
+/**
  * Purchase routes
  * @type {object}
  */
