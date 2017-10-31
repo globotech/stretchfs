@@ -3,10 +3,9 @@ var P = require('bluebird')
 var Table = require('cli-table')
 var program = require('commander')
 
-var sequelize = require('../helpers/sequelize')()
 var logger = require('../helpers/logger')
 
-var Staff = sequelize.models.Staff
+var Staff = require('../helpers/staff')
 
 var config = require('../config')
 

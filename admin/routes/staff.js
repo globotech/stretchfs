@@ -1,9 +1,10 @@
 'use strict';
 var list = require('../../helpers/list')
 var oose = require('oose-sdk')
-var couch = require('../../helpers/couchbase')
 
 var UserError = oose.UserError
+
+var Staff = require('../../helpers/staff')
 
 
 /**

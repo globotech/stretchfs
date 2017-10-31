@@ -39,7 +39,7 @@ app.locals = {
 //setup view enging
 app.set('trust proxy',true)
 app.set('views',__dirname + '/' + 'views')
-app.set('view engine','jade')
+app.set('view engine','pug')
 
 //load middleware
 app.use(compress())

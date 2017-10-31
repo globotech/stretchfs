@@ -221,6 +221,16 @@ CouchSchema.prototype.ooseToken = function(token){
 
 
 /**
+ * OOSE Staff (admin user)
+ * @param {string} name
+ * @return {string}
+ */
+CouchSchema.prototype.staff = function(name){
+  return this.applyPrefix('staff:' + name)
+}
+
+
+/**
  * Export Object
  * @type {CouchSchema}
  */
