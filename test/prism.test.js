@@ -86,14 +86,142 @@ describe('prism',function(){
     })
   })
   describe('prism:job',function(){
-    it('should create a job')
-    it('should get job detail')
-    it('should update a job')
-    it('should start a job')
-    it('should abort a job')
-    it('should retry a job')
-    it('should remove a job')
-    it('should check for content existence')
-    it('should error on non existent content download')
+    var job = {}
+    var sessionClient
+    before(function(){
+      return client
+        .postAsync({
+          url: client.url('/user/login'),
+          json: {
+            name: user.name,
+            secret: user.secret
+          }
+        })
+        .spread(function(res,body){
+          if(!body.session) throw new Error('No session created')
+          user.session = body.session
+          expect(body.message).to.equal('Login successful')
+          expect(body.success).to.equal('User logged in')
+          expect(body.session).to.be.an('Object')
+          sessionClient = api.setSession(user.session,client)
+        })
+    })
+    after(function(){
+      return sessionClient.postAsync({
+        url: client.url('/user/logout'), json: true
+      })
+        .spread(function(res,body){
+          expect(body.success).to.equal('User logged out')
+        })
+    })
+    it('should create a job',function(){
+      return sessionClient.postAsync({
+        url: client.url('/job/create'),
+        json: {
+          priority: 5,
+          description: {save: ['foo']},
+          category: 'augment'
+        }
+      })
+        .spread(function(res,body){
+          job = body
+          expect(body.handle).to.be.a('string')
+          expect(body.description).to.be.a('string')
+          expect(body.priority).to.equal(5)
+          expect(body.status).to.equal('staged')
+        })
+    })
+    it('should update a job',function(){
+      return sessionClient
+        .postAsync({
+          url: client.url('/job/update'),
+          json: {
+            handle: job.handle,
+            priority: 10
+          }
+        })
+        .spread(function(res,body){
+          expect(body.priority).to.equal(10)
+        })
+    })
+    it('should get job detail',function(){
+      return sessionClient
+        .postAsync({url: client.url('/job/detail'), json: {handle: job.handle}})
+        .spread(function(res,body){
+          expect(body.handle).to.equal(job.handle)
+          expect(body.priority).to.equal(10)
+        })
+    })
+    it('should start a job',function(){
+      return sessionClient
+        .postAsync({
+          url: client.url('/job/start'),
+          json: {
+            handle: job.handle
+          }
+        })
+        .spread(function(res,body){
+          expect(body.status).to.equal('queued')
+        })
+    })
+    it('should retry a job',function(){
+      return sessionClient
+        .postAsync({
+          url: client.url('/job/update?force=true'),
+          json: {
+            handle: job.handle,
+            status: 'error'
+          }
+        })
+        .spread(function(res,body){
+          expect(body.status).to.equal('error')
+          return sessionClient
+            .postAsync({
+              url: client.url('/job/retry'),
+              json: {
+                handle: job.handle
+              }
+            })
+        })
+        .spread(function(res,body){
+          expect(body.status).to.equal('queued_retry')
+        })
+    })
+    it('should abort a job',function(){
+      return sessionClient
+        .postAsync({
+          url: client.url('/job/update?force=true'),
+          json: {
+            handle: job.handle,
+            status: 'processing'
+          }
+        })
+        .spread(function(res,body){
+          expect(body.status).to.equal('processing')
+          return sessionClient
+            .postAsync({
+              url: client.url('/job/abort'),
+              json: {
+                handle: job.handle
+              }
+            })
+        })
+        .spread(function(res,body){
+          expect(body.status).to.equal('queued_abort')
+        })
+    })
+    it('should remove a job',function(){
+      return sessionClient
+        .postAsync({
+          url: client.url('/job/remove?force=true'),
+          json: {
+            handle: job.handle
+          }
+        })
+        .spread(function(res,body){
+          expect(body.success).to.equal('Job removed')
+          expect(body.count).to.equal(1)
+        })
+    })
   })
 })

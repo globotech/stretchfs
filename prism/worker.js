@@ -118,9 +118,19 @@ app.post('/cache/detail',auth,routes.cache.detail)
 app.post('/content/exists',auth,routes.content.exists)
 app.put('/content/put/:file',auth,routes.content.put)
 
+//public job functions
+app.post('/job/create',userSessionValidate,routes.job.create)
+app.post('/job/detail',userSessionValidate,routes.job.detail)
+app.post('/job/update',userSessionValidate,routes.job.update)
+app.post('/job/remove',userSessionValidate,routes.job.remove)
+app.post('/job/start',userSessionValidate,routes.job.start)
+app.post('/job/retry',userSessionValidate,routes.job.retry)
+app.post('/job/abort',userSessionValidate,routes.job.abort)
+app.post('/job/content/exists',userSessionValidate,routes.job.contentExists)
+app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
+
 //static content
 app.get('/static/:hash/:filename',routes.content.contentStatic)
-
 
 //main content retrieval route
 app.get('/:token/:filename',routes.content.deliver)
