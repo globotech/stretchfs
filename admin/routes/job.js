@@ -5,11 +5,11 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchPeer = couch.peer()
+var couchJob = couch.peer()
 
 
 /**
- * List Stores
+ * List Jobs
  * @param {object} req
  * @param {object} res
  */
@@ -19,14 +19,14 @@ exports.list = function(req,res){
   var search = req.query.search || ''
   if(start < 0) start = 0
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.PEER,true) + ' b ' +
+    couch.getName(couch.type.JOB,true) + ' b ' +
     ' WHERE META(b).id LIKE $1 ' +
     (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
   var query = couch.N1Query.fromString(qstring)
-  var storeKey = couch.schema.store(search) + '%'
-  couchPeer.queryAsync(query,[storeKey])
+  var jobKey = couch.schema.job(search) + '%'
+  couchJob.queryAsync(query,[jobKey])
     .then(function(result){
-      res.render('store/list',{
+      res.render('job/list',{
         page: list.pagination(start,result.length,limit),
         count: result.length,
         search: search,
@@ -46,37 +46,36 @@ exports.listAction = function(req,res){
   P.try(function(){
     return req.body.remove || []
   })
-    .each(function(storeKey){
-      return couchPeer.removeAsync(storeKey)
+    .each(function(jobKey){
+      return couchJob.removeAsync(jobKey)
     })
     .then(function(){
-      req.flash('success','Store(s) removed successfully')
-      res.redirect('/store/list')
+      req.flash('success','Jobs(s) removed successfully')
+      res.redirect('/job/list')
     })
 }
 
 
 /**
- * Create Store
+ * Create Job
  * @param {object} req
  * @param {object} res
  */
 exports.create = function(req,res){
-  res.render('store/create')
+  res.render('job/create')
 }
 
 
 /**
- * Edit Store
+ * Edit Job
  * @param {object} req
  * @param {object} res
- * @return {*}
  */
 exports.edit = function(req,res){
-  var storeKey = couch.schema.store(req.query.name)
-  couchPeer.getAsync(storeKey)
+  var jobKey = couch.schema.job(req.query.handle)
+  couchJob.getAsync(jobKey)
     .then(function(result){
-      res.render('store/edit',{store: result.value})
+      res.render('job/edit',{job: result.value})
     })
     .catch(function(err){
       res.render('error',{error: err.message})
@@ -85,45 +84,27 @@ exports.edit = function(req,res){
 
 
 /**
- * Remove store
+ * Save job
  * @param {object} req
  * @param {object} res
- * @return {*}
- */
-exports.remove = function(req,res){
-  var storeKey = couch.schema.store(req.body.name)
-  couchPeer.removeAsync(storeKey)
-    .then(function(){
-      req.flash('success','Store removed successfully')
-      res.redirect('/store/list')
-    })
-}
-
-
-/**
- * Save Store
- * @param {object} req
- * @param {object} res
- * @return {*}
  */
 exports.save = function(req,res){
   var data = req.body
-  var storeKey = couch.schema.store(req.body.name)
+  var jobKey = couch.schema.prism(req.body.name)
   var doc
-  couchPeer.getAsync(storeKey)
+  couchJob.getAsync(jobKey)
     .then(function(result){
       doc = result.value
       if(!doc) doc = {}
-      if(data.name) doc.name = data.name
-      if(data.port) doc.port = data.port
-      if(data.host) doc.host = data.host
-      doc.full = !!data.full
-      doc.active = !!data.active
-      return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
+      if(data.description) doc.description = data.description
+      if(data.category) doc.category = data.category
+      if(data.priority) doc.priority = data.priority
+      if(data.status) doc.status = data.status
+      return couchJob.upsertAsync(jobKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Store saved')
-      res.redirect('/store/edit?name=' + doc.name)
+      req.flash('success','Job saved')
+      res.redirect('/job/edit?handle=' + doc.handle)
     })
     .catch(function(err){
       res.render('error',{error: err})

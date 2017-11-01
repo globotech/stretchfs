@@ -3,7 +3,7 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    +tableHeader('User','/user/create','Create User')
+    +tableHeader('Stores','/store/create','Create Store')
     +alerts()
     form(method='post', role='form')
       table.table.table-striped
@@ -11,21 +11,24 @@ block content
           th
             input#toggle(type='checkbox')
           th Name
-          th Last Login
-          th Tokens
+          th Host
+          th Port
+          th Created
+          th Updated
+          th Full
           th Active
         each row in list
           tr
             td
               input(type='checkbox', name='remove[]', value=row.name)
             td
-              a(href='/user/edit?email=#{row.name}')= row.name
+              a(href='/store/edit?name=#{row.name}')= row.name
+            td= row.host
+            td= row.port
+            td= new Date(row.createdAt).toDateString()
+            td= new Date(row.updatedAt).toDateString()
             td
-              if row.dateSeen
-                div.text-success= new Date(row.dateSeen * 1000).toDateString()
-              if row.dateFail
-                div.text-danger= new Date(row.dateFail * 1000).toDateString()
-            td 0
+              +active(row.full)
             td
               +active(row.active)
       +tableFooter(page,count)

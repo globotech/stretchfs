@@ -108,14 +108,7 @@ app.post('/user/list',routes.user.listAction)
 app.post('/user/save',routes.user.save)
 app.post('/user/find',routes.user.find)
 app.post('/user/update',routes.user.update)
-app.post('/user/login',routes.user.login)
-app.post('/user/logout',routes.user.logout)
 app.post('/user/remove',routes.user.remove)
-app.post('/user/password/reset',routes.user.passwordReset)
-app.post('/user/session/find',routes.user.sessionFind)
-app.post('/user/session/validate',routes.user.sessionFind)
-app.post('/user/session/update',routes.user.sessionUpdate)
-app.post('/user/session/remove',routes.user.sessionRemove)
 app.get('/user/list',routes.user.list)
 app.get('/user/create',routes.user.create)
 app.get('/user/edit', routes.user.edit)
@@ -131,10 +124,27 @@ app.get('/prism/edit',routes.prism.edit)
 app.get('/prism',function(req,res){ res.redirect('/') })
 
 //stores
+app.post('/store/list',routes.store.listAction)
 app.post('/store/save',routes.store.save)
 app.post('/store/remove',routes.store.remove)
+app.get('/store/list',routes.store.list)
 app.get('/store/create',routes.store.create)
 app.get('/store/edit',routes.store.edit)
+
+//inventory
+app.post('/inventory/list',routes.inventory.listAction)
+app.post('/inventory/save',routes.inventory.save)
+app.get('/inventory/list',routes.inventory.list)
+app.get('/inventory/edit',routes.inventory.edit)
+app.get('/inventory',function(req,res){ res.redirect('/') })
+
+//jobs
+app.post('/job/list',routes.job.listAction)
+app.post('/job/save',routes.job.save)
+app.get('/job/list',routes.job.list)
+app.get('/job/create',routes.job.create)
+app.get('/job/edit',routes.job.edit)
+app.get('/job',function(req,res){ res.redirect('/') })
 
 
 //home page

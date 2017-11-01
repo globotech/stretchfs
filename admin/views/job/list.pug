@@ -1,0 +1,24 @@
+extends ../layout
+block append js
+  script(src='/js/table.js')
+block content
+  .container
+    +tableHeader('Jobs','/job/create','Create Job')
+    +alerts()
+    form(method='post', role='form')
+      table.table.table-striped
+        tr
+          th
+            input#toggle(type='checkbox')
+          th Handle
+          th Status
+          th Status Description
+        each row in list
+          tr
+            td
+              input(type='checkbox', name='remove[]', value=row.handle)
+            td
+              a(href='/prism/edit?id=#{row.handle}')= row.handle
+            td= row.status
+            td= row.statusDescription
+      +tableFooter(page,count)

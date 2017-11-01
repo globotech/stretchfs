@@ -1,0 +1,32 @@
+extends ../layout
+block append js
+  script(src='/js/table.js')
+block content
+  .container
+    h1 Job #{job.handle}
+    +alerts()
+    form.form-horizontal(action='/job/save', method='post', role='form')
+      input(type='hidden', name='handle', value=job.handle)
+      .form-group
+        label.control-label.col-sm-2 Handle
+        .col-sm-10
+          input.form-control(type='text', name='handle', placeholder='Handle', value=jop.handle)
+      .form-group
+        label.control-label.col-sm-2 Description
+        .col-sm-10
+          input.form-control(type='text', name='description', placeholder='description', value=jop.description)
+      .form-group
+        label.control-label.col-sm-2 Category
+        .col-sm-10
+          input.form-control(type='text', name='category', placeholder='category', value=jop.category)
+      .form-group
+        label.control-label.col-sm-2 Priority
+        .col-sm-10
+          input.form-control(type='text', name='priority', placeholder='priority', value=jop.priority)
+      .form-group
+        label.control-label.col-sm-2 Status
+        .col-sm-10
+          input.form-control(type='text', name='status', placeholder='Status', value=jop.status)
+      .form-group
+        .col-sm-offset-2.col-sm-10
+          button.btn.btn-success(type='submit') Save

@@ -5,7 +5,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchPeer = couch.peer()
+var couchInventory = couch.peer()
 
 
 /**
@@ -19,14 +19,14 @@ exports.list = function(req,res){
   var search = req.query.search || ''
   if(start < 0) start = 0
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.PEER,true) + ' b ' +
+    couch.getName(couch.type.INVENTORY,true) + ' b ' +
     ' WHERE META(b).id LIKE $1 ' +
     (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
   var query = couch.N1Query.fromString(qstring)
   var prismKey = couch.schema.prism(search) + '%'
-  couchPeer.queryAsync(query,[prismKey])
+  couchInventory.queryAsync(query,[prismKey])
     .then(function(result){
-      res.render('prism/list',{
+      res.render('inventory/list',{
         page: list.pagination(start,result.length,limit),
         count: result.length,
         search: search,
@@ -46,36 +46,26 @@ exports.listAction = function(req,res){
   P.try(function(){
     return req.body.remove || []
   })
-    .each(function(prismKey){
-      return couchPeer.removeAsync(prismKey)
+    .each(function(inventoryKey){
+      return couchInventory.removeAsync(inventoryKey)
     })
     .then(function(){
-      req.flash('success','Prism(s) removed successfully')
-      res.redirect('/prism/list')
+      req.flash('success','Inventory item(s) removed successfully')
+      res.redirect('/inventory/list')
     })
 }
 
 
 /**
- * Create Prism
- * @param {object} req
- * @param {object} res
- */
-exports.create = function(req,res){
-  res.render('prism/create')
-}
-
-
-/**
- * Edit Prism
+ * Edit Inventory
  * @param {object} req
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var prismKey = couch.schema.prism(req.query.name)
-  couchPeer.getAsync(prismKey)
+  var inventoryKey = couch.schema.inventory(req.query.key)
+  couchInventory.getAsync(inventoryKey)
     .then(function(result){
-      res.render('prism/edit',{prism: result.value})
+      res.render('inventory/edit',{inventory: result.value})
     })
     .catch(function(err){
       res.render('error',{error: err.message})
@@ -84,29 +74,23 @@ exports.edit = function(req,res){
 
 
 /**
- * Save prism
+ * Save inventory
  * @param {object} req
  * @param {object} res
  */
 exports.save = function(req,res){
-  var data = req.body
-  var prismKey = couch.schema.prism(req.body.name)
+  //var data = req.body
+  var inventoryKey = couch.schema.prism(req.body.name)
   var doc
-  couchPeer.getAsync(prismKey)
+  couchInventory.getAsync(inventoryKey)
     .then(function(result){
       doc = result.value
       if(!doc) doc = {}
-      if(data.name) doc.name = data.name
-      if(data.group) doc.group = data.group
-      if(data.host) doc.host = data.host
-      if(data.port) doc.port = data.port
-      doc.full = !!data.full
-      doc.active = !!data.active
-      return couchPeer.upsertAsync(prismKey,doc,{cas: result.cas})
+      return couchInventory.upsertAsync(inventoryKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Staff member saved')
-      res.redirect('/staff/edit?email=' + doc.email)
+      req.flash('success','Inventory saved')
+      res.redirect('/inventory/edit?key=' + doc.key)
     })
     .catch(function(err){
       res.render('error',{error: err})

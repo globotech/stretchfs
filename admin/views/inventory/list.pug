@@ -1,0 +1,25 @@
+extends ../layout
+block append js
+  script(src='/js/table.js')
+block content
+  .container
+    +tableHeader('Inventory')
+    +alerts()
+    form(method='post', role='form')
+      table.table.table-striped
+        tr
+          th
+            input#toggle(type='checkbox')
+          th Name
+          th Hosts
+          th Active
+        each row in list
+          tr
+            td
+              input(type='checkbox', name='remove[]', value=row.id)
+            td
+              a(href='/inventory/edit?key=#{row.key}')= row.name
+            td= row.hosts
+            td
+              +active(row.active)
+      +tableFooter(page,count)

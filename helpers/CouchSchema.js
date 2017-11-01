@@ -201,12 +201,22 @@ CouchSchema.prototype.inventory = function(hash,prism,store){
 
 
 /**
+ * Job
+ * @param {string} handle
+ * @return {string}
+ */
+CouchSchema.prototype.job = function(handle){
+  return this.applyPrefix(handle || '')
+}
+
+
+/**
  * OOSE User
  * @param {string} name
  * @return {string}
  */
 CouchSchema.prototype.ooseUser = function(name){
-  return this.applyPrefix('user:' + name)
+  return this.applyPrefix('user:' + (name || ''))
 }
 
 
@@ -216,7 +226,7 @@ CouchSchema.prototype.ooseUser = function(name){
  * @return {string}
  */
 CouchSchema.prototype.ooseToken = function(token){
-  return this.applyPrefix('token:' + token)
+  return this.applyPrefix('token:' + (token || ''))
 }
 
 
@@ -225,8 +235,8 @@ CouchSchema.prototype.ooseToken = function(token){
  * @param {string} name
  * @return {string}
  */
-CouchSchema.prototype.staff = function(name){
-  return this.applyPrefix('staff:' + name)
+CouchSchema.prototype.ooseStaff = function(name){
+  return this.applyPrefix('staff:' + (name || ''))
 }
 
 

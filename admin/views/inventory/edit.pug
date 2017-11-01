@@ -1,0 +1,12 @@
+extends ../layout
+block append js
+  script(src='/js/table.js')
+block content
+  .container
+    h1 #{inventory.name}
+    +alerts()
+    form.form-horizontal(action='/prism/save', method='post', role='form')
+      input(type='hidden', name='id', value=inventory.id)
+      .form-group
+        .col-sm-offset-2.col-sm-10
+          button.btn.btn-success(type='submit') Save
