@@ -9,6 +9,6 @@ fi
 
 while read svr; do
   echo -n "Copying $src to $svr:$dst ..."
-  scp -4 -q $src $svr:$dst
+  scp -q $src $svr:$dst
   echo " $svr done"
 done < oose_server_list
