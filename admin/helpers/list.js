@@ -21,6 +21,7 @@ exports.listQuery = function(cb,db,type,search,orderField,orderAsc,start,limit){
   if(!limit) limit = 10
   else limit = parseInt(limit)
   if(!search) search = ''
+  else search = '%' + search + '%'
   if(!type) throw new Error('Must know database type to list')
   if(!cb || !db) throw new Error('Must have couch helper and couch db to list')
   var cstring = 'SELECT COUNT(b) AS _count FROM ' +

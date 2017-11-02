@@ -21,8 +21,8 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  search = couch.schema.ooseStaff(search) + '%'
-  list.listQuery(couch,couchOOSE,couch.type.OOSE,search,'name',true,start,limit)
+  list.listQuery(couch,couchOOSE,couch.type.OOSE,
+    couch.schema.ooseStaff(search),'name',true,start,limit)
     .then(function(result){
       res.render('staff/list',{
         page: list.pagination(start,result.count,limit),

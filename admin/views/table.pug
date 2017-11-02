@@ -19,8 +19,8 @@ mixin tableHeader(title,createUrl,createLabel)
 mixin tableFooter(page,count)
   div
     .pull-right.btn-group
-      a.btn.btn-default(href='?start=#{page.previous}&search=#{search}') Previous
-      a.btn.btn-default(href='?start=#{page.next}&search=#{search}') Next
+      a.btn.btn-default(href='?start=' + page.previous + '&search=' + search) Previous
+      a.btn.btn-default(href='?start=' + page.next + '&search=' + search) Next
     span #{page.start + 1} - #{page.end} of #{count} entries
     div
       button.btn.btn-danger#tableDelete(type='submit') Delete Checked
@@ -28,8 +28,8 @@ mixin tableFooter(page,count)
 mixin tableMaintenanceFooter(page,count)
   div
     .pull-right.btn-group
-      a.btn.btn-default(href='?start=#{page.previous}&search=#{search}') Previous
-      a.btn.btn-default(href='?start=#{page.next}&search=#{search}') Next
+      a.btn.btn-default(href='?start=' + page.previous + '&search=' + search) Previous
+      a.btn.btn-default(href='?start=' + page.next + '&search=' + search) Next
     span #{page.start + 1} - #{page.end} of #{count} entries
     div
       button.btn.btn-success#tableResolve(type='submit') Resolve Checked

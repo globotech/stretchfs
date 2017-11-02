@@ -37,6 +37,13 @@ exports.staff = require('./staff')
 
 
 /**
+ * Session
+ * @type {exports}
+ */
+exports.session = require('./session')
+
+
+/**
  * Users
  * @type {exports}
  */

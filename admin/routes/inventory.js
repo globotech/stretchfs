@@ -17,7 +17,6 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  search = couch.schema.inventory(search) + '%'
   list.listQuery(
     couch,couchInventory,couch.type.INVENTORY,search,'hash',true,start,limit)
     .then(function(result){

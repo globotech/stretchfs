@@ -119,7 +119,7 @@ app.post('/prism/save',routes.prism.save)
 app.get('/prism/list',routes.prism.list)
 app.get('/prism/create',routes.prism.create)
 app.get('/prism/edit',routes.prism.edit)
-app.get('/prism',function(req,res){ res.redirect('/') })
+app.get('/prism',function(req,res){ res.redirect('/prism/list') })
 
 //stores
 app.post('/store/list',routes.store.listAction)
@@ -128,6 +128,7 @@ app.post('/store/remove',routes.store.remove)
 app.get('/store/list',routes.store.list)
 app.get('/store/create',routes.store.create)
 app.get('/store/edit',routes.store.edit)
+app.get('/store',function(req,res){ res.redirect('/store/list') })
 
 //inventory
 app.post('/inventory/list',routes.inventory.listAction)
@@ -135,7 +136,12 @@ app.post('/inventory/save',routes.inventory.save)
 app.get('/inventory/list',routes.inventory.list)
 app.get('/inventory/create',routes.inventory.create)
 app.get('/inventory/edit',routes.inventory.edit)
-app.get('/inventory',function(req,res){ res.redirect('/') })
+app.get('/inventory',function(req,res){ res.redirect('/inventory/list') })
+
+//sessions
+app.post('/session/list',routes.session.listAction)
+app.get('/session/list',routes.session.list)
+app.get('/session',function(req,res){ res.redirect('/session/list') })
 
 //jobs
 app.post('/job/list',routes.job.listAction)
@@ -143,7 +149,7 @@ app.post('/job/save',routes.job.save)
 app.get('/job/list',routes.job.list)
 app.get('/job/create',routes.job.create)
 app.get('/job/edit',routes.job.edit)
-app.get('/job',function(req,res){ res.redirect('/') })
+app.get('/job',function(req,res){ res.redirect('/job/list') })
 
 
 //home page

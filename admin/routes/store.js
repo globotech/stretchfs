@@ -17,8 +17,8 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  search = couch.schema.store(search) + '%'
-  list.listQuery(couch,couchPeer,couch.type.PEER,search,'name',true,start,limit)
+  list.listQuery(couch,couchPeer,couch.type.PEER,
+    couch.schema.store(search),'name',true,start,limit)
     .then(function(result){
       res.render('store/list',{
         page: list.pagination(start,result.count,limit),
