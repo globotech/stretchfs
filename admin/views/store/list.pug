@@ -28,7 +28,9 @@ block content
             td= new Date(row.createdAt).toDateString()
             td= new Date(row.updatedAt).toDateString()
             td
-              +active(row.full)
+              +active(row.writable)
+            td
+              +active(row.available)
             td
               +active(row.active)
       +tableFooter(page,count)
