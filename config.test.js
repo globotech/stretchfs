@@ -9,22 +9,28 @@ module.exports = {
   couch: {
     bucket: {
       heartbeat: {
-        secret: 'password'
+        secret: 'password',
+        ramQuotaMB: 128
       },
       job: {
-        secret: 'password'
+        secret: 'password',
+        ramQuotaMB: 128
       },
       inventory: {
-        secret: 'password'
+        secret: 'password',
+        ramQuotaMB: 128
       },
       oose: {
-        secret: 'password'
+        secret: 'password',
+        ramQuotaMB: 128
       },
       peer: {
-        secret: 'password'
+        secret: 'password',
+        ramQuotaMB: 128
       },
       purchase: {
-        secret: 'password'
+        secret: 'password',
+        ramQuotaMB: 128
       }
     }
   },
