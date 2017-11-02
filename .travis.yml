@@ -20,6 +20,6 @@ before_script:
   - sleep 2
   - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-init-username=root --cluster-init-password=password --cluster-init-ramsize=1024 --cluster-index-ramsize=256 --cluster-fts-ramsize=256 --services=data,index,query,fts
   # Init couchbase
-  - node bin/createCouchbaseBuckets.js root password
-  - node bin/initCouchbase.js
-  - node bin/createUser.js localhost bigpassword
+  - DEBUG=oose:couchbase node bin/createCouchbaseBuckets.js root password
+  - DEBUG=oose:couchbase node bin/initCouchbase.js
+  - DEBUG=oose:couchbase node bin/createUser.js localhost bigpassword
