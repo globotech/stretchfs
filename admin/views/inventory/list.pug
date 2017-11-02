@@ -27,7 +27,7 @@ block content
             td= row.prism
             td= row.store
             td= row.mimeType
-            td= prettyBytes(row.size)
+            td= row.size ? prettyBytes(row.size) : ''
             td= row.hits || 0
             td= row.createdAt || 'Unknown'
             td= row.updatedAt || 'Unknown'

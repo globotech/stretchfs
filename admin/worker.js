@@ -36,7 +36,7 @@ app.locals = {
 }
 
 
-//setup view enging
+//setup view engine
 app.set('trust proxy',true)
 app.set('views',__dirname + '/' + 'views')
 app.set('view engine','pug')

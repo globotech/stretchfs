@@ -1,7 +1,7 @@
 'use strict';
 var P = require('bluebird')
 
-var list = require('../helpers/list')
+var inv = require('../helpers/inventory')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
@@ -9,19 +9,19 @@ var couchInventory = couch.inventory()
 
 
 /**
- * List Prisms
+ * List Inventory
  * @param {object} req
  * @param {object} res
  */
 exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
-  var search = req.query.search || ''
-  list.listQuery(
+  var search = req.query.search || false
+  inv.listMain(
     couch,couchInventory,couch.type.INVENTORY,search,'hash',true,start,limit)
     .then(function(result){
       res.render('inventory/list',{
-        page: list.pagination(start,result.count,limit),
+        page: inv.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
