@@ -1,4 +1,5 @@
 'use strict';
+var bcrypt = require('bcrypt')
 var P = require('bluebird')
 var Table = require('cli-table')
 var program = require('commander')
@@ -6,6 +7,9 @@ var program = require('commander')
 var logger = require('../helpers/logger')
 
 var couch = require('../helpers/couchbase')
+
+//make some promises
+P.promisifyAll(bcrypt)
 
 //open some buckets
 var couchOOSE = couch.oose()
@@ -27,9 +31,11 @@ program
       var staffKey = couch.schema.ooseStaff(opts.email)
       var doc = {
         email: opts.email,
-        password: opts.password,
+        password: bcrypt.hashSync(
+          opts.password,bcrypt.genSaltSync(12)),
         name: opts.name,
-        active: true
+        active: true,
+        createdAt: new Date().toJSON()
       }
       return couchOOSE.upsertAsync(staffKey,doc)
     })
@@ -57,8 +63,13 @@ program
       .then(function(result){
         var doc = result.value
         if(opts.newEmail) doc.email = opts.newEmail
-        if(opts.password) doc.password = opts.password
+        if(opts.password){
+          doc.passwordLastChanged = new Date().toJSON()
+          doc.password = bcrypt.hashSync(
+            opts.password,bcrypt.genSaltSync(12))
+        }
         if(opts.name) doc.name = opts.name
+        doc.updatedAt = new Date().toJSON()
         return couchOOSE.upsertAsync(staffKey,doc,{cas: result.cas})
       })
       .then(function(){

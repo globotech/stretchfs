@@ -3,39 +3,37 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    h1 Inventory: #{inventory.hash}
+    h1 Create Inventory Record
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
-      input(type='hidden', name='id', value=inventory._id)
-      input(type='hidden', name='hash', value=inventory.hash)
       .form-group
         label.control-label.col-sm-2 Hash
         .col-sm-10
-          .form-control-static= inventory.hash
+          input.form-control(type='text', name='hash')
       .form-group
         label.control-label.col-sm-2 Prism
         .col-sm-10
-          input.form-control(type='text', name='prism', value=inventory.prism)
+          input.form-control(type='text', name='prism')
       .form-group
         label.control-label.col-sm-2 Store
         .col-sm-10
-          input.form-control(type='text', name='store', value=inventory.store)
+          input.form-control(type='text', name='store')
       .form-group
         label.control-label.col-sm-2 Mime Type
         .col-sm-10
-          input.form-control(type='text', name='mimeType', value=inventory.mimeType)
+          input.form-control(type='text', name='mimeType')
       .form-group
         label.control-label.col-sm-2 Mime Extension
         .col-sm-10
-          input.form-control(type='text', name='mimeExtension', value=inventory.mimeExtension)
+          input.form-control(type='text', name='mimeExtension')
       .form-group
         label.control-label.col-sm-2 Size
         .col-sm-10
-          input.form-control(type='text', name='size', value=inventory.size)
+          input.form-control(type='text', name='size')
       .form-group
         label.control-label.col-sm-2 Relative Path
         .col-sm-10
-          input.form-control(type='text', name='relativePath', value=inventory.relativePath)
+          input.form-control(type='text', name='relativePath')
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Save

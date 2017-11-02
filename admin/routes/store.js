@@ -17,21 +17,15 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  if(start < 0) start = 0
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.PEER,true) + ' b ' +
-    ' WHERE META(b).id LIKE $1 ' +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = couch.N1Query.fromString(qstring)
-  var storeKey = couch.schema.store(search) + '%'
-  couchPeer.queryAsync(query,[storeKey])
+  search = couch.schema.store(search) + '%'
+  list.listQuery(couch,couchPeer,couch.type.PEER,search,'name',true,start,limit)
     .then(function(result){
       res.render('store/list',{
-        page: list.pagination(start,result.length,limit),
-        count: result.length,
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
         search: search,
         limit: limit,
-        list: result
+        list: result.rows
       })
     })
 }
@@ -73,9 +67,11 @@ exports.create = function(req,res){
  * @return {*}
  */
 exports.edit = function(req,res){
-  var storeKey = couch.schema.store(req.query.name)
+  var storeKey = req.query.id
   couchPeer.getAsync(storeKey)
     .then(function(result){
+      result.value._id = storeKey
+      result.value.prismKey = couch.schema.prism(result.value.prism)
       res.render('store/edit',{store: result.value})
     })
     .catch(function(err){
@@ -91,7 +87,7 @@ exports.edit = function(req,res){
  * @return {*}
  */
 exports.remove = function(req,res){
-  var storeKey = couch.schema.store(req.body.name)
+  var storeKey = req.body.id
   couchPeer.removeAsync(storeKey)
     .then(function(){
       req.flash('success','Store removed successfully')
@@ -108,22 +104,24 @@ exports.remove = function(req,res){
  */
 exports.save = function(req,res){
   var data = req.body
-  var storeKey = couch.schema.store(req.body.name)
+  var storeKey = req.body.id
   var doc
   couchPeer.getAsync(storeKey)
     .then(function(result){
       doc = result.value
-      if(!doc) doc = {}
+      if(!doc) doc = {createdAt: new Date().toJSON()}
       if(data.name) doc.name = data.name
       if(data.port) doc.port = data.port
       if(data.host) doc.host = data.host
-      doc.full = !!data.full
+      doc.writable = !!data.writable
+      doc.available = !!data.available
       doc.active = !!data.active
+      doc.updatedAt = new Date().toJSON()
       return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Store saved')
-      res.redirect('/store/edit?name=' + doc.name)
+      res.redirect('/store/edit?id=' + storeKey)
     })
     .catch(function(err){
       res.render('error',{error: err})

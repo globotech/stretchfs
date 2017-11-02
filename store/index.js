@@ -44,10 +44,11 @@ if(require.main === module){
             var doc = result.value
             doc.prism = config.store.prism
             doc.name = config.store.name
-            doc.host = config.store.host
+            doc.host = config.store.host || '127.0.0.1'
             doc.port = config.store.port
             doc.available = true
             doc.active = true
+            doc.updatedAt = new Date().toJSON()
             return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
           },
           //if we dont exist lets make sure thats why and create ourselves
@@ -57,12 +58,13 @@ if(require.main === module){
             return couchPeer.upsertAsync(storeKey,{
               prism: config.store.prism,
               name: config.store.name,
-              host: config.store.host,
+              host: config.store.host || '127.0.0.1',
               port: config.store.port,
               writable: true,
               available: true,
               active: true,
-              createdAt: new Date().toJSON()
+              createdAt: new Date().toJSON(),
+              updatedAt: new Date().toJSON()
             })
           }
         )

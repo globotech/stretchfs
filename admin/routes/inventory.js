@@ -5,7 +5,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchInventory = couch.peer()
+var couchInventory = couch.inventory()
 
 
 /**
@@ -17,21 +17,16 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  if(start < 0) start = 0
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.INVENTORY,true) + ' b ' +
-    ' WHERE META(b).id LIKE $1 ' +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = couch.N1Query.fromString(qstring)
-  var prismKey = couch.schema.prism(search) + '%'
-  couchInventory.queryAsync(query,[prismKey])
+  search = couch.schema.inventory(search) + '%'
+  list.listQuery(
+    couch,couchInventory,couch.type.INVENTORY,search,'hash',true,start,limit)
     .then(function(result){
       res.render('inventory/list',{
-        page: list.pagination(start,result.length,limit),
-        count: result.length,
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
         search: search,
         limit: limit,
-        list: result
+        list: result.rows
       })
     })
 }
@@ -57,14 +52,25 @@ exports.listAction = function(req,res){
 
 
 /**
+ * Create inventory record
+ * @param {object} req
+ * @param {object} res
+ */
+exports.create = function(req,res){
+  res.render('inventory/create')
+}
+
+
+/**
  * Edit Inventory
  * @param {object} req
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var inventoryKey = couch.schema.inventory(req.query.key)
+  var inventoryKey = req.query.id
   couchInventory.getAsync(inventoryKey)
     .then(function(result){
+      result.value._id = inventoryKey
       res.render('inventory/edit',{inventory: result.value})
     })
     .catch(function(err){
@@ -79,18 +85,31 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  //var data = req.body
-  var inventoryKey = couch.schema.prism(req.body.name)
-  var doc
-  couchInventory.getAsync(inventoryKey)
+  var inventoryKey = req.body.id || ''
+  var doc = {}
+  P.try(function(){
+    if(inventoryKey){
+      return couchInventory.getAsync(inventoryKey)
+    } else {
+      inventoryKey = couch.schema.inventory(req.body.hash)
+      return {value: {createdAt: new Date().toJSON()}, cas: null}
+    }
+  })
     .then(function(result){
       doc = result.value
-      if(!doc) doc = {}
+      if(req.body.hash) doc.hash = req.body.hash
+      if(req.body.prism) doc.prism = req.body.prism
+      if(req.body.store) doc.store = req.body.store
+      if(req.body.mimeType) doc.mimeType = req.body.mimeType
+      if(req.body.mimeExtension) doc.mimeExtension = req.body.mimeExtension
+      if(req.body.size) doc.size = parseInt(req.body.size)
+      if(req.body.relativePath) doc.relativePath = req.body.relativePath
+      doc.updatedAt = new Date().toJSON()
       return couchInventory.upsertAsync(inventoryKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Inventory saved')
-      res.redirect('/inventory/edit?key=' + doc.key)
+      res.redirect('/inventory/edit?id=' + inventoryKey)
     })
     .catch(function(err){
       res.render('error',{error: err})

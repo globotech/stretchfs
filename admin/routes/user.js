@@ -1,8 +1,12 @@
 'use strict';
+var bcrypt = require('bcrypt')
 var P = require('bluebird')
 
 var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
+
+//make some promises
+P.promisifyAll(bcrypt)
 
 //open couch buckets
 var couchOOSE = couch.oose()
@@ -17,21 +21,15 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  if(start < 0) start = 0
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.OOSE,true) + ' b ' +
-    ' WHERE META(b).id LIKE $1 ' +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = couch.N1Query.fromString(qstring)
-  var userKey = couch.schema.ooseUser(search) + '%'
-  couchOOSE.queryAsync(query,[userKey])
+  search = couch.schema.ooseUser(search) + '%'
+  list.listQuery(couch,couchOOSE,couch.type.OOSE,search,'name',true,start,limit)
     .then(function(result){
       res.render('user/list',{
-        page: list.pagination(start,result.length,limit),
-        count: result.length,
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
         search: search,
         limit: limit,
-        list: result
+        list: result.rows
       })
     })
 }
@@ -57,28 +55,6 @@ exports.listAction = function(req,res){
 
 
 /**
- * User find
- * @param {object} req
- * @param {object} res
- */
-exports.find = function(req,res){
-  var data = req.body
-  var email = data.email
-  var userKey = couch.schema.ooseUser(email)
-  couchOOSE.getAsync(userKey)
-    .then(function(result){
-      if(!result) throw new Error('No user found')
-      var values = result.value
-      delete values.password
-      res.json(values)
-    })
-    .catch(function(err){
-      res.json({error: err.message})
-    })
-}
-
-
-/**
  * Create User
  * @param {object} req
  * @param {object} res
@@ -95,21 +71,31 @@ exports.create = function(req,res){
  */
 exports.save = function(req,res){
   var data = req.body
-  var userKey = couch.schema.prism(req.body.name)
-  var doc
-  couchOOSE.getAsync(userKey)
+  var userKey = req.body.id || ''
+  P.try(function(){
+    if(userKey){
+      return couchOOSE.getAsync(userKey)
+    } else {
+      userKey = couch.schema.ooseUser(req.body.userName)
+      return {value: {createdAt: new Date().toJSON()}, cas: null}
+    }
+  })
     .then(function(result){
-      doc = result.value
-      if(!doc) doc = {}
-      if(data.name) doc.name = data.name
-      if(data.password) doc.password = data.password
+      var doc = result.value
+      if(data.userName) doc.name = data.userName
+      if(req.body.userSecret === req.body.userSecretConfirm){
+        doc.secretLastChanged = new Date().toJSON()
+        doc.secret = bcrypt.hashSync(
+          req.body.userSecret,bcrypt.genSaltSync(12))
+      }
       if(data.roles) doc.roles = ['create','read','update','delete']
-      data.active = true
+      doc.active = !!data.userActive
+      doc.updatedAt = new Date().toJSON()
       return couchOOSE.upsertAsync(userKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','User saved')
-      res.redirect('/user/edit?email=' + doc.email)
+      res.redirect('/user/edit?id=' + userKey)
     })
     .catch(function(err){
       res.render('error',{error: err})
@@ -123,40 +109,15 @@ exports.save = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var data = req.query
-  var userKey = couch.schema.ooseUser(data.email)
+  var userKey = req.query.id
   couchOOSE.getAsync(userKey)
     .then(function(result){
       if(!result) throw new Error('User not found')
       var user = result.value
+      user._id = userKey
       res.render('user/edit',{
-        user: user,
-        sessions: result.rows
+        user: user
       })
-    })
-    .catch(function(err){
-      res.json({error: err.message})
-    })
-}
-
-
-/**
- * Update a user
- * @param {object} req
- * @param {object} res
- */
-exports.update = function(req,res){
-  var data = req.query
-  var userKey = couch.schema.ooseUser(data.email)
-  couchOOSE.getAsync(userKey)
-    .then(function(result){
-      if(!result) throw new Error('No user found for update')
-      result.value.active = (data.active)
-      return couchOOSE.upsertAsync(userKey,result.value,{cas: result.cas})
-    })
-    .then(function(){
-      req.flash('Success:', 'User updated')
-      res.redirect('/user/list')
     })
     .catch(function(err){
       res.json({error: err.message})
@@ -170,7 +131,7 @@ exports.update = function(req,res){
  * @param {object} res
  */
 exports.remove = function(req,res){
-  var userKey = couch.schema.prism(req.body.email)
+  var userKey = req.body.id
   couchOOSE.removeAsync(userKey)
     .then(function(){
       req.flash('success','User removed successfully')

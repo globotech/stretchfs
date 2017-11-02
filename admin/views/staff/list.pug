@@ -13,19 +13,26 @@ block content
           th Full Name
           th Email
           th Last Login
+          th Login Count
+          th Last Failed Login
+          th Failed Login Count
           th Active
-        each row,i in list
+        each row in list
           tr
             td
-              input(type='checkbox', name='remove[]', value=row.id)
+              input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/staff/edit?id=#{row.id}')= row.name
-            td= row.email
+              a(href='/staff/edit?id=' + row._id)= row.name
             td
-              if row.dateSeen
-                div.text-success= new Date(row.dateSeen * 1000).toDateString()
-              if row.dateFail
-                div.text-danger= new Date(row.dateFail * 1000).toDateString()
+              a(href='/staff/edit?id=' + row._id)= row.email
+            td
+              if row.lastLogin
+                div.text-success= moment(row.lastLogin).format('MM-DD-YY hh:mmA')
+            td= row.loginCount || 0
+            td
+              if row.lastFailedLogin
+                div.text-danger= moment(row.lastFailedLogin).format('MM-DD-YY hh:mmA')
+            td= row.failedLoginCount || 0
             td
               +active(row.active)
       +tableFooter(page,count)

@@ -1,11 +1,12 @@
 'use strict';
 var P = require('bluebird')
+var Password = require('node-password').Password
 
 var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchJob = couch.peer()
+var couchJob = couch.job()
 
 
 /**
@@ -17,21 +18,15 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  if(start < 0) start = 0
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.JOB,true) + ' b ' +
-    ' WHERE META(b).id LIKE $1 ' +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = couch.N1Query.fromString(qstring)
-  var jobKey = couch.schema.job(search) + '%'
-  couchJob.queryAsync(query,[jobKey])
+  search = couch.schema.job(search) + '%'
+  list.listQuery(couch,couchJob,couch.type.JOB,search,'handle',true,start,limit)
     .then(function(result){
       res.render('job/list',{
-        page: list.pagination(start,result.length,limit),
-        count: result.length,
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
         search: search,
         limit: limit,
-        list: result
+        list: result.rows
       })
     })
 }
@@ -72,9 +67,10 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var jobKey = couch.schema.job(req.query.handle)
+  var jobKey = req.query.id
   couchJob.getAsync(jobKey)
     .then(function(result){
+      result.value._id = jobKey
       res.render('job/edit',{job: result.value})
     })
     .catch(function(err){
@@ -90,21 +86,29 @@ exports.edit = function(req,res){
  */
 exports.save = function(req,res){
   var data = req.body
-  var jobKey = couch.schema.prism(req.body.name)
+  var jobKey = req.body.id || ''
   var doc
-  couchJob.getAsync(jobKey)
+  P.try(function(){
+    if(jobKey){
+      return couchJob.getAsync(jobKey)
+    } else {
+      jobKey = couch.schema.job(
+        new Password({length: 12, special: false}).toString())
+      return {value: {createdAt: new Date().toJSON()}, cas: null}
+    }
+  })
     .then(function(result){
       doc = result.value
-      if(!doc) doc = {}
       if(data.description) doc.description = data.description
       if(data.category) doc.category = data.category
       if(data.priority) doc.priority = data.priority
       if(data.status) doc.status = data.status
+      doc.updatedAt = new Date().toJSON()
       return couchJob.upsertAsync(jobKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Job saved')
-      res.redirect('/job/edit?handle=' + doc.handle)
+      res.redirect('/job/edit?id=' + jobKey)
     })
     .catch(function(err){
       res.render('error',{error: err})

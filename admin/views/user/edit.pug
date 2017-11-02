@@ -3,38 +3,28 @@ block content
   .container
     h1 Update User
     +alerts()
-    form.form-horizontal(action='/user/password/reset', method='post', role='form', style='text-align: center')
-      input(type='hidden', name='username', value=user.username)
-      .form-group
-        .col-sm-offset-2.col-sm-10
-          button.btn.btn-danger(type='submit') Click Here To Reset The Users Password
-    form.form-horizontal(action='/user/update', method='post', role='form')
-      input(type='hidden', name='id', value=user.id)
+    form.form-horizontal(action='/user/save', method='post', role='form')
+      input(type='hidden', name='id', value=user._id)
       .form-group
         label.control-label.col-sm-2 Name
         .col-sm-10
-          input.form-control(type='text', name='username', placeholder='User Name', value=user.username)
+          input.form-control(type='text', name='userName', placeholder='User Name', value=user.name)
+      .form-group
+        label.control-label.col-sm-2 Last Secret Change
+        .col-sm-10
+          .form-control-static= moment(user.secretLastChanged).format('MM-DD-YY hh:mmA') || 'Never'
+      .form-group
+        label.control-label.col-sm-2 Secret
+        .col-sm-10
+          input.form-control(type='password', name='userSecret', autocomplete="off")
+      .form-group
+        label.control-label.col-sm-2 Confirm
+        .col-sm-10
+          input.form-control(type='password', name='userSecretConfirm', autocomplete="off")
       .form-group
         label.control-label.col-sm-2 Active
         .col-sm-10
-          input(type='checkbox', name='active', checked=user.active)
+          input(type='checkbox', name='userActive', checked=user.active)
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Save
-      h1 User Sessions
-    form.form-horizontal(action='/user/session/remove', method='post', role='form')
-      input(type='hidden', name='user', value=user.id)
-      table.table.table-striped
-        tr
-          th
-            input#toggle(type='checkbox')
-          th IP
-          th Token
-          th Created
-        each session in sessions
-          tr
-            td
-              input(type='checkbox', name='remove[]', value=session.id)
-            td= session.ip
-            td= session.token
-            td= session.createdAt

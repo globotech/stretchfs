@@ -44,7 +44,8 @@ var createInventory = function(fileDetail,verified){
     relativePath: hashFile.toRelativePath(
       fileDetail.hash,fileDetail.ext
     ),
-    size: fileDetail.stat.size
+    size: fileDetail.stat.size,
+    createdAt: new Date().toJSON()
   }
   if(verified) inventory.verifiedAt = verified
   debug(inventoryKey,'creating inventory record',inventory)
@@ -66,6 +67,7 @@ var updateInventory = function(fileDetail,inventoryKey,doc,verified){
   )
   doc.size = fileDetail.stat.size
   if(verified) doc.verifiedAt = verified
+  doc.updatedAt = new Date().toJSON()
   return couchInventory.upsertAsync(inventoryKey,doc,{cas: cas})
     .then(function(){
       doc._id = inventoryKey

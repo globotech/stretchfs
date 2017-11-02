@@ -3,23 +3,32 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    +tableHeader('Inventory')
+    +tableHeader('Inventory','/inventory/create','Create Inventory')
     +alerts()
     form(method='post', role='form')
       table.table.table-striped
         tr
           th
             input#toggle(type='checkbox')
-          th Name
-          th Hosts
-          th Active
+          th Hash
+          th Prism
+          th Store
+          th MimeType
+          th Size
+          th Hits
+          th Created
+          th Updated
         each row in list
           tr
             td
-              input(type='checkbox', name='remove[]', value=row.id)
+              input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/inventory/edit?key=#{row.key}')= row.name
-            td= row.hosts
-            td
-              +active(row.active)
+              a(href='/inventory/edit?id=' + row._id)= row.hash
+            td= row.prism
+            td= row.store
+            td= row.mimeType
+            td= prettyBytes(row.size)
+            td= row.hits || 0
+            td= row.createdAt || 'Unknown'
+            td= row.updatedAt || 'Unknown'
       +tableFooter(page,count)

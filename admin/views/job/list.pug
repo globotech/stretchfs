@@ -11,14 +11,40 @@ block content
           th
             input#toggle(type='checkbox')
           th Handle
+          th Category
+          th Priority
           th Status
-          th Status Description
+          th Progress
+          th Action
         each row in list
-          tr
+          - var percentComplete = 0
+          - if('processing' === row.status)
+          -   percentComplete = ((row.frameComplete / row.frameTotal) * 100).toFixed(2)
+          - if('complete' === row.status) percentComplete = 100
+          - var statusClass = ''
+          - if('processing' === row.status) statusClass ='bg-info'
+          - if(['error','aborted'].indexOf(row.status) >= 0) statusClass = 'bg-danger'
+          tr(class=statusClass)
             td
-              input(type='checkbox', name='remove[]', value=row.handle)
+              input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/prism/edit?id=#{row.handle}')= row.handle
+              a(href='/job/edit?id=' + row._id)= row.handle
+            td= row.category
+            td= row.priority
             td= row.status
-            td= row.statusDescription
+            td
+              if 'processing' === row.status && metrics && metrics.frameDescription
+                div
+                  small.text-muted= S('' + metrics.frameDescription).truncate(75)
+              .progress.progress-striped(style='margin-bottom: 0;')
+                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='100', style='width: #{percentComplete}%;')
+                  | #{percentComplete}%
+              if 'processing' === row.status
+                div
+                  small.text-muted #{prettyBytes(row.frameComplete)} / #{prettyBytes(row.frameTotal)}
+            td
+              div
+                a.btn-sm.btn-warning(href='/job/retry?id=' + row._id)
+                  span.glyphicon.glyphicon-refresh
+                  span  Retry
       +tableFooter(page,count)

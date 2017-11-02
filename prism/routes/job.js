@@ -46,6 +46,7 @@ exports.create = function(req,res){
     priority: +data.priority || 10,
     category: data.category || 'resource',
     status: 'staged',
+    createdAt: new Date().toJSON(),
     user: {
       session: req.session
     }
@@ -81,6 +82,7 @@ exports.update = function(req,res){
       if(description) job.$load({description: description})
       if(priority) job.priority = priority
       if(status && force) job.status = status
+      job.updatedAt = new Date().toJSON()
       return ooseJob.upsertAsync(handle,job.$strip(),{cas: result.cas})
     })
     .then(function(){
@@ -167,6 +169,7 @@ exports.retry = function(req,res){
       if(job.status !== 'processing'){
         job.worker = null
       }
+      job.retriedAt = new Date().toJSON()
       return ooseJob.upsertAsync(handle,job,{cas: result.cas})
     })
     .then(function(){
@@ -193,6 +196,7 @@ exports.abort = function(req,res){
       if('processing' !== job.status)
         throw new Error('Job cannot be aborted when not processing')
       job.status = 'queued_abort'
+      job.abortedAt = new Date().toJSON()
       return ooseJob.upsertAsync(handle,job,{cas: result.cas})
     })
     .then(function(){

@@ -1,8 +1,12 @@
 'use strict';
+var bcrypt = require('bcrypt')
 var P = require('bluebird')
 
 var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
+
+//make some promises
+P.promisifyAll(bcrypt)
 
 //open buckets
 var couchOOSE = couch.oose()
@@ -17,21 +21,15 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  if(start < 0) start = 0
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.OOSE,true) + ' b ' +
-    ' WHERE META(b).id LIKE $1 ' +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = couch.N1Query.fromString(qstring)
-  var staffKey = couch.schema.ooseStaff(search) + '%'
-  couchOOSE.queryAsync(query,[staffKey])
+  search = couch.schema.ooseStaff(search) + '%'
+  list.listQuery(couch,couchOOSE,couch.type.OOSE,search,'name',true,start,limit)
     .then(function(result){
       res.render('staff/list',{
-        page: list.pagination(start,result.length,limit),
-        count: result.length,
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
         search: search,
         limit: limit,
-        list: result
+        list: result.rows
       })
     })
 }
@@ -72,9 +70,10 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var staffKey = couch.schema.ooseStaff(req.query.email)
+  var staffKey = req.query.id
   couchOOSE.getAsync(staffKey)
     .then(function(result){
+      result.value._id = staffKey
       res.render('staff/edit',{staff: result.value})
     })
     .catch(function(err){
@@ -89,20 +88,31 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  var staffKey = couch.schema.ooseStaff(req.body.email)
-  couchOOSE.getAsync(staffKey)
+  var staffKey = req.body.id || ''
+  P.try(function(){
+    if(staffKey){
+      return couchOOSE.getAsync(staffKey)
+    } else {
+      staffKey = couch.schema.ooseStaff(req.body.staffEmail)
+      return {value: {createdAt: new Date().toJSON()}, cas: null}
+    }
+  })
     .then(function(result){
       var doc = result.value
-      if(!doc) doc = {}
-      doc.name = req.body.name
-      doc.email = req.body.email
-      if(req.body.password) doc.password = req.body.password
-      doc.active = !!req.body.active
+      doc.name = req.body.staffName
+      doc.email = req.body.staffEmail
+      if(req.body.staffPassword === req.body.staffPasswordConfirm){
+        doc.passwordLastChanged = new Date().toJSON()
+        doc.password = bcrypt.hashSync(
+          req.body.staffPassword,bcrypt.genSaltSync(12))
+      }
+      doc.active = !!req.body.staffActive
+      doc.updatedAt = new Date().toJSON()
       return couchOOSE.upsertAsync(staffKey,doc,{cas: result.cas})
     })
-    .then(function(staff){
+    .then(function(){
       req.flash('success','Staff member saved')
-      res.redirect('/staff/edit?id=' + staff.id)
+      res.redirect('/staff/edit?id=' + staffKey)
     })
     .catch(function(err){
       res.render('error',{error: err})
@@ -127,13 +137,30 @@ exports.login = function(req,res){
  */
 exports.loginAction = function(req,res){
   var staffKey = couch.schema.ooseStaff(req.body.email)
+  var staff = {}
   couchOOSE.getAsync(staffKey)
     .then(function(result){
-      if(!result) throw new Error('Invalid login')
-      if(result.value.password !== req.body.password)
-        throw new Error('Invalid login')
+      staff = result
+      if(!staff) throw new Error('Invalid login')
+      return bcrypt.compareAsync(req.body.password,staff.value.password)
+    })
+    .then(function(match){
+      if(!match){
+        staff.value.lastFailedLogin = new Date().toJSON()
+        staff.value.failedLoginCount = staff.value.failedLoginCount +1
+        return couchOOSE.upsertAsync(staffKey,staff.value,{cas: staff.cas})
+          .then(function(){
+            throw new Error('Invalid login')
+          })
+      }
+      staff.value.loginCount = staff.value.loginCount + 1
+      staff.value._id = staffKey
       //otherwise we are valid start the session
-      req.session.staff = result.value
+      req.session.staff = staff.value
+      staff.value.lastLogin = new Date().toJSON()
+      return couchOOSE.upsertAsync(staffKey,staff.value,{cas: staff.cas})
+    })
+    .then(function(){
       res.redirect('/')
     })
     .catch(function(err){

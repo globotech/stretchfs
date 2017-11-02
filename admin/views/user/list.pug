@@ -12,20 +12,24 @@ block content
             input#toggle(type='checkbox')
           th Name
           th Last Login
-          th Tokens
+          th Login Count
+          th Last Failed Login
+          th Failed Login Count
           th Active
         each row in list
           tr
             td
-              input(type='checkbox', name='remove[]', value=row.name)
+              input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/user/edit?email=#{row.name}')= row.name
+              a(href='/user/edit?id=' + row._id)= row.name
             td
-              if row.dateSeen
-                div.text-success= new Date(row.dateSeen * 1000).toDateString()
-              if row.dateFail
-                div.text-danger= new Date(row.dateFail * 1000).toDateString()
-            td 0
+              if row.lastLogin
+                div.text-success= moment(row.lastLogin).format('MM-DD-YY hh:mmA')
+            td= row.loginCount || 0
+            td
+              if row.lastFailedLogin
+                div.text-danger= moment(row.lastFailedLogin).format('MM-DD-YY hh:mmA')
+            td= row.failedLoginCount || 0
             td
               +active(row.active)
       +tableFooter(page,count)

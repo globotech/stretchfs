@@ -1,4 +1,5 @@
 'use strict';
+var bcrypt = require('bcrypt')
 
 var couch = require('../helpers/couchbase')
 
@@ -10,7 +11,8 @@ var couchOOSE = couch.oose()
 var userKey = couch.schema.ooseUser(name)
 var user = {
   name: name,
-  secret: secret,
+  secret: bcrypt.hashSync(
+    secret,bcrypt.genSaltSync(12)),
   roles: ['create','read','update','delete']
 }
 couchOOSE.upsertAsync(userKey,user)

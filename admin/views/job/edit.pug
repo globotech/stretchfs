@@ -6,27 +6,27 @@ block content
     h1 Job #{job.handle}
     +alerts()
     form.form-horizontal(action='/job/save', method='post', role='form')
-      input(type='hidden', name='handle', value=job.handle)
+      input(type='hidden', name='id', value=job._id)
       .form-group
         label.control-label.col-sm-2 Handle
         .col-sm-10
-          input.form-control(type='text', name='handle', placeholder='Handle', value=jop.handle)
+          input.form-control(type='text', name='handle', placeholder='Handle', value=job.handle)
       .form-group
         label.control-label.col-sm-2 Description
         .col-sm-10
-          input.form-control(type='text', name='description', placeholder='description', value=jop.description)
+          input.form-control(type='text', name='description', placeholder='description', value=job.description)
       .form-group
         label.control-label.col-sm-2 Category
         .col-sm-10
-          input.form-control(type='text', name='category', placeholder='category', value=jop.category)
+          input.form-control(type='text', name='category', placeholder='category', value=job.category)
       .form-group
         label.control-label.col-sm-2 Priority
         .col-sm-10
-          input.form-control(type='text', name='priority', placeholder='priority', value=jop.priority)
+          input.form-control(type='text', name='priority', placeholder='priority', value=job.priority)
       .form-group
         label.control-label.col-sm-2 Status
         .col-sm-10
-          input.form-control(type='text', name='status', placeholder='Status', value=jop.status)
+          input.form-control(type='text', name='status', placeholder='Status', value=job.status)
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Save

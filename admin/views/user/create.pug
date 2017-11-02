@@ -7,7 +7,15 @@ block content
       .form-group
         label.control-label.col-sm-2 Name
         .col-sm-10
-          input.form-control(type='text', name='username', placeholder='User Name')
+          input.form-control(type='text', name='userName', placeholder='User Name')
+      .form-group
+        label.control-label.col-sm-2 Secret
+        .col-sm-10
+          input.form-control(type='password', name='userSecret', autocomplete="off")
+      .form-group
+        label.control-label.col-sm-2 Confirm
+        .col-sm-10
+          input.form-control(type='password', name='userSecretConfirm', autocomplete="off")
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Create

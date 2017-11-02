@@ -94,6 +94,7 @@ PurchaseDb.prototype.create = function(token,params){
     couch = couchWrap(token)
     if(!couch) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
+    params.createdAt = new Date().toJSON()
     return couch.upsertAsync(token,params)
   })
     .then(function(result){
@@ -123,6 +124,7 @@ PurchaseDb.prototype.update = function(token,params){
     .then(function(result){
       if(result){
         debug(token,'update result received, udpating',result,params)
+        params.updatedAt = new Date().toJSON()
         return couch.upsertAsync(token,params)
       } else{
         debug(token,'doesnt exist, creating',result,params)

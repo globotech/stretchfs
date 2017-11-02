@@ -17,21 +17,15 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  if(start < 0) start = 0
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.PEER,true) + ' b ' +
-    ' WHERE META(b).id LIKE $1 ' +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = couch.N1Query.fromString(qstring)
-  var prismKey = couch.schema.prism(search) + '%'
-  couchPeer.queryAsync(query,[prismKey])
+  search = couch.schema.prism(search) + '%'
+  list.listQuery(couch,couchPeer,couch.type.PEER,search,'name',true,start,limit)
     .then(function(result){
       res.render('prism/list',{
-        page: list.pagination(start,result.length,limit),
-        count: result.length,
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
         search: search,
         limit: limit,
-        list: result
+        list: result.rows
       })
     })
 }
@@ -72,9 +66,10 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var prismKey = couch.schema.prism(req.query.name)
+  var prismKey = req.query.id
   couchPeer.getAsync(prismKey)
     .then(function(result){
+      result.value._id = prismKey
       res.render('prism/edit',{prism: result.value})
     })
     .catch(function(err){
@@ -90,23 +85,25 @@ exports.edit = function(req,res){
  */
 exports.save = function(req,res){
   var data = req.body
-  var prismKey = couch.schema.prism(req.body.name)
+  var prismKey = req.body.id
   var doc
   couchPeer.getAsync(prismKey)
     .then(function(result){
       doc = result.value
-      if(!doc) doc = {}
+      if(!doc) doc = {createdAt: new Date().toJSON()}
       if(data.name) doc.name = data.name
       if(data.group) doc.group = data.group
       if(data.host) doc.host = data.host
       if(data.port) doc.port = data.port
-      doc.full = !!data.full
+      doc.writable = !!data.writable
+      doc.available = !!data.available
       doc.active = !!data.active
+      doc.updatedAt = new Date().toJSON()
       return couchPeer.upsertAsync(prismKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Staff member saved')
-      res.redirect('/staff/edit?email=' + doc.email)
+      req.flash('success','Prism saved')
+      res.redirect('/prism/edit?id=' + prismKey)
     })
     .catch(function(err){
       res.render('error',{error: err})

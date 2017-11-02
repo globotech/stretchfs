@@ -37,10 +37,11 @@ if(require.main === module){
             function(result){
               var doc = result.value
               doc.name = config.prism.name
-              doc.host = config.prism.host
+              doc.host = config.prism.host || '127.0.0.1'
               doc.port = config.prism.port
               doc.available = true
               doc.active = true
+              doc.updatedAt = new Date().toJSON()
               return couchPeer.upsertAsync(prismKey,doc,{cas: result.cas})
             },
             //if we dont exist lets make sure thats why and create ourselves
@@ -49,12 +50,13 @@ if(require.main === module){
               //now register ourselves or mark ourselves available
               return couchPeer.upsertAsync(prismKey,{
                 name: config.prism.name,
-                host: config.prism.host,
+                host: config.prism.host || '127.0.0.1',
                 port: config.prism.port,
                 writable: true,
                 available: true,
                 active: true,
-                createdAt: new Date().toJSON()
+                createdAt: new Date().toJSON(),
+                updatedAt: new Date().toJSON()
               })
             }
           )

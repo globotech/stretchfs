@@ -3,7 +3,7 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    +tableHeader('Prisms','/prism/create','Create Prism')
+    +tableHeader('Prisms')
     +alerts()
     form(method='post', role='form')
       table.table.table-striped
@@ -15,20 +15,23 @@ block content
           th Port
           th Created
           th Updated
-          th Full
+          th Writable
+          th Available
           th Active
-        each row,i in list
+        each row in list
           tr
             td
-              input(type='checkbox', name='remove[]', value=row.id)
+              input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/prism/edit?id=#{row.id}')= row.name
+              a(href='/prism/edit?id=' + row._id)= row.name
             td= row.host
             td= row.port
             td= new Date(row.createdAt).toDateString()
             td= new Date(row.updatedAt).toDateString()
             td
-              +active(row.full)
+              +active(row.writable)
+            td
+              +active(row.available)
             td
               +active(row.active)
       +tableFooter(page,count)

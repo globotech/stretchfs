@@ -3,7 +3,7 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    +tableHeader('Stores','/store/create','Create Store')
+    +tableHeader('Stores')
     +alerts()
     form(method='post', role='form')
       table.table.table-striped
@@ -20,9 +20,9 @@ block content
         each row in list
           tr
             td
-              input(type='checkbox', name='remove[]', value=row.name)
+              input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/store/edit?name=#{row.name}')= row.name
+              a(href='/store/edit?id=' + row._id)= row.name
             td= row.host
             td= row.port
             td= new Date(row.createdAt).toDateString()

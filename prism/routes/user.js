@@ -1,4 +1,5 @@
 'use strict';
+var bcrypt = require('bcrypt')
 var P = require('bluebird')
 var Password = require('node-password').Password
 var request = require('request-promise')
@@ -11,6 +12,7 @@ var couchOOSE = couch.oose()
 
 
 //make some promises
+P.promisifyAll(bcrypt)
 P.promisifyAll(request)
 
 
@@ -41,10 +43,23 @@ exports.login = function(req,res){
     return couchOOSE.getAsync(userKey)
   })
     .then(function(result){
-      user = result.value
-      if(user.secret !== req.body.secret){
-        throw new Error('Invalid name or secret')
+      user = result
+      return bcrypt.compareAsync(req.body.secret,user.value.secret)
+    })
+    .then(function(match){
+      if(!match){
+        user.value.failedLoginCount = user.value.failedLoginCount + 1
+        user.value.lastFailedLogin = new Date().toJSON()
+        return couchOOSE.upsertAsync(userKey,user.value,{cas: user.cas})
+          .then(function(){
+            throw new Error('Invalid name or secret')
+          })
       }
+      user.value.lastLogin = new Date().toJSON()
+      user.value.loginCount = user.value.loginCount + 1
+      return couchOOSE.upsertAsync(userKey,user.value,{cas: user.cas})
+    })
+    .then(function(){
       //generate session token
       token = new Password({length: 16,special: false}).toString()
       tokenKey = couch.schema.ooseToken(token)
