@@ -164,6 +164,51 @@ client.init = function(){
 
 
 /**
+ * Create couchbase buckets
+ * @return {P}
+ */
+client.createBuckets = function(username,password){
+  var request = P.promisifyAll(require('request'))
+  return P.try(function(){
+    var types = []
+    for(var type in client.type){
+      if(client.type.hasOwnProperty(type)){
+        types.push(client.type[type])
+      }
+    }
+    return types
+  })
+    .each(function(name){
+      var bucketParams = {
+        name: config.couch.bucket[name].name,
+        ramQuotaMB: config.couch.bucket[name].ramQuotaMB,
+        authType: 'sasl',
+        bucketType: config.couch.bucket[name].bucketType,
+        evictionPolicy: config.couch.bucket[name].evictionPolicy,
+        replicaNumber: 1,
+        saslPassword: config.couch.bucket[name].secret
+      }
+      debug('Creating bucket',name,bucketParams)
+      return request.postAsync({
+        url: 'http://' + config.couch.host + ':' + config.couch.port +
+          '/pools/default/buckets',
+        auth: {
+          username: username,
+          password: password
+        },
+        form: bucketParams
+      })
+        .then(function(result){
+          debug('Bucket creation complete',result.statusCode,result.body)
+        })
+        .catch(function(err){
+          console.log('Couchbase bucket creation error',err)
+        })
+    })
+}
+
+
+/**
  * Setup the Heartbeat DB
  * @return {Object}
  */
