@@ -29,11 +29,13 @@ exports.login = function(req,res){
   var session = {}
   var token = null
   var expiry = 0
-  var userKey = couch.schema.ooseUser(req.body.name)
   var tokenKey = ''
+  var name = req.body.name || req.body.username || ''
+  var secret = req.body.secret || req.body.password || ''
+  var userKey = couch.schema.ooseUser(name)
   P.try(function(){
     //make a login request to couch db
-    if(!req.body.name || !req.body.secret){
+    if(!name || !secret){
       throw new Error('Invalid name or secret')
     }
     //validate token type
@@ -44,7 +46,7 @@ exports.login = function(req,res){
   })
     .then(function(result){
       user = result
-      return bcrypt.compareAsync(req.body.secret,user.value.secret)
+      return bcrypt.compareAsync(secret,user.value.secret)
     })
     .then(function(match){
       if(!match){
