@@ -126,7 +126,7 @@ describe('prism',function(){
         .spread(function(res,body){
           job = body
           expect(body.handle).to.be.a('string')
-          expect(body.description).to.be.a('string')
+          expect(body.description).to.be.an('object')
           expect(body.priority).to.equal(5)
           expect(body.status).to.equal('staged')
         })

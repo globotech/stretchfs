@@ -131,7 +131,7 @@ jobStatus = JSON.parse(
 //set an overall execution timeout
 setTimeout(function(){
   errorHandler(new Error('Processing timeout exceeded'))
-},jobDescription.timeout || config.worker.job.timeout.process)
+},jobDescription.timeout || config.job.timeout.process)
 
 
 /**
@@ -281,7 +281,7 @@ var jobAugmentResources = function(){
   })
     .each(function(cmd){
       return new P(function(resolve,reject){
-        if(config.worker.job.programs.indexOf(cmd.program) < 0)
+        if(config.job.programs.indexOf(cmd.program) < 0)
           throw new Error('Unsupported program used ' + cmd.program)
         //make a status update
         jobStatus.frameDescription =
@@ -369,7 +369,7 @@ var jobProcess = function(){
 
 if(require.main === module){
   infant.child(
-    'shredder:' + config.worker.name + ':job:' + jobHandle,
+    'oose:' + config.store.name + ':job:' + jobHandle,
     function(){
       jobProcess()
         .then(function(){

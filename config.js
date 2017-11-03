@@ -112,14 +112,12 @@ config.$load({
     dispatchFrequency: 11000, //11 seconds
     maxExecutionTime: 14400, // 4 hours
     concurrency: 2,
-    job: {
-      timeout: {
-        process: 7200000, //2 hours
-        cleanup: 7200000, //2 hours
-        complete: 7200000 //2 hours
-      },
-      programs: []
-    }
+    timeout: {
+      process: 7200000, //2 hours
+      cleanup: 7200000, //2 hours
+      complete: 7200000 //2 hours
+    },
+    programs: []
   },
   //purchase system
   purchase: {

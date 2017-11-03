@@ -68,6 +68,12 @@ var client = {
           return manager.createIndexAsync(
             'job',['category','priority','status'],{ignoreIfExists: true})
         })
+        .then(function(){
+          return manager.createIndexAsync(
+            'jobWorker',
+            ['category','priority','status','workerKey','workerName'],
+            {ignoreIfExists: true})
+        })
     },
     oose: function(manager){
       return manager.createPrimaryIndexAsync({ignoreIfExists: true})

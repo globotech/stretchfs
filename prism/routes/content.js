@@ -584,6 +584,8 @@ exports.purchase = function(req,res){
 exports.deliver = function(req,res){
   redis.incr(redis.schema.counter('prism','content:deliver'))
   var token = req.params.token
+  var filename = req.params.filename
+  var queryString = req.query
   //support different address delivery types
   var addressType = 'fqdn'
   if(req.query.addressType) addressType = req.query.addressType
@@ -606,7 +608,18 @@ exports.deliver = function(req,res){
     } else if('ipv6' === addressType){
       host = (store.host6 || store.host) + ':[' + store.port + ']'
     }
-    return proto + '://' + host + '/play/' + token + '/video.' + purchase.ext
+    var compileQueryString = function(queryString){
+      var str = '?'
+      for(var i in queryString){
+        if(queryString.hasOwnProperty(i)){
+          str = str + '&' + i + '=' + queryString[i]
+        }
+      }
+      return str
+    }
+    return proto + '://' + host +
+      '/play/' + token + '/' + filename + '.' + purchase.ext +
+      compileQueryString(queryString)
   }
   /**
    * Validate request

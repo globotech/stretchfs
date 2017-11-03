@@ -37,8 +37,6 @@ exports.detail = function(req,res){
  */
 exports.create = function(req,res){
   var data = req.body
-  if('object' === typeof data.description)
-    data.description = JSON.stringify(data.description)
   var jobHandle = new Password({length: 12, special: false}).toString()
   var job = {
     handle: jobHandle,

@@ -45,7 +45,7 @@ var jobNotification = function(handle,status,statusDescription,silent){
       jobResult.value.statusDescription = statusDescription
       if(!silent){
         //parse out the job description
-        var description = JSON.parse(jobResult.description)
+        var description = jobResult.description
         //make sure they have a subscription url
         if(!description.callback || !description.callback.request)
           return jobResult
@@ -72,7 +72,6 @@ var jobNotification = function(handle,status,statusDescription,silent){
  */
 var findJobs = function(status,category,limit,prioritize){
   debug('querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
-  //abort any jobs queued for abortion on this worker and category
   var qstring = 'SELECT b.* FROM ' +
     couch.getName(couch.type.JOB,true) + ' b ' +
     'WHERE b.status = $1 ' +
@@ -98,8 +97,8 @@ var findJobsByWorker = function(workerKey,status,category,limit,prioritize){
     'querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
   var qstring = 'SELECT b.* FROM ' +
     couch.getName(couch.type.JOB,true) + ' b ' +
-    'WHERE b.workerKey LIKE $1 AND b.status = $3 ' +
-    (category ? ' AND b.category = $2' : '') +
+    'WHERE b.workerKey = $1 AND b.status = $2 ' +
+    (category ? ' AND b.category = $3' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +
     (limit ? ' LIMIT ' + limit : '')
   var query = couch.N1Query.fromString(qstring)
@@ -194,38 +193,22 @@ var superviseJobProcessing = function(){
       return result
     })
     .each(function(job){
-      var promises = []
-      var jobFolder = jobHelper.folder(job.handle)
-      var status = {}
-      //update the status
-      promises.push(
-        fs.readFileAsync(jobFolder + '/status.json')
-          .then(function(result){
-            status = JSON.parse(result)
-            return ooseJob.getAsync(job.handle)
-          })
-          .then(function(result){
-            result.value.statusDescription = status.statusDescription
-            result.value.stepTotal = status.stepTotal
-            result.value.stepcomplete = status.stepComplete
-            result.value.frameTotal = status.frameTotal
-            result.value.frameComplete = status.frameComplete
-            result.value.frameDescription = status.frameDescription
-            return ooseJob.upsertAsync(
-              job.handle,result.value,{cas: result.cas})
-          })
-      )
+      var jobKey = couch.schema.job(job.handle)
       //check the runtime of the job and kill it if needed
       var jobTime
       var time = Math.floor(Date.now() /1000)
-      jobTime = JSON.parse(
-        fs.readFileSync(jobFolder + '/time').toString('utf-8').trim())
-      if(jobTime.start + jobTime.maxExecutionTime < time){
-        promises.push(fs.unlinkAsync(jobFolder + '/processing'))
-        promises.push(fs.writeFileAsync(
-          jobFolder + '/error','Time exceeded for this job to finish.'))
+      jobTime = Math.floor(+(new Date(job.startedAt)) /1000)
+      if(jobTime + jobTime.maxExecutionTime < time){
+        return ooseJob.getAsync(jobKey)
+          .then(function(result){
+            result.value.status = 'queued_error'
+            result.value.statusDescription =
+              'Time exceeded for this job to finish.'
+            result.value.error = 'Time exceeded for this job to finish.'
+            result.value.erroredAt = new Date().toJSON()
+            return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+          })
       }
-      return P.all(promises)
     })
     .then(function(){
       debug('processing jobs checked')
@@ -313,7 +296,7 @@ var superviseJobComplete = function(){
 var superviseJobRemove = function(){
   return findJobsByWorker(workerKey,'queued_remove')
     .then(function(result){
-      debug('found abort jobs',result)
+      debug('found removal jobs',result)
       return result
     })
     .each(function(job){
@@ -381,7 +364,7 @@ var superviseJobCleanup = function(){
 var superviseJobRetry = function(){
   return findJobsByWorker(workerKey,'queued_retry')
     .then(function(result){
-      debug('found abort jobs',result)
+      debug('found retru jobs',result)
       return result
     })
     .each(function(job){
@@ -422,12 +405,13 @@ var superviseJobRetry = function(){
 var superviseJobStart = function(){
   return findJobsByWorker(workerKey,'queued_start')
     .then(function(result){
-      debug('found abort jobs',result)
+      debug('found start jobs',result)
       return result
     })
     .each(function(job){
       debug('found job for start',job)
       var startJob = function(jobFolder,handle,description){
+        var jobKey = couch.schema.job(handle)
         return rimraf(jobFolder)
           .then(function(){
             return mkdirp(jobFolder)
@@ -449,15 +433,9 @@ var superviseJobStart = function(){
               frameComplete: 0,
               frameDescription: 'Idle'
             }
-            var time = {
-              start:Math.floor(Date.now() /1000),
-              maxExecutionTime:description.maxExecutionTime ?
-                description.maxExecutionTime:maxExecutionTime
-            }
             return P.all([
               fs.writeFileAsync(jobFolder + '/handle',handle),
               fs.writeFileAsync(jobFolder + '/processing',handle),
-              fs.writeFileAsync(jobFolder + '/time',JSON.stringify(time)),
               fs.writeFileAsync(
                 jobFolder + '/description.json',JSON.stringify(description)),
               fs.writeFileAsync(
@@ -465,17 +443,30 @@ var superviseJobStart = function(){
             ])
           })
           .then(function(){
+            //update database
+            return ooseJob.getAsync(jobKey)
+          })
+          .then(function(result){
+            result.value.status = 'processing'
+            result.value.statusDescription = 'The worker is starting'
+            result.value.startedAt = new Date().toJSON()
+            return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+          })
+          .then(function(){
             //actually finally start the process to handle the job
+            var env = {
+              'JOB_FOLDER': jobFolder,
+              'JOB_HANDLE': handle,
+              'PATH' : process.env.PATH
+            }
+            if(process.env.OOSE_CONFIG){
+              env.OOSE_CONFIG = process.env.OOSE_CONFIG
+            }
             jobsProcessing[handle] = infant.parent(
-              './job',
+              './worker',
               {
                 fork: {
-                  env: {
-                    'JOB_FOLDER': jobFolder,
-                    'JOB_HANDLE': handle,
-                    'SHREDDER_CONFIG': process.env.SHREDDER_CONFIG,
-                    'PATH' : process.env.PATH
-                  }
+                  env: env
                 },
                 respawn: false
               }
@@ -483,7 +474,6 @@ var superviseJobStart = function(){
             return jobsProcessing[handle].startAsync()
           })
       }
-      var promises = []
       var handle = job.handle
       var description = job.description
       var jobFolder = jobHelper.folder(handle)
@@ -491,8 +481,7 @@ var superviseJobStart = function(){
       if(jobsProcessing[handle])
         jobsProcessing[handle].kill('SIGKILL')
       //destroy the job folder and create a new one
-      promises.push(startJob(jobFolder,handle,description))
-      return P.all(promises)
+      return startJob(jobFolder,handle,description)
     })
     .then(function(){
       debug('jobs started')
@@ -526,7 +515,7 @@ var superviseJobAssign = function(){
       if(0 === limit){
         throw new Error('Worker busy')
       }
-      return findJobs('staged',null,limit,true)
+      return findJobs('queued',null,limit,true)
     })
     .then(function(result){
       debug('got assignable jobs',result)
@@ -535,9 +524,9 @@ var superviseJobAssign = function(){
     .each(function(job){
       return ooseJob.getAsync(job.handle)
         .then(function(result){
-          result.status = 'queued_start'
-          result.workerName = config.store.name
-          result.workerKey = workerKey
+          result.value.status = 'queued_start'
+          result.value.workerName = config.store.name
+          result.value.workerKey = workerKey
           return ooseJob.upsertAsync(job.handle,result.value,{cas: result.cas})
         })
     })
