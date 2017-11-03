@@ -133,13 +133,6 @@ config.$load({
   },
   //purchase system
   purchase: {
-    redis: {
-      host: '127.0.0.1',
-      port: 6379,
-      db: 1,
-      prefix: 'oose',
-      options: {}
-    },
     life: 7200000, //2 hrs
     afterlife: 7200000 //2hrs
   },

@@ -18,7 +18,7 @@ module.exports = {
     name: 'store2',
     prism: 'prism1',
     username: 'oose-store',
-    password: 'fuckthat',
+    password: 'that',
     timeout: 2000,
     workers: {count: 2, maxConnections: 1000000}
   },
@@ -26,7 +26,7 @@ module.exports = {
     enabled: false,
     name: 'prism1',
     username: 'oose-prism',
-    password: 'fuckit',
+    password: 'it',
     timeout: 2000
   }
 }
