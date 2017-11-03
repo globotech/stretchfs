@@ -522,7 +522,7 @@ var superviseJobAssign = function(){
       return result
     })
     .each(function(job){
-      return ooseJob.getAsync(job.handle)
+      return ooseJob.getAndLockAsync(job.handle)
         .then(function(result){
           result.value.status = 'queued_start'
           result.value.workerName = config.store.name
