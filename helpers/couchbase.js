@@ -49,6 +49,35 @@ var client = {
     OOSE: 'oose',
     PEER: 'peer',
     PURCHASE: 'purchase'
+  },
+  initBucket: {
+    heartbeat: function(manager){
+      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+    },
+    inventory: function(manager){
+      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+        .then(function(){
+          return manager.createIndexAsync(
+            'inventory',['mimeType','size'],{ignoreIfExists: true}
+          )
+        })
+    },
+    job: function(manager){
+      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+        .then(function(){
+          return manager.createIndexAsync(
+            'job',['category','priority','status'],{ignoreIfExists: true})
+        })
+    },
+    oose: function(manager){
+      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+    },
+    peer: function(manager){
+      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+    },
+    purchase: function(manager){
+      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+    }
   }
 }
 
@@ -140,7 +169,6 @@ client.getManager = function(bucket){
  * @return {P}
  */
 client.init = function(){
-  var opts = {ignoreIfExists: true}
   return P.try(function(){
     var types = []
     for(var type in client.type){
@@ -152,7 +180,10 @@ client.init = function(){
   })
     .each(function(name){
       debug('Initializing bucket',name)
-      return client.getManager(client[name]).createPrimaryIndexAsync(opts)
+      var manager = client.getManager(client[name])
+      var initFn = client.initBucket[name]
+      debug('Got manager',name)
+      return initFn(manager)
         .then(function(result){
           debug('Initialization complete',name,result)
         })
@@ -167,8 +198,11 @@ client.init = function(){
  * Create couchbase buckets
  * @return {P}
  */
-client.createBuckets = function(username,password){
-  var request = P.promisifyAll(require('request'))
+client.createBuckets = function(){
+  var manager = P.promisifyAll(
+    cluster.manager(config.couch.username,config.couch.password)
+  )
+  debug('setup manager',config.couch.username,config.couch.password)
   return P.try(function(){
     var types = []
     for(var type in client.type){
@@ -179,30 +213,22 @@ client.createBuckets = function(username,password){
     return types
   })
     .each(function(name){
+      var bucketName = config.couch.bucket[name].name
       var bucketParams = {
-        name: config.couch.bucket[name].name,
         ramQuotaMB: config.couch.bucket[name].ramQuotaMB,
         authType: 'sasl',
-        bucketType: config.couch.bucket[name].bucketType,
-        evictionPolicy: config.couch.bucket[name].evictionPolicy,
+        bucketType: 'couchbase',
         replicaNumber: 1,
         saslPassword: config.couch.bucket[name].secret
       }
-      debug('Creating bucket',name,bucketParams)
-      return request.postAsync({
-        url: 'http://' + config.couch.host + ':' + config.couch.port +
-          '/pools/default/buckets',
-        auth: {
-          username: username,
-          password: password
-        },
-        form: bucketParams
-      })
+      debug('Creating bucket',bucketName,bucketParams)
+      return manager.createBucketAsync(bucketName,bucketParams)
         .then(function(result){
           debug('Bucket creation complete',result.statusCode,result.body)
         })
         .catch(function(err){
-          console.log('Couchbase bucket creation error',err)
+          if(!err.message.match(/^Bucket with given name already exists/))
+            console.log('Couchbase bucket creation error',err)
         })
     })
 }

@@ -2,14 +2,8 @@
 
 var couch = require('../helpers/couchbase')
 
-var username = process.argv[2]
-var password = process.argv[3]
-
-if(!username || !password)
-  throw new Error('Couchbase Administrator username and password required')
-
 console.log('Creating Couchbase Buckets')
-couch.createBuckets(username,password)
+couch.createBuckets()
   .then(function(){
     console.log('Bucket creation complete')
   })

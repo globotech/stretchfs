@@ -51,6 +51,8 @@ config.$load({
     protocol: 'couchbase://',
     host: '127.0.0.1',
     port: '8091',
+    username: '',
+    password: '',
     prefix: '',
     connectionTimeout: 60000,
     operationTimeout: 30000,
@@ -58,44 +60,32 @@ config.$load({
       heartbeat: {
         name: 'oose-heartbeat',
         secret: '',
-        bucketType: 'couchbase',
-        ramQuotaMB: 128,
-        evictionPolicy: 'valueOnly'
+        ramQuotaMB: 128
       },
       job: {
         name: 'oose-job',
         secret: '',
-        bucketType: 'couchbase',
-        ramQuotaMB: 512,
-        evictionPolicy: 'valueOnly'
+        ramQuotaMB: 512
       },
       inventory: {
         name: 'oose-inventory',
         secret: '',
-        bucketType: 'couchbase',
-        ramQuotaMB: 512,
-        evictionPolicy: 'valueOnly'
+        ramQuotaMB: 512
       },
       oose: {
         name: 'oose',
         secret: '',
-        bucketType: 'couchbase',
-        ramQuotaMB: 256,
-        evictionPolicy: 'valueOnly'
+        ramQuotaMB: 256
       },
       peer: {
         name: 'oose-peer',
         secret: '',
-        bucketType: 'couchbase',
-        ramQuotaMB: 128,
-        evictionPolicy: 'valueOnly'
+        ramQuotaMB: 128
       },
       purchase: {
         name: 'oose-purchase',
         secret: '',
-        bucketType: 'couchbase',
-        ramQuotaMB: 512,
-        evictionPolicy: 'valueOnly'
+        ramQuotaMB: 512
       }
     }
   },

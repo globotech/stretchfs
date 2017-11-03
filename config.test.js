@@ -7,6 +7,8 @@
  */
 module.exports = {
   couch: {
+    username: 'root',
+    password: 'password',
     bucket: {
       heartbeat: {
         secret: 'password',
