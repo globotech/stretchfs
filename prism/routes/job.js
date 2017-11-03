@@ -6,6 +6,8 @@ var request = require('request')
 
 var couch = require('../../helpers/couchbase')
 
+var config = require('../../config')
+
 var ooseJob = couch.job()
 
 //make some promises
@@ -49,7 +51,7 @@ exports.create = function(req,res){
       session: req.session
     }
   }
-  ooseJob.upsertAsync(jobHandle,job)
+  ooseJob.upsertAsync(jobHandle,job,{expiry: config.job.recordLife})
     .then(function(){
       res.json(job)
     })

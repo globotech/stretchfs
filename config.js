@@ -108,6 +108,7 @@ config.$load({
   //job system
   job: {
     enabled: false,
+    recordLife: 2591999, //29.99 days
     superviseFrequency: 7000, //7 seconds
     dispatchFrequency: 11000, //11 seconds
     maxExecutionTime: 14400, // 4 hours
