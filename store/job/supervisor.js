@@ -564,62 +564,52 @@ var superviseJobAssign = function(){
 var supervise = function(){
   debug('supervise starting')
   var startTime = +(new Date())
+  var stepTime = +(new Date())
+  var endTime
+  var duration
+  var printTimer = function(name){
+    endTime = +(new Date())
+    duration = endTime - stepTime
+    debug('supervise ' + name + ' completed in ' + duration + ' ms')
+    stepTime = +(new Date())
+  }
   return superviseJobAbort()
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise abort complete in ' + duration + ' ms')
+      printTimer('abort')
       return superviseJobRemove()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise removal complete in ' + duration + ' ms')
+      printTimer('remove')
       return superviseJobProcessing()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise processing complete in ' + duration + ' ms')
+      printTimer('processing')
       return superviseJobError()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise erroneous complete in ' + duration + ' ms')
+      printTimer('erroneous')
       return superviseJobComplete()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise complete complete in ' + duration + ' ms')
+      printTimer('complete')
       return superviseJobCleanup()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise cleanup complete in ' + duration + ' ms')
+      printTimer('cleanup')
       return superviseJobRetry()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise retry complete in ' + duration + ' ms')
+      printTimer('retry')
       return superviseJobStart()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise start complete in ' + duration + ' ms')
+      printTimer('start')
       return superviseJobAssign()
     })
     .then(function(){
-      var stepTime = +(new Date())
-      var duration = stepTime - startTime
-      debug('supervise assign complete in ' + duration + ' ms')
-      var endTime = +(new Date())
-      duration = endTime - startTime
-      debug('supervise completed in ' + duration + 'ms')
+      printTimer('assign')
+      stepTime = startTime
+      printTimer('has')
     })
 }
 
