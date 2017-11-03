@@ -289,45 +289,47 @@ var jobAugmentResources = function(){
         jobStatus.frameComplete = 0
         jobStatus.frameTotal = 1
         writeStatus()
-        //start the process
-        var proc = cp.spawn(
-          cmd.program,
-          populateJobDataArray(cmd.args),
-          {cwd: jobFolder}
-        )
-        var pid = proc.pid
-        var stdout = ''
-        proc.stdout.on('data', function(data){
-          stdout += data.toString()
-        })
-        proc.stderr.on('data', function(data){
-          stdout += data.toString()
-        })
-        proc.on('error',function(){
-          removeJobPID(pid)
-          reject()
-        })
-        proc.on('close',function(code){
-          removeJobPID(pid)
-          //log stdout
-          log(stdout+'\n')
-          if(code > 0){
-            var errMsg = cmd.program + ' exited with code: ' + code
-            if(stdout) errMsg += ' :' + stdout
-            reject(errMsg)
-          }
-          else {
-            //update status
-            jobStatus.frameComplete = 1
-            jobStatus.stepComplete++
-            writeStatus()
-              .then(function(){
-                //move on
-                resolve()
-              })
-          }
-        })
-        addJobPID(pid)
+          .then(function(){
+            //start the process
+            var proc = cp.spawn(
+              cmd.program,
+              populateJobDataArray(cmd.args),
+              {cwd: jobFolder}
+            )
+            var pid = proc.pid
+            var stdout = ''
+            proc.stdout.on('data', function(data){
+              stdout += data.toString()
+            })
+            proc.stderr.on('data', function(data){
+              stdout += data.toString()
+            })
+            proc.on('error',function(){
+              removeJobPID(pid)
+              reject()
+            })
+            proc.on('close',function(code){
+              removeJobPID(pid)
+              //log stdout
+              log(stdout+'\n')
+              if(code > 0){
+                var errMsg = cmd.program + ' exited with code: ' + code
+                if(stdout) errMsg += ' :' + stdout
+                reject(errMsg)
+              }
+              else {
+                //update status
+                jobStatus.frameComplete = 1
+                jobStatus.stepComplete++
+                writeStatus()
+                  .then(function(){
+                    //move on
+                    resolve()
+                  })
+              }
+            })
+            addJobPID(pid)
+          })
       })
     })
     .then(function(){
@@ -343,7 +345,7 @@ var jobProcessComplete = function(){
   jobStatus.frameDescription = 'Job processing complete'
   jobStatus.frameTotal = jobStatus.stepTotal
   jobStatus.frameComplete = jobStatus.stepTotal
-  writeStatus()
+  return writeStatus()
 }
 
 var jobProcess = function(){
