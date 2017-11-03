@@ -563,33 +563,63 @@ var superviseJobAssign = function(){
  */
 var supervise = function(){
   debug('supervise starting')
+  var startTime = +(new Date())
   return superviseJobAbort()
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise abort complete in ' + duration + ' ms')
       return superviseJobRemove()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise removal complete in ' + duration + ' ms')
       return superviseJobProcessing()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise processing complete in ' + duration + ' ms')
       return superviseJobError()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise erroneous complete in ' + duration + ' ms')
       return superviseJobComplete()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise complete complete in ' + duration + ' ms')
       return superviseJobCleanup()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise cleanup complete in ' + duration + ' ms')
       return superviseJobRetry()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise retry complete in ' + duration + ' ms')
       return superviseJobStart()
     })
     .then(function(){
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise start complete in ' + duration + ' ms')
       return superviseJobAssign()
     })
     .then(function(){
-      debug('supervise complete')
+      var stepTime = +(new Date())
+      var duration = stepTime - startTime
+      debug('supervise assign complete in ' + duration + ' ms')
+      var endTime = +(new Date())
+      duration = endTime - startTime
+      debug('supervise completed in ' + duration + 'ms')
     })
 }
 
