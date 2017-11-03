@@ -3,19 +3,23 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    h1 Inventory: Hash #{inventory.hash}
+    h1 Inventory: #{inventory.hash}
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
       input(type='hidden', name='id', value=inventory._id)
       input(type='hidden', name='hash', value=inventory.hash)
       .form-group
-        label.control-label.col-sm-2 Relative Path
+        label.control-label.col-sm-2 Hash
         .col-sm-10
-          input.form-control(type='text', name='relativePath', value=inventory.relativePath)
+          .form-control-static= inventory.hash
       .form-group
-        label.control-label.col-sm-2 Size
+        label.control-label.col-sm-2 Prism
         .col-sm-10
-          input.form-control(type='text', name='size', value=inventory.size)
+          input.form-control(type='text', name='prism', value=inventory.prism)
+      .form-group
+        label.control-label.col-sm-2 Store
+        .col-sm-10
+          input.form-control(type='text', name='store', value=inventory.store)
       .form-group
         label.control-label.col-sm-2 Mime Type
         .col-sm-10
@@ -25,15 +29,13 @@ block content
         .col-sm-10
           input.form-control(type='text', name='mimeExtension', value=inventory.mimeExtension)
       .form-group
-        label.control-label.col-sm-2 Locations
+        label.control-label.col-sm-2 Size
         .col-sm-10
-          each l,i in inventory.loc
-            input.checkbox-input(type='checkbox', name=`loc[${i}]`, id=`loc[${i}]` value=l, checked)
-            label(for=`loc[${i}]`) #{l}&nbsp;&nbsp;
-            a(href=`/inventory/editIndividual?id=${inventory.id[i]}` class='btn btn-xs btn-info')
-              span(class='glyphicon glyphicon-edit')
-              |&nbsp;Edit
-            br
-    .form-group
+          input.form-control(type='text', name='size', value=inventory.size)
+      .form-group
+        label.control-label.col-sm-2 Relative Path
+        .col-sm-10
+          input.form-control(type='text', name='relativePath', value=inventory.relativePath)
+      .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Save

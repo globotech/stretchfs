@@ -7,6 +7,45 @@ var couch = require('../../helpers/couchbase')
 //open couch buckets
 var couchInventory = couch.inventory()
 
+/**
+ * Roll-up inventory records
+ */
+var _rollup = function(result){
+  var _roll = {
+    hash: false,
+    createdAt: false,
+    updatedAt: false,
+    mimeType: false,
+    mimeExtension: false,
+    relativePath: false,
+    size: false,
+    individuals: {
+      _id: [],
+      _loc: []
+    }
+  }
+  result.forEach(function(wut){
+    console.log('wut:',wut);
+    var keyList = [
+      'hash',
+      'createdAt',
+      'updatedAt',
+      'mimeType',
+      'mimeExtension',
+      'relativePath',
+      'size'
+    ]
+    if(_roll.hash !== wut.hash) console.log('_rollup: hash mismatch?')
+    keyList.forEach(function(key){
+      if(!_roll[key]) _roll[key] = wut[key]
+      if(_roll[key] !== wut[key]) console.log('_rollup: ' + key + ' mismatch?')
+    })
+    _roll.individuals._id.push(wut._id)
+    _roll.individuals._loc.push(wut.prism+':'+wut.store)
+  })
+  return [_roll]
+}
+
 
 /**
  * List Inventory
@@ -18,8 +57,9 @@ exports.list = function(req,res){
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || false
   inv.listMain(
-    couch,couchInventory,couch.type.INVENTORY,search,'hash',true,start,limit)
+    couch,couchInventory,couch.type.INVENTORY,search,'_id',true,start,limit)
     .then(function(result){
+      console.log('listMain result:',result)
       res.render('inventory/list',{
         page: inv.pagination(start,result.count,limit),
         count: result.count,
@@ -61,16 +101,35 @@ exports.create = function(req,res){
 
 
 /**
- * Edit Inventory
+ * Edit Inventory by hash
  * @param {object} req
  * @param {object} res
  */
 exports.edit = function(req,res){
   var inventoryKey = req.query.id
+  var hash = inventoryKey.split(':')[0] || inventoryKey
+  inv.hashQuery(couch,couchInventory,couch.type.INVENTORY,hash)
+    .then(function(result){
+      console.log(result)
+      res.render('inventory/edit',{inventory: result[0]})
+    })
+    .catch(function(err){
+      res.render('error',{error: err.message})
+    })
+}
+
+
+/**
+ * Edit Inventory by _id (individual record)
+ * @param {object} req
+ * @param {object} res
+ */
+exports.editIndividual = function(req,res){
+  var inventoryKey = req.query.id
   couchInventory.getAsync(inventoryKey)
     .then(function(result){
       result.value._id = inventoryKey
-      res.render('inventory/edit',{inventory: result.value})
+      res.render('inventory/editIndividual',{inventory: result.value})
     })
     .catch(function(err){
       res.render('error',{error: err.message})

@@ -43,7 +43,7 @@ app.set('view engine','pug')
 
 //load middleware
 app.use(compress())
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 app.use(cookieParser(config.admin.cookie.secret))
 app.use(expressSession({
@@ -136,6 +136,7 @@ app.post('/inventory/save',routes.inventory.save)
 app.get('/inventory/list',routes.inventory.list)
 app.get('/inventory/create',routes.inventory.create)
 app.get('/inventory/edit',routes.inventory.edit)
+app.get('/inventory/editIndividual',routes.inventory.editIndividual)
 app.get('/inventory',function(req,res){ res.redirect('/inventory/list') })
 
 //sessions
