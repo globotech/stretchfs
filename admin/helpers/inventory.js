@@ -1,6 +1,30 @@
 'use strict';
 var P = require('bluebird')
 
+//list of fields for sanitizer
+var keyList = [
+  'hash',
+  'createdAt',
+  'updatedAt',
+  'mimeType',
+  'mimeExtension',
+  'relativePath',
+  'size'
+]
+
+
+/**
+ * Private integer argument parser
+ * @param {string} arg
+ * @param {integer} minimumDefault
+ * @return {integer}
+ */
+var _intarg = function(arg,minimumDefault){
+  var rv = (!arg) ? minimumDefault : parseInt(arg,10)
+  if(rv < minimumDefault) rv = minimumDefault
+  return rv
+}
+
 
 /**
  * Helper for queries by hash
@@ -29,6 +53,16 @@ exports.hashQuery = function(cb,db,type,search){
     ' GROUP BY `hash`'
   var query = cb.N1Query.fromString(qstring)
   return db.queryAsync(query,[search])
+    .then(function(result){
+      var r = result.shift()
+      //sanitize (collapse single member arrays)
+      keyList.forEach(function(key){
+        if(r[key] && 1 >= r[key].length){
+          r[key] = r[key][0]
+        }
+      })
+      return r
+    })
 }
 
 
@@ -45,40 +79,43 @@ exports.hashQuery = function(cb,db,type,search){
  * @return {P}
  */
 exports.listMain = function(cb,db,type,search,orderField,orderAsc,start,limit){
-  //validate and preprocess arguments
+  //validate and pre-process arguments
   if(!cb || !db)
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!type)
     throw new Error('Must know bucket type to list')
-  if(!search) search = ''
-  else search = '%' + search + '%'
-  if(!start) start = 0
-  else start = parseInt(start)
-  if(start < 0) start = 0
-  if(!limit) limit = 10
-  else limit = parseInt(limit)
+  var clause = {where:'',orderby:''}
+  clause.from = ' FROM ' + cb.getName(type,true) + ' b '
+  var s = []
+  if(!!search){
+    s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
+    clause.where = ' WHERE META(b).id LIKE $1 '
+  }
+  if(orderField){
+    clause.orderby = ' ORDER BY `' + orderField + '`' +
+      (orderAsc ? ' ASC ' : ' DESC ')
+  }
+  start = _intarg(start,0)
+  limit = _intarg(limit,10)
+  clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + start
   //build queries
-  var cstring = 'SELECT COUNT(b) AS _count FROM ' +
-    cb.getName(type,true) + ' b ' +
-    (search ? ' WHERE META(b).id LIKE $1 ' : '')
-  var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
-    cb.getName(type,true) + ' b ' +
-    (search ? ' WHERE META(b).id LIKE $1 ' : '') +
-    (orderField ? ' ORDER BY `' + orderField + '` ' +
-      (orderAsc ? 'ASC' : 'DESC') : '') +
-    (limit ? ' LIMIT ' + limit + ' OFFSET ' + start : '')
-  var query = cb.N1Query.fromString(qstring)
-  var cquery = cb.N1Query.fromString(cstring)
+  var queries = {}
+  queries.total = cb.N1Query.fromString(
+    'SELECT COUNT(b) AS _count' + clause.from + clause.where
+  )
+  queries.data = cb.N1Query.fromString(
+    'SELECT META(b).id AS _id, b.*' + clause.from + clause.where +
+    clause.orderby + clause.pagination
+  )
   return P.all([
-    db.queryAsync(query,[search]),
-    db.queryAsync(cquery,[search])
+    db.queryAsync(queries.data,s),
+    db.queryAsync(queries.total,s)
   ])
-    .spread(function(result,count){
-      if(count[0]) count = count[0]._count
-      else count = 0
+    .spread(function(data,total){
+      total = (total[0]) ? total[0]._count : 0
       return {
-        rows: result,
-        count: count
+        rows: data,
+        count: total
       }
     })
 }

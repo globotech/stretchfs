@@ -23,7 +23,8 @@ block content
             td
               input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/inventory/edit?id=' + row._id)= row.hash
+              samp(class='text-center')
+                a(href='/inventory/edit?id=' + row._id)= row.hash
             td= row.prism
             td= row.store
             td= row.mimeType

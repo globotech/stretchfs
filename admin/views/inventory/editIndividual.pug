@@ -3,7 +3,8 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    h1 Inventory: #{inventory.hash}
+    h1 Inventory: Record
+      pre(class='small text-center') #{inventory._id}
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
       input(type='hidden', name='id', value=inventory._id)
@@ -21,6 +22,14 @@ block content
         .col-sm-10
           input.form-control(type='text', name='store', value=inventory.store)
       .form-group
+        label.control-label.col-sm-2 Relative Path
+        .col-sm-10
+          input.form-control(type='text', name='relativePath', value=inventory.relativePath)
+      .form-group
+        label.control-label.col-sm-2 Size
+        .col-sm-10
+          input.form-control(type='text', name='size', value=inventory.size)
+      .form-group
         label.control-label.col-sm-2 Mime Type
         .col-sm-10
           input.form-control(type='text', name='mimeType', value=inventory.mimeType)
@@ -28,14 +37,6 @@ block content
         label.control-label.col-sm-2 Mime Extension
         .col-sm-10
           input.form-control(type='text', name='mimeExtension', value=inventory.mimeExtension)
-      .form-group
-        label.control-label.col-sm-2 Size
-        .col-sm-10
-          input.form-control(type='text', name='size', value=inventory.size)
-      .form-group
-        label.control-label.col-sm-2 Relative Path
-        .col-sm-10
-          input.form-control(type='text', name='relativePath', value=inventory.relativePath)
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Save

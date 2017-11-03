@@ -3,7 +3,8 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    h1 Inventory: Hash #{inventory.hash}
+    h1 Inventory: Hash
+      pre(class='small text-center') #{inventory.hash}
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
       input(type='hidden', name='id', value=inventory._id)
