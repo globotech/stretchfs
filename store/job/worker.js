@@ -7,7 +7,12 @@ var infant = require('infant')
 var promisePipe = require('promisepipe')
 var request = require('request')
 
+var couch = require('../../helpers/couchbase')
+
 var config = require('../../config')
+
+//open some buckets
+var ooseJob = couch.job()
 
 //make some promises
 P.promisifyAll(infant)
@@ -17,7 +22,6 @@ var requestP = P.promisify(request)
 var jobData = {}
 var jobFolder = process.env.JOB_FOLDER
 var jobHandle = process.env.JOB_HANDLE
-var jobLog = jobFolder + '/log'
 
 //placeholders
 var jobDescription = {}
@@ -52,35 +56,56 @@ var removeJobPID = function(pid){
 
 /**
  * Write the status.json
+ * @return {P}
  */
 var writeStatus = function(){
-  fs.writeFileSync(jobFolder + '/status.json',JSON.stringify(jobStatus))
+  var jobKey = couch.schema.job(jobHandle)
+  return ooseJob.getAsync(jobKey)
+    .then(function(result){
+      result.value.status = jobStatus.status
+      result.value.statusDescription = jobStatus.statusDescription
+      result.value.stepTotal = jobStatus.stepTotal
+      result.value.stepComplete = jobStatus.stepComplete
+      result.value.frameTotal = jobStatus.frameTotal
+      result.value.frameComplete = jobStatus.frameComplete
+      result.value.frameDescription = jobStatus.frameDescription
+      return ooseJob.getAsync(jobKey,result.value,{cas: result.cas})
+    })
 }
 
 //setup logging
-fs.writeFileSync(jobLog,'Created Log\n')
-//var logStream = fs.createWriteStream(jobLog)
-var log = fs.openSync(jobLog,'a')
+var log = function(message){
+  var jobKey = couch.schema.job(jobHandle)
+  return ooseJob.getAsync(jobKey)
+    .then(function(result){
+      if(!message.match(/\n/)) message = message + '\n'
+      result.value.log = result.value.log + message
+      result.value.lastLogUpdate = new Date().toJSON()
+      return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+    })
+}
 
 var errorHandler = function(err){
   //put into an error instance regardless
   if(!(err instanceof Error)) err = new Error(err)
-  //now write the error file
-  fs.writeFileSync(
-    jobFolder + '/error',
-    'Job processing has crashed!\n' + err.stack + '\n'
-  )
-  if(jobStatus){
-    jobStatus.status = 'error'
-    jobStatus.statusDescription = err.message
-    writeStatus()
-  }
-  //send the error to the upstream log
-  console.log(err.stack)
-  //log to the job log
-  fs.writeSync(log,err.stack + '\n')
-  //kill the process with an erroneous status
-  process.exit(1)
+  //now update the database with the error
+  var jobKey = couch.schema.job(jobHandle)
+  return ooseJob.getAsync(jobKey)
+    .then(function(result){
+      result.value.status = 'queued_error'
+      result.value.statusDescription = err.message
+      result.value.error = err
+      result.value.erroredAt = new Date().toJSON()
+      return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+    })
+    .then(function(){
+      //send the error to the upstream log
+      console.log(err.stack)
+      //log to the job log
+      log(err.stack + '\n')
+      //kill the process with an erroneous status
+      process.exit(1)
+    })
 }
 
 //setup error handler
@@ -190,9 +215,10 @@ var jobObtainResource = function(req){
   })
     .each(function(item){
       var opts = populateJobDataObject(item.request)
-      fs.writeSync(log,
-        'Making intermediate resource request: ' + opts.url + '\n')
-      return requestP(opts)
+      return log('Making intermediate resource request: ' + opts.url + '\n')
+        .then(function(){
+          return requestP(opts)
+        })
         .spread(intermediateParse(item))
     })
     .then(function(){
@@ -201,7 +227,7 @@ var jobObtainResource = function(req){
 }
 
 var jobObtainResources = function(){
-  fs.writeSync(log,'Starting to obtain resources\n')
+  log('Starting to obtain resources\n')
   var resource = jobDescription.resource || []
   var promises = []
   var req
@@ -234,7 +260,7 @@ var jobObtainResources = function(){
   }
   for(var i = 0; i < resource.length; i++){
     req = resource[i]
-    fs.writeSync(log,'Obtaining resource:' + req.name + '\n')
+    log('Obtaining resource:' + req.name + '\n')
     ws = fs.createWriteStream(jobFolder + '/' + req.name)
     promises.push(
       jobObtainResource(req)
@@ -243,12 +269,12 @@ var jobObtainResources = function(){
   }
   return P.all(promises)
     .then(function(){
-      fs.writeSync(log,'Resources have been obtained\n')
+      log('Resources have been obtained\n')
     })
 }
 
 var jobAugmentResources = function(){
-  fs.writeSync(log,'Starting to augment resources\n')
+  log('Starting to augment resources\n')
   var augment = jobDescription.augment || []
   return P.try(function(){
     return augment
@@ -284,7 +310,7 @@ var jobAugmentResources = function(){
         proc.on('close',function(code){
           removeJobPID(pid)
           //log stdout
-          fs.writeSync(log,stdout+'\n')
+          log(stdout+'\n')
           if(code > 0){
             var errMsg = cmd.program + ' exited with code: ' + code
             if(stdout) errMsg += ' :' + stdout
@@ -295,20 +321,22 @@ var jobAugmentResources = function(){
             jobStatus.frameComplete = 1
             jobStatus.stepComplete++
             writeStatus()
-            //move on
-            resolve()
+              .then(function(){
+                //move on
+                resolve()
+              })
           }
         })
         addJobPID(pid)
       })
     })
     .then(function(){
-      fs.writeSync(log,'Resource augmentation complete\n')
+      log('Resource augmentation complete\n')
     })
 }
 
 var jobProcessComplete = function(){
-  jobStatus.status = 'complete'
+  jobStatus.status = 'queued_complete'
   jobStatus.statusDescription = 'Job has been processed successfully'
   jobStatus.stepTotal = 1
   jobStatus.stepComplete = jobStatus.stepTotal
@@ -316,7 +344,6 @@ var jobProcessComplete = function(){
   jobStatus.frameTotal = jobStatus.stepTotal
   jobStatus.frameComplete = jobStatus.stepTotal
   writeStatus()
-  return fs.unlinkAsync(jobFolder + '/processing')
 }
 
 var jobProcess = function(){
@@ -329,11 +356,7 @@ var jobProcess = function(){
       return jobProcessComplete()
     })
     .then(function(){
-      return fs.writeFileAsync(jobFolder + '/complete','complete')
-    })
-    .then(function(){
-      fs.writeSync(log,'Job processing complete\n')
-      fs.closeSync(log)
+      log('Job processing complete\n')
       debug('job process complete')
     })
     .catch(function(e){

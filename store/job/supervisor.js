@@ -2,10 +2,8 @@
 var P = require('bluebird')
 var debug = require('debug')('oose:job:supervisor')
 var fs = require('graceful-fs')
-var glob = P.promisify(require('glob'))
 var infant = require('infant')
 var mkdirp = require('mkdirp-then')
-var path = require('path')
 var request = require('request-promise')
 var rimraf = require('rimraf-promise')
 
@@ -240,30 +238,27 @@ var superviseJobProcessing = function(){
  * @return {P}
  */
 var superviseJobError = function(){
-  return glob(config.root + '/job/**/error')
+  return findJobsByWorker(workerKey,'queued_error')
     .then(function(result){
-      debug('found erroneous jobs',result)
-      var promises = []
-      var file
-      var handle
-      var jobFolder
+      debug('found queued error jobs',result)
+      return result
+    })
+    .each(function(job){
+      debug('found job for queued error',job)
+      var handle = job.handle
+      var jobFolder = jobHelper.folder(handle)
       var error
-      for(var i = 0; i < result.length; i++){
-        file = result[i]
-        jobFolder = path.dirname(file)
-        handle = fs.readFileSync(jobFolder + '/handle').toString('utf-8').trim()
-        error = fs.readFileSync(jobFolder + '/error').toString('utf-8').trim()
-        //kill the job process
-        if(jobsProcessing[handle]){
-          cleanupProcesses(handle,jobFolder)
-          delete jobsProcessing[handle]
-        }
-        //destroy the job folder
-        promises.push(rimraf(jobFolder))
-        //tell master the job has been reported an error
-        promises.push(jobNotification(handle,'error',error))
+      //kill the job process
+      if(jobsProcessing[handle]){
+        cleanupProcesses(handle,jobFolder)
+        delete jobsProcessing[handle]
       }
-      return P.all(promises)
+      //destroy the job folder
+      return rimraf(jobFolder)
+        .then(function(){
+          //tell master the job has been reported an error
+          return jobNotification(handle,'error',error)
+        })
     })
     .then(function(){
       debug('jobs have been cleaned up from errors and errors reported')
@@ -276,32 +271,33 @@ var superviseJobError = function(){
  * @return {P}
  */
 var superviseJobComplete = function(){
-  return glob(config.root + '/**/complete')
+  return findJobsByWorker(workerKey,'queued_complete')
     .then(function(result){
-      debug('found complete jobs',result)
-      var promises = []
-      var file
-      var handle
-      var jobFolder
-      for(var i = 0; i < result.length; i++){
-        file = result[i]
-        jobFolder = path.dirname(file)
-        handle = fs.readFileSync(jobFolder + '/handle').toString('utf-8').trim()
-        //kill the job process (for good measure)
-        if(jobsProcessing[handle]){
-          cleanupProcesses(handle,jobFolder)
-          //remove the job process from the list
-          delete jobsProcessing[handle]
-        }
-        //remove the completion flag
-        promises.push(fs.unlinkAsync(file))
-        //add a cleanup flag with the current timestamp
-        promises.push(fs.writeFileAsync(jobFolder + '/cleanup',+new Date()))
-        //tell master the job has been completed
-        promises.push(jobNotification(
-          handle,'complete','Job processing complete'))
+      debug('found queued complete jobs',result)
+      return result
+    })
+    .each(function(job){
+      debug('found job for completion',job)
+      var handle = job.handle
+      var jobFolder = jobHelper.folder(job.handle)
+      //kill the job process (for good measure)
+      if(jobsProcessing[handle]){
+        cleanupProcesses(handle,jobFolder)
+        //remove the job process from the list
+        delete jobsProcessing[handle]
       }
-      return P.all(promises)
+      //remove the completion flag
+      return ooseJob.getAsync(couch.schema.job(handle))
+        .then(function(result){
+          result.value.status = 'cleanup'
+          result.value.completedAt = new Date().toJSON()
+          return ooseJob.upsertAsync(handle,result.value,{cas: result.cas})
+        })
+        .then(function(){
+          //tell master the job has been completed
+          return jobNotification(
+            handle,'complete','Job processing complete')
+        })
     })
     .then(function(){
       debug('jobs completed processed and notified')
@@ -322,7 +318,6 @@ var superviseJobRemove = function(){
     })
     .each(function(job){
       debug('found job for removal',job)
-      var promises = []
       var handle = job.handle
       var jobFolder = jobHelper.folder(job.handle)
       //kill the job process (for good measure)
@@ -332,9 +327,10 @@ var superviseJobRemove = function(){
         delete jobsProcessing[handle]
       }
       //destroy the job folder
-      promises.push(rimraf(jobFolder))
-      promises.push(ooseJob.removeAsync(handle))
-      return P.all(promises)
+      return rimraf(jobFolder)
+        .then(function(){
+          return ooseJob.removeAsync(handle)
+        })
     })
     .then(function(){
       debug('jobs removed')
@@ -347,29 +343,30 @@ var superviseJobRemove = function(){
  * @return {P}
  */
 var superviseJobCleanup = function(){
-  return glob(config.root + '/**/cleanup')
+  return findJobsByWorker(workerKey,'cleanup')
     .then(function(result){
-      debug('found jobs for cleanup',result)
-      var now = +new Date()
-      var promises = []
-      var file
+      debug('found cleanup jobs',result)
+      return result
+    })
+    .each(function(job){
+      debug('found job for cleanup check',job.handle)
+      var now = +(new Date())
       var handle
       var completed
       var jobFolder
-      for(var i = 0; i < result.length; i++){
-        file = result[i]
-        jobFolder = path.dirname(file)
-        handle = fs.readFileSync(jobFolder + '/handle').toString('utf-8').trim()
-        completed = +(fs.readFileSync(file).toString('utf-8').trim())
-        //check if the cleanup timeout has expired
-        if(now < (completed + config.job.timeout.cleanup)) continue
-        //destroy the folder if the timeout has expired
-        promises.push(rimraf(jobFolder))
-        //tell master the job has been archived
-        promises.push(jobNotification(
-          handle,'archived','Job resources removed, it is now archived.',true))
-      }
-      return P.all(promises)
+      jobFolder = jobHelper.folder(job.handle)
+      handle = job.handle
+      completed = +(new Date(job.completedAt))
+      //check if the cleanup timeout has expired
+      if(now < (completed + config.job.timeout.cleanup)) return
+      //destroy the folder if the timeout has expired
+      debug('performing job cleanup',job.handle)
+      return rimraf(jobFolder)
+        .then(function(){
+          //tell master the job has been archived
+          jobNotification(
+            handle,'archived','Job resources removed, it is now archived.',true)
+        })
     })
     .then(function(){
       debug('jobs cleaned up')
