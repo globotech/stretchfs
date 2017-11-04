@@ -22,6 +22,7 @@ var requestP = P.promisify(request)
 var jobData = {}
 var jobFolder = process.env.JOB_FOLDER
 var jobHandle = process.env.JOB_HANDLE
+var jobKey = couch.schema.job(jobHandle)
 var jobLog = ''
 var jobLogLastUpdate = new Date().toJSON()
 var jobLogInterval
@@ -68,7 +69,6 @@ var removeJobPID = function(pid){
  */
 var sendStatus = function(){
   debug(jobHandle,'send status',jobStatus.status,jobStatus.statusDescription)
-  var jobKey = couch.schema.job(jobHandle)
   return ooseJob.getAsync(jobKey)
     .then(function(result){
       result.value.status = jobStatus.status
@@ -94,7 +94,6 @@ statusInterval = setInterval(sendStatus,statusFrequency)
  * @return {P}
  */
 var sendJobLog = function(){
-  var jobKey = couch.schema.job(jobHandle)
   return ooseJob.getAsync(jobKey)
     .then(function(result){
       result.value.log = jobLog
@@ -134,7 +133,6 @@ var errorHandlerAsync = function(err){
   //put into an error instance regardless
   if(!(err instanceof Error)) err = new Error(err)
   //now update the database with the error
-  var jobKey = couch.schema.job(jobHandle)
   return ooseJob.getAndLockAsync(jobKey)
     .then(function(result){
       result.value.status = 'queued_error'
@@ -297,6 +295,11 @@ var jobObtainResource = function(req){
     .catch(errorHandlerAsync)
 }
 
+
+/**
+ * Obtain job resources
+ * @return {P}
+ */
 var jobObtainResources = function(){
   debug(jobHandle,'resource obtainment started')
   log('Starting to obtain resources\n')
@@ -327,14 +330,24 @@ var jobObtainResources = function(){
       return promisePipe(req,ws)
     }
   }
+  var obtainResource = function(req,resourceFile,ws){
+    return ooseJob.getAndLockAsync(jobKey)
+      .then(function(result){
+        if(!result.value.manifest) result.value.manifest = [resourceFile]
+        else result.value.manifest.push(resourceFile)
+        return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+      })
+      .then(function(){
+        return jobObtainResource(req)
+      })
+      .then(pipeRequest(ws))
+  }
   for(var i = 0; i < resource.length; i++){
     req = resource[i]
     log('Obtaining resource:' + req.name + '\n')
-    ws = fs.createWriteStream(jobFolder + '/' + req.name)
-    promises.push(
-      jobObtainResource(req)
-        .then(pipeRequest(ws))
-    )
+    var resourceFile = jobFolder + '/' + req.name
+    ws = fs.createWriteStream(resourceFile)
+    promises.push(obtainResource(req,resourceFile,ws))
   }
   return P.all(promises)
     .then(function(){
@@ -344,6 +357,65 @@ var jobObtainResources = function(){
     .catch(errorHandlerAsync)
 }
 
+
+/**
+ * Augment job resource
+ * @param {object} cmd - Augment command to run
+ * @return {P}
+ */
+var augmentResource = function(cmd){
+  return new P(function(resolve,reject){
+    if(config.job.programs.indexOf(cmd.program) < 0)
+      throw new Error('Unsupported program used ' + cmd.program)
+    //make a status update
+    jobStatus.frameDescription =
+      'Augment: ' + cmd.program + ' ' + cmd.args.join(' ')
+    jobStatus.frameComplete = 0
+    jobStatus.frameTotal = 1
+    //start the process
+    var proc = cp.spawn(
+      cmd.program,
+      populateJobDataArray(cmd.args),
+      {cwd: jobFolder}
+    )
+    var pid = proc.pid
+    addJobPID(pid)
+    var stdout = ''
+    proc.stdout.on('data',function(data){
+      stdout += data.toString()
+    })
+    proc.stderr.on('data',function(data){
+      stdout += data.toString()
+    })
+    proc.on('error',function(){
+      removeJobPID(pid)
+      reject()
+    })
+    proc.on('close',function(code){
+      removeJobPID(pid)
+      //log stdout
+      log(stdout + '\n')
+      if(code > 0){
+        var errMsg = cmd.program + ' exited with code: ' + code
+        if(stdout) errMsg += ' :' + stdout
+        reject(errMsg)
+      }
+      else{
+        //update status
+        jobStatus.frameComplete = 1
+        jobStatus.stepComplete++
+        //move on
+        resolve()
+      }
+    })
+  })
+}
+
+
+/**
+ * Augment job resources
+ * @return {P}
+ */
 var jobAugmentResources = function(){
   debug(jobHandle,'starting augment')
   log('Starting to augment resources\n')
@@ -352,51 +424,16 @@ var jobAugmentResources = function(){
     return augment
   })
     .each(function(cmd){
-      return new P(function(resolve,reject){
-        if(config.job.programs.indexOf(cmd.program) < 0)
-          throw new Error('Unsupported program used ' + cmd.program)
-        //make a status update
-        jobStatus.frameDescription =
-          'Augment: ' + cmd.program + ' ' + cmd.args.join(' ')
-        jobStatus.frameComplete = 0
-        jobStatus.frameTotal = 1
-        //start the process
-        var proc = cp.spawn(
-          cmd.program,
-          populateJobDataArray(cmd.args),
-          {cwd: jobFolder}
-        )
-        var pid = proc.pid
-        addJobPID(pid)
-        var stdout = ''
-        proc.stdout.on('data', function(data){
-          stdout += data.toString()
+      var resourceFile = jobFolder + '/' + cmd.resource
+      return ooseJob.getAndLockAsync(jobKey)
+        .then(function(result){
+          if(!result.value.manifest) result.value.manifest = [resourceFile]
+          else result.value.manifest.push(resourceFile)
+          return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
         })
-        proc.stderr.on('data', function(data){
-          stdout += data.toString()
+        .then(function(){
+          return augmentResource(cmd)
         })
-        proc.on('error',function(){
-          removeJobPID(pid)
-          reject()
-        })
-        proc.on('close',function(code){
-          removeJobPID(pid)
-          //log stdout
-          log(stdout+'\n')
-          if(code > 0){
-            var errMsg = cmd.program + ' exited with code: ' + code
-            if(stdout) errMsg += ' :' + stdout
-            reject(errMsg)
-          }
-          else {
-            //update status
-            jobStatus.frameComplete = 1
-            jobStatus.stepComplete++
-            //move on
-            resolve()
-          }
-        })
-      })
     })
     .then(function(){
       debug(jobHandle,'augment complete')
@@ -405,12 +442,16 @@ var jobAugmentResources = function(){
     .catch(errorHandlerAsync)
 }
 
+
+/**
+ * Complete job processing
+ * @return {P}
+ */
 var jobProcessComplete = function(){
   //shutdown the status updater
   clearInterval(statusInterval)
   //shutdown the log updater
   clearInterval(jobLogInterval)
-  var jobKey = couch.schema.job(jobHandle)
   return ooseJob.getAndLockAsync(jobKey)
     .then(function(result){
       result.value.status = 'queued_complete'
@@ -426,6 +467,11 @@ var jobProcessComplete = function(){
     })
 }
 
+
+/**
+ * Process job
+ * @return {P}
+ */
 var jobProcess = function(){
   debug(jobHandle,'starting to process job')
   return jobObtainResources()
@@ -443,6 +489,9 @@ var jobProcess = function(){
 }
 
 
+/**
+ * Start Process
+ */
 if(require.main === module){
   infant.child(
     'oose:' + config.store.name + ':job:' + jobHandle,

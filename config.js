@@ -123,7 +123,7 @@ config.$load({
   //purchase system
   purchase: {
     life: 7200, //2 hrs
-    afterlife: 7200 //2hrs
+    afterLife: 7200 //2hrs
   },
   /**
    * Interfaces

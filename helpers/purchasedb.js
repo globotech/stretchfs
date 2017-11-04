@@ -11,6 +11,9 @@ var couchbase = require('./couchbase')
 
 var config = require('../config')
 
+//open some buckets
+var couchPurchase = couchbase.purchase()
+
 
 /**
  * Wrap couch calls to enumerate
@@ -29,7 +32,7 @@ var couchWrap = function(token){
   var year = +token.slice(1,5)
   if(year !== now.getFullYear() && year !== (now.getFullYear() -1))
     return null
-  return couchbase.purchase()
+  return couchPurchase
 }
 
 
@@ -91,21 +94,18 @@ PurchaseDb.prototype.create = function(token,params,life){
   //create purchase
   var couch
   debug(token,'create')
+  if(!life) life = parseInt(config.purchase.life)
   return P.try(function(){
     couch = couchWrap(token)
     if(!couch) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
     params.life = life
-    params.afterLife = config.purchase.afterLife
-    params.expirationDate = '' + (+new Date() + life)
+    params.afterLife = parseInt(config.purchase.afterLife)
+    params.expirationDate = (+new Date()) + life
     params.createdAt = new Date().toJSON()
-    return couch.upsertAsync(
-      token,
-      params,
-      {
-        expiry: ((life || config.purchase.life) + config.purchase.afterLife)
-      }
-    )
+    return couch.upsertAsync(token,params,{
+      expiry: life + parseInt(config.purchase.afterLife)
+    })
   })
     .then(function(result){
       debug(token,'create result',result)

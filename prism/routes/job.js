@@ -2,6 +2,7 @@
 var P = require('bluebird')
 var ObjectManage = require('object-manage')
 var Password = require('node-password').Password
+var path = require('path')
 var request = require('request')
 
 var couch = require('../../helpers/couchbase')
@@ -9,6 +10,7 @@ var couch = require('../../helpers/couchbase')
 var config = require('../../config')
 
 var ooseJob = couch.job()
+var oosePeer = couch.peer()
 
 //make some promises
 request = P.promisify(request)
@@ -40,11 +42,14 @@ exports.detail = function(req,res){
 exports.create = function(req,res){
   var data = req.body
   var job = {}
+  if('string' === typeof data.description){
+    data.description = JSON.parse(data.description)
+  }
   P.try(function(){
     var jobHandle = new Password({length: 12, special: false}).toString()
     job = {
       handle: jobHandle,
-      description: JSON.parse(data.description),
+      description: data.description,
       priority: +data.priority || 10,
       category: data.category || 'resource',
       status: 'staged',
@@ -225,14 +230,9 @@ exports.contentExists = function(req,res){
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       job = result.value
-      for(var i in job.manifest){
-        if(job.manifest.hasOwnProperty(i)){
-          var path = job.manifest[i]
-          if(path === file){
-            exists = true
-          }
-        }
-      }
+      job.manifest.forEach(function(val){
+        if(path.basename(val) === file) exists = true
+      })
       res.json({
         exists: exists
       })
@@ -252,11 +252,16 @@ exports.contentDownload = function(req,res){
   var handle = req.params.handle
   var file = req.params.file
   var job = {}
+  var worker = {}
   ooseJob.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       job = result.value
-      var url = 'http://' + job.worker.host + ':' + job.worker.port +
+      return oosePeer.getAsync(job.workerKey)
+    })
+    .then(function(result){
+      worker = result.value
+      var url = 'https://' + worker.host + ':' + worker.port +
         '/job/content/download/' + handle + '/' + file
       res.redirect(302,url)
     })

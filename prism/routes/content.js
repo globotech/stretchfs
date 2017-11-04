@@ -149,6 +149,12 @@ exports.upload = function(req,res){
           }
           //got here? file already exists on cluster so we are done
         })
+        .catch(function(err){
+          fs.unlinkSync(file.tmpfile)
+          redis.incr(redis.schema.counterError('prism','content:upload'))
+          debug('upload error',err.message,err,err.stack)
+          res.json({error: err.message})
+        })
     )
   })
   busboy.on('finish',function(){
@@ -158,6 +164,12 @@ exports.upload = function(req,res){
         res.json({success: 'File(s) uploaded',data: data,files: files})
       })
       .catch(function(err){
+        var keys = Object.keys(files)
+        var file
+        for(var i = 0; i < keys.length; i++){
+          file = files[keys[i]]
+          fs.unlinkSync(file.tmpfile)
+        }
         redis.incr(redis.schema.counterError('prism','content:upload'))
         debug('upload error',err.message,err,err.stack)
         res.json({error: err.message})
@@ -170,8 +182,7 @@ exports.upload = function(req,res){
         var file
         for(var i = 0; i < keys.length; i++){
           file = files[keys[i]]
-          if(fs.existsSync(file.tmpfile))
-            promises.push(fs.unlinkAsync(file.tmpfile))
+          fs.unlinkSync(file.tmpfile)
         }
         return P.all(promises)
           .then(function(){
@@ -201,6 +212,7 @@ exports.retrieve = function(req,res){
   })
   var hash
   var writeStream = fs.createWriteStream(tmpfile)
+  debug('retrieve',hashType,extension,retrieveRequest)
   P.try(function(){
     return promisePipe(request(retrieveRequest),sniff,writeStream)
   })
@@ -225,6 +237,8 @@ exports.retrieve = function(req,res){
       res.json(response)
     })
     .catch(UserError,NetworkError,function(err){
+      fs.unlinkSync(tmpfile)
+      debug('retrieve error',err)
       logger.log('error', err)
       logger.log('error', err.stack)
       redis.incr(redis.schema.counterError('prism','content:retrieve'))
@@ -239,6 +253,7 @@ exports.retrieve = function(req,res){
       })
     })
     .catch(function(err){
+      fs.unlinkSync(tmpfile)
       res.status(501)
       res.set({
         'OOSE-Code': 501,
@@ -251,8 +266,7 @@ exports.retrieve = function(req,res){
       logger.log('error', err.stack)
     })
     .finally(function(){
-      return fs.unlinkAsync(tmpfile)
-        .catch(function(){})
+      fs.unlinkSync(tmpfile)
     })
 }
 

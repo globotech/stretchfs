@@ -11,13 +11,9 @@ var rmfr = require('rmfr')
 var hashStream = require('sha1-stream')
 
 var api = require('../helpers/api')
-var couch = require('../helpers/couchbase')
 var purchasedb = require('../helpers/purchasedb')
 
 var content = oose.mock.content
-
-//open couch buckets
-var couchInventory = couch.inventory()
 
 var config = require('../config')
 config.$load(require(__dirname + '/assets/store1.config.js'))
@@ -225,7 +221,6 @@ describe('store',function(){
         .then(function(){
           return purchasedb.create(purchaseToken,{
             hash: content.hash,
-            expirationDate: (+(new Date()) + 72000), //2 hours
             ext: content.ext,
             referrer: 'localhost,127.0.0.1'
           })
@@ -233,7 +228,9 @@ describe('store',function(){
     })
     after(function(){
       //delete purchase record
-      return purchasedb.remove(purchaseToken)
+      return P.try(function(){
+        return purchasedb.remove(purchaseToken)
+      })
       //delete inventory record
         .then(function(){
           return client.postAsync({
@@ -273,10 +270,10 @@ describe('store',function(){
         })
     })
     it('should play content with purchases',function(){
-      return client.getAsync(
-        client.url('/play/' + purchaseToken + '/video.mp4')
-      )
+      var url = client.url('/play/' + purchaseToken + '/video.mp4')
+      return client.getAsync(url)
         .spread(function(result,body){
+          console.log(body)
           expect(body).to.equal('The fox is brown')
           expect(result.statusCode).to.equal(200)
         })

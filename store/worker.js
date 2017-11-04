@@ -80,6 +80,9 @@ app.get('/purchase/uri/play/:token/:filename',routes.purchase.uri)
 app.get('/static/:hash/:file',routes.content.static)
 app.get('/play/:token/:file',routes.content.play)
 
+//job functions
+app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
+
 //auth below this point
 app.use(basicAuth(config.store.username,config.store.password))
 
@@ -91,9 +94,6 @@ app.post('/content/remove',routes.content.remove)
 app.post('/content/send',routes.content.send)
 app.post('/content/detail',routes.content.detail)
 app.post('/content/verify',routes.content.verify)
-
-//job functions (protect this one to prevent scanning)
-app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
 
 
 /**
