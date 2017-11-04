@@ -16,7 +16,7 @@ var ooseInventory = couch.inventory()
 exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
-  var search = req.query.search || false
+  var search = req.query.search || ''
   inv.listMain(
     couch,ooseInventory,couch.type.INVENTORY,search,'_id',true,start,limit)
     .then(function(result){
