@@ -171,10 +171,10 @@ client.getManager = function(bucket){
 
 
 /**
- * Initialize couchbase in a harmless repeatable way
+ * Create couchbase indexes a harmless repeatable way
  * @return {P}
  */
-client.init = function(){
+client.createIndexes = function(){
   return P.try(function(){
     var types = []
     for(var type in client.type){

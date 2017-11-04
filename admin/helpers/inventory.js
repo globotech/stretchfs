@@ -152,6 +152,54 @@ exports.listMain = function(cb,db,type,search,orderField,orderAsc,start,limit){
 
 
 /**
+ * Helper for list queries
+ * @param {object} cb
+ * @param {object} db
+ * @param {string} type
+ * @return {P}
+ */
+exports.listBuild = function(cb,db,type){
+  //validate and pre-process arguments
+  if(!cb || !db)
+    throw new Error('Must have couchbase helper and bucket-handle to list')
+  if(!type)
+    throw new Error('Must know bucket type to list')
+  var clause = {}
+  clause.from = ' FROM ' + cb.getName(type,true)
+  var s = []
+  //build queries
+  var queries = {}
+  queries.total = cb.N1Query.fromString(
+    'SELECT ARRAY_COUNT(ARRAY_AGG(DISTINCT `hash`)) AS _count' +
+    clause.from + clause.where
+  )
+  queries.data = cb.N1Query.fromString(
+    'SELECT META(b.id) AS id' + clause.from
+  )
+  return P.all([
+    db.queryAsync(queries.data,s),
+    db.queryAsync(queries.total,s)
+  ])
+    .spread(function(data,total){
+      var rv = {
+        rows: [],
+        count: (total[0]) ? total[0]._count : 0
+      }
+      data.forEach(function(r){
+        //sanitize (collapse single member arrays)
+        keyList.forEach(function(key){
+          if(r[key] && 1 >= r[key].length){
+            r[key] = r[key][0]
+          }
+        })
+        rv.rows.push(r)
+      })
+      return rv
+    })
+}
+
+
+/**
  * Pagination helper
  * @param {number} start
  * @param {number} count

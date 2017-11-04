@@ -3,15 +3,37 @@ var P = require('bluebird')
 var debug = require('debug')('oose:store:inventory')
 var fs = require('graceful-fs')
 var infant = require('infant')
+var os = require('os')
 var path = require('path')
+var prettyBytes = require('pretty-bytes')
 var ProgressBar = require('progress')
 
-var config = require('../../config')
 var couch = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
 
+var config = require('../../config')
+
+var interval
+
+//open some buckets
+var couchInventory = couch.inventory()
+
 //make some promises
 P.promisifyAll(fs)
+
+//determine inventory driver
+var scanInventory
+if(os.platform().match(/(darwin|linux|freebsd|sunos)/i)){
+  //this is the high performance unix driver that uses find
+  scanInventory = require('../../helpers/inventory/unix.js')
+} else {
+  //the native drive will work everywhere and is perfect for small to mid
+  //size installations and development
+  scanInventory = require('../../helpers/inventory/native.js')
+}
+
+//make the function a promise
+var scanInventoryAsync = P.promisify(scanInventory)
 
 
 //make the function a promise
@@ -37,7 +59,6 @@ var verifyInventoryAsync = function(){
     valid: 0
   }
   debug('starting to verify',contentFolder)
-  var couchInventory = couch.inventory()
   var hbKey = couch.schema.downVote()
   debug('requesting votes',hbKey)
   var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
@@ -85,11 +106,29 @@ var verifyInventoryAsync = function(){
  * @param {function} done
  */
 var runInterval = function(done){
-  logger.log('info', 'Starting to verify store inventory with remote')
+  logger.log('info', 'Starting to examine store inventory')
   var scanStart = +new Date()
   var scanEnd = scanStart + 1000
   var duration = 0
-  verifyInventoryAsync()
+  scanInventoryAsync()
+    .then(function(counter){
+      scanEnd = +new Date()
+      duration = ((scanEnd - scanStart) / 1000).toFixed(2)
+      logger.log('info', 'Inventory scan complete in ' + duration + ' seconds')
+      logger.log('info', '  ' +
+        counter.valid + ' valid ' +
+        prettyBytes(counter.bytes) + ' ' +
+        counter.created + ' created ' +
+        counter.updated + ' updated ' +
+        counter.repaired + ' repaired ' +
+        counter.invalid + ' invalid ' +
+        counter.warning + ' warnings ' +
+        counter.error + ' errors'
+      )
+    })
+    .then(function(){
+      return verifyInventoryAsync()
+    })
     .then(function(counter){
       scanEnd = +new Date()
       duration = ((scanEnd - scanStart) / 1000).toFixed(2)
@@ -103,8 +142,8 @@ var runInterval = function(done){
       )
     })
     .catch(function(err){
-      logger.log('error', err.stack)
-      logger.log('error', 'Inventory Verification Error: ' + err.message)
+      logger.log('error',err.stack)
+      logger.log('error', 'Inventory Scan Error: ' + err.message)
     })
     .finally(function(){
       //register the next run semi randomly to try and percolate the inventory
@@ -118,12 +157,14 @@ var runInterval = function(done){
 
 if(require.main === module){
   infant.child(
-    'oose:' + config.store.name + ':verifyInventory',
+    'oose:' + config.store.name + ':scanInventory',
     function(done){
       //do immediate scan
       runInterval(done)
     },
     function(done){
+      clearInterval(interval)
+      debug('cleared inventory interval')
       process.nextTick(done)
       process.exit(0)
     }
