@@ -147,13 +147,13 @@ exports.loginAction = function(req,res){
     .then(function(match){
       if(!match){
         staff.value.lastFailedLogin = new Date().toJSON()
-        staff.value.failedLoginCount = staff.value.failedLoginCount +1
+        staff.value.failedLoginCount = (+staff.value.failedLoginCount || 0) + 1
         return couchOOSE.upsertAsync(staffKey,staff.value,{cas: staff.cas})
           .then(function(){
             throw new Error('Invalid login')
           })
       }
-      staff.value.loginCount = staff.value.loginCount + 1
+      staff.value.loginCount = (+staff.value.loginCount || 0) + 1
       staff.value._id = staffKey
       //otherwise we are valid start the session
       req.session.staff = staff.value

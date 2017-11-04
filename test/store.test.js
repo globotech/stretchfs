@@ -273,7 +273,6 @@ describe('store',function(){
       var url = client.url('/play/' + purchaseToken + '/video.mp4')
       return client.getAsync(url)
         .spread(function(result,body){
-          console.log(body)
           expect(body).to.equal('The fox is brown')
           expect(result.statusCode).to.equal(200)
         })

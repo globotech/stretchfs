@@ -50,7 +50,7 @@ exports.login = function(req,res){
     })
     .then(function(match){
       if(!match){
-        user.value.failedLoginCount = user.value.failedLoginCount + 1
+        user.value.failedLoginCount = (+user.value.failedLoginCount || 0) + 1
         user.value.lastFailedLogin = new Date().toJSON()
         return couchOOSE.upsertAsync(userKey,user.value,{cas: user.cas})
           .then(function(){
@@ -58,7 +58,7 @@ exports.login = function(req,res){
           })
       }
       user.value.lastLogin = new Date().toJSON()
-      user.value.loginCount = user.value.loginCount + 1
+      user.value.loginCount = (+user.value.loginCount || 0) + 1
       return couchOOSE.upsertAsync(userKey,user.value,{cas: user.cas})
     })
     .then(function(){
