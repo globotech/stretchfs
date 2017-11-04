@@ -34,14 +34,14 @@ if(require.main === module){
           maxConnections: config.store.workers.maxConnections
         }
       )
+      var env = process.env
+      env.OOSE_HB_TYPE = 'store'
+      env.OOSE_HB_KEY = config.store.name
+      env.OOSE_HB_PRISM = config.store.prism
       heartbeat = infant.parent('../helpers/heartbeat',{
         respawn: false,
           fork: {
-          env: {
-            OOSE_HB_TYPE: 'store',
-              OOSE_HB_KEY: config.store.name,
-              OOSE_HB_PRISM: config.store.prism
-          }
+          env: env
         }
       })
       supervisor = infant.parent('./job/supervisor')

@@ -29,14 +29,14 @@ if(require.main === module){
           maxConnections: config.prism.workers.maxConnections
         }
       )
+      var env = process.env
+      env.OOSE_HB_TYPE = 'prism'
+      env.OOSE_HB_KEY = config.prism.name
+      env.OOSE_HB_PRISM = ''
       heartbeat = infant.parent('../helpers/heartbeat',{
         respawn: false,
         fork: {
-          env: {
-            OOSE_HB_TYPE: 'prism',
-            OOSE_HB_KEY: config.prism.name,
-            OOSE_HB_PRISM: ''
-          }
+          env: env
         }
       })
       if(!config.prism.ghost){
