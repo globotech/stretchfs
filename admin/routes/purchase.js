@@ -21,7 +21,15 @@ exports.list = function(req,res){
   var offset = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
   list.listQuery(
-    couch,oosePurchase,couch.type.JOB,search,'META(b).id',true,offset,limit)
+    couch,
+    oosePurchase,
+    couch.type.PURCHASE,
+    search,
+    'META(b).id',
+    true,
+    offset,
+    limit
+  )
     .then(function(result){
       res.render('purchase/list',{
         page: list.pagination(offset,result.count,limit),
