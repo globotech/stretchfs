@@ -323,7 +323,7 @@ exports.checkPublic = function(prism){
         logger.log('info',body)
         throw new Error('Should have thrown an error for no username')
       })
-      .catch(UserError,function(err){
+      .catch(Error,function(err){
         expect(err.message).to.equal('Invalid name or secret')
       })
   }
