@@ -1,6 +1,6 @@
 'use strict';
 
-var couch = require('../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 
 console.log('Creating Couchbase Buckets')
 couch.createBuckets()

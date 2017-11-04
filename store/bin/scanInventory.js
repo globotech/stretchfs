@@ -6,8 +6,8 @@ var infant = require('infant')
 var os = require('os')
 var prettyBytes = require('pretty-bytes')
 
-var config = require('../config')
-var logger = require('../helpers/logger')
+var config = require('../../config')
+var logger = require('../../helpers/logger')
 
 var interval
 
@@ -18,11 +18,11 @@ P.promisifyAll(fs)
 var scanInventory
 if(os.platform().match(/(darwin|linux|freebsd|sunos)/i)){
   //this is the high performance unix driver that uses find
-  scanInventory = require('../helpers/inventory/unix.js')
+  scanInventory = require('../../helpers/inventory/unix.js')
 } else {
   //the native drive will work everywhere and is perfect for small to mid
   //size installations and development
-  scanInventory = require('../helpers/inventory/native.js')
+  scanInventory = require('../../helpers/inventory/native.js')
 }
 
 //make the function a promise

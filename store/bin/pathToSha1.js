@@ -1,6 +1,6 @@
 'use strict';
 
-var logger = require('../helpers/logger')
+var logger = require('../../helpers/logger')
 
 var filePath = process.argv[2]
 logger.log('info', filePath)

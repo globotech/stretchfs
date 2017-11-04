@@ -4,9 +4,9 @@ var P = require('bluebird')
 var Table = require('cli-table')
 var program = require('commander')
 
-var logger = require('../helpers/logger')
+var logger = require('../../helpers/logger')
 
-var couch = require('../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 
 //make some promises
 P.promisifyAll(bcrypt)
@@ -14,7 +14,7 @@ P.promisifyAll(bcrypt)
 //open some buckets
 var couchOOSE = couch.oose()
 
-var config = require('../config')
+var config = require('../../config')
 
 //create
 program

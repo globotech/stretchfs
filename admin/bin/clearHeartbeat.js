@@ -2,8 +2,8 @@
 var debug = require('debug')('oose:clearHeartbeat')
 var infant = require('infant')
 
-var couch = require('../helpers/couchbase')
-var logger = require('../helpers/logger')
+var couch = require('../../helpers/couchbase')
+var logger = require('../../helpers/logger')
 
 
 /**

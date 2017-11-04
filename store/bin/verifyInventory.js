@@ -6,9 +6,9 @@ var infant = require('infant')
 var path = require('path')
 var ProgressBar = require('progress')
 
-var config = require('../config')
-var couch = require('../helpers/couchbase')
-var logger = require('../helpers/logger')
+var config = require('../../config')
+var couch = require('../../helpers/couchbase')
+var logger = require('../../helpers/logger')
 
 //make some promises
 P.promisifyAll(fs)

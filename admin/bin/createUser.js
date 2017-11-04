@@ -1,7 +1,7 @@
 'use strict';
 var bcrypt = require('bcrypt')
 
-var couch = require('../helpers/couchbase')
+var couch = require('../../helpers/couchbase')
 
 var name = process.argv[2]
 var secret = process.argv[3]
