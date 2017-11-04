@@ -513,10 +513,9 @@ exports.purchase = function(req,res){
       purchase = {
         hash: '' + hash,
         ext: '' + ext,
-        referrer: '' + referrer.join(','),
-        expirationDate: '' + (+new Date() + life)
+        referrer: '' + referrer.join(',')
       }
-      return purchasedb.create(token,purchase)
+      return purchasedb.create(token,purchase,life)
     })
     .then(function(){
       //var duration = (+new Date()) - start

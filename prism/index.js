@@ -29,7 +29,16 @@ if(require.main === module){
           maxConnections: config.prism.workers.maxConnections
         }
       )
-      heartbeat = infant.parent('../helpers/heartbeat')
+      heartbeat = infant.parent('../helpers/heartbeat',{
+        respawn: false,
+        fork: {
+          env: {
+            OOSE_HB_TYPE: 'prism',
+            OOSE_HB_KEY: config.prism.name,
+            OOSE_HB_PRISM: ''
+          }
+        }
+      })
       if(!config.prism.ghost){
         couchPeer.getAsync(prismKey)
           .then(

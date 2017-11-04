@@ -34,7 +34,16 @@ if(require.main === module){
           maxConnections: config.store.workers.maxConnections
         }
       )
-      heartbeat = infant.parent('../helpers/heartbeat')
+      heartbeat = infant.parent('../helpers/heartbeat',{
+        respawn: false,
+          fork: {
+          env: {
+            OOSE_HB_TYPE: 'store',
+              OOSE_HB_KEY: config.store.name,
+              OOSE_HB_PRISM: config.store.prism
+          }
+        }
+      })
       supervisor = infant.parent('./job/supervisor')
       //check if our needed folders exist
       couchPeer.getAsync(storeKey)

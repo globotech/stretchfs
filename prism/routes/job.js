@@ -39,19 +39,22 @@ exports.detail = function(req,res){
  */
 exports.create = function(req,res){
   var data = req.body
-  var jobHandle = new Password({length: 12, special: false}).toString()
-  var job = {
-    handle: jobHandle,
-    description: data.description,
-    priority: +data.priority || 10,
-    category: data.category || 'resource',
-    status: 'staged',
-    createdAt: new Date().toJSON(),
-    user: {
-      session: req.session
+  var job = {}
+  P.try(function(){
+    var jobHandle = new Password({length: 12, special: false}).toString()
+    job = {
+      handle: jobHandle,
+      description: JSON.parse(data.description),
+      priority: +data.priority || 10,
+      category: data.category || 'resource',
+      status: 'staged',
+      createdAt: new Date().toJSON(),
+      user: {
+        session: req.session
+      }
     }
-  }
-  ooseJob.upsertAsync(jobHandle,job,{expiry: config.job.recordLife})
+    return ooseJob.upsertAsync(jobHandle,job,{expiry: config.job.recordLife})
+  })
     .then(function(){
       res.json(job)
     })

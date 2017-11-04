@@ -6,7 +6,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchJob = couch.job()
+var ooseJob = couch.job()
 
 
 /**
@@ -18,7 +18,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(couch,couchJob,couch.type.JOB,search,'handle',true,start,limit)
+  list.listQuery(couch,ooseJob,couch.type.JOB,search,'handle',true,start,limit)
     .then(function(result){
       res.render('job/list',{
         page: list.pagination(start,result.count,limit),
@@ -41,7 +41,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(jobKey){
-      return couchJob.removeAsync(jobKey)
+      return ooseJob.removeAsync(jobKey)
     })
     .then(function(){
       req.flash('success','Jobs(s) removed successfully')
@@ -67,7 +67,7 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var jobKey = req.query.id
-  couchJob.getAsync(jobKey)
+  ooseJob.getAsync(jobKey)
     .then(function(result){
       result.value._id = jobKey
       res.render('job/edit',{job: result.value})
@@ -89,7 +89,7 @@ exports.save = function(req,res){
   var doc
   P.try(function(){
     if(jobKey){
-      return couchJob.getAsync(jobKey)
+      return ooseJob.getAsync(jobKey)
     } else {
       jobKey = couch.schema.job(
         new Password({length: 12, special: false}).toString())
@@ -103,7 +103,7 @@ exports.save = function(req,res){
       if(data.priority) doc.priority = data.priority
       if(data.status) doc.status = data.status
       doc.updatedAt = new Date().toJSON()
-      return couchJob.upsertAsync(jobKey,doc,{cas: result.cas})
+      return ooseJob.upsertAsync(jobKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Job saved')

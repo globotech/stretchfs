@@ -1,0 +1,30 @@
+extends ../layout
+block append js
+  script(src='/js/table.js')
+block content
+  .container
+    +tableHeader('Purchases','/purchase/create','Create Purchase')
+    +alerts()
+    form(method='post', role='form')
+      table.table.table-striped
+        tr
+          th
+            input#toggle(type='checkbox')
+          th Token
+          th Hash
+          th Extension
+          th Referrer
+          th Life (After Life) Seconds
+          th Expiration Date
+        each row in list
+          tr
+            td
+              input(type='checkbox', name='remove[]', value=row._id)
+            td
+              a(href='/purchase/edit?id=' + row._id)= row._id
+            td= row.hash
+            td= row.ext
+            td= row.referrer
+            td= row.life + '(' + row.afterLife + ')'
+            td= row.expirationDate
+      +tableFooter(page,count)

@@ -5,7 +5,7 @@ var inv = require('../helpers/inventory')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchInventory = couch.inventory()
+var ooseInventory = couch.inventory()
 
 
 /**
@@ -18,7 +18,7 @@ exports.list = function(req,res){
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || false
   inv.listMain(
-    couch,couchInventory,couch.type.INVENTORY,search,'_id',true,start,limit)
+    couch,ooseInventory,couch.type.INVENTORY,search,'_id',true,start,limit)
     .then(function(result){
       res.render('inventory/list',{
         page: inv.pagination(start,result.count,limit),
@@ -41,7 +41,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(inventoryKey){
-      return couchInventory.removeAsync(inventoryKey)
+      return ooseInventory.removeAsync(inventoryKey)
     })
     .then(function(){
       req.flash('success','Inventory item(s) removed successfully')
@@ -68,7 +68,7 @@ exports.create = function(req,res){
 exports.edit = function(req,res){
   var inventoryKey = req.query.id
   var hash = inventoryKey.split(':')[0] || inventoryKey
-  inv.hashQuery(couch,couchInventory,couch.type.INVENTORY,hash)
+  inv.hashQuery(couch,ooseInventory,couch.type.INVENTORY,hash)
     .then(function(result){
       res.render('inventory/edit',{inventory: result})
     })
@@ -85,7 +85,7 @@ exports.edit = function(req,res){
  */
 exports.editIndividual = function(req,res){
   var inventoryKey = req.query.id
-  couchInventory.getAsync(inventoryKey)
+  ooseInventory.getAsync(inventoryKey)
     .then(function(result){
       result.value._id = inventoryKey
       res.render('inventory/editIndividual',{inventory: result.value})
@@ -106,7 +106,7 @@ exports.save = function(req,res){
   var doc = {}
   P.try(function(){
     if(inventoryKey){
-      return couchInventory.getAsync(inventoryKey)
+      return ooseInventory.getAsync(inventoryKey)
     } else {
       inventoryKey = couch.schema.inventory(req.body.hash)
       return {value: {createdAt: new Date().toJSON()}, cas: null}
@@ -122,7 +122,7 @@ exports.save = function(req,res){
       if(req.body.size) doc.size = parseInt(req.body.size)
       if(req.body.relativePath) doc.relativePath = req.body.relativePath
       doc.updatedAt = new Date().toJSON()
-      return couchInventory.upsertAsync(inventoryKey,doc,{cas: result.cas})
+      return ooseInventory.upsertAsync(inventoryKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Inventory saved')

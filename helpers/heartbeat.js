@@ -55,14 +55,10 @@ var setupProgram = function(){
   if(!program.key && !program.type){
     program.key = config.heartbeat.systemKey
     program.type = config.heartbeat.systemType
-    if(!program.key && config.prism.enabled){
-      program.key = config.prism.name
-      program.type = 'prism'
-    }
-    if(!program.key && config.store.enabled){
-      program.key = config.store.name
-      program.prism = config.store.prism || ''
-      program.type = 'store'
+    if(!program.key || !program.type){
+      program.key = process.env.OOSE_HB_KEY || config.prism.name
+      program.type = process.env.OOSE_HB_TYPE || 'prism'
+      program.prism = process.env.OOSE_HB_PRISM || ''
     }
   }
 }

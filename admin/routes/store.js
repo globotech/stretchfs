@@ -5,7 +5,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchPeer = couch.peer()
+var oosePeer = couch.peer()
 
 
 /**
@@ -17,7 +17,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(couch,couchPeer,couch.type.PEER,
+  list.listQuery(couch,oosePeer,couch.type.PEER,
     couch.schema.store(search),'name',true,start,limit)
     .then(function(result){
       res.render('store/list',{
@@ -41,7 +41,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(storeKey){
-      return couchPeer.removeAsync(storeKey)
+      return oosePeer.removeAsync(storeKey)
     })
     .then(function(){
       req.flash('success','Store(s) removed successfully')
@@ -68,7 +68,7 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var storeKey = req.query.id
-  couchPeer.getAsync(storeKey)
+  oosePeer.getAsync(storeKey)
     .then(function(result){
       result.value._id = storeKey
       result.value.prismKey = couch.schema.prism(result.value.prism)
@@ -88,7 +88,7 @@ exports.edit = function(req,res){
  */
 exports.remove = function(req,res){
   var storeKey = req.body.id
-  couchPeer.removeAsync(storeKey)
+  oosePeer.removeAsync(storeKey)
     .then(function(){
       req.flash('success','Store removed successfully')
       res.redirect('/store/list')
@@ -106,7 +106,7 @@ exports.save = function(req,res){
   var data = req.body
   var storeKey = req.body.id
   var doc
-  couchPeer.getAsync(storeKey)
+  oosePeer.getAsync(storeKey)
     .then(function(result){
       doc = result.value
       if(!doc) doc = {createdAt: new Date().toJSON()}
@@ -117,7 +117,7 @@ exports.save = function(req,res){
       doc.available = !!data.available
       doc.active = !!data.active
       doc.updatedAt = new Date().toJSON()
-      return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
+      return oosePeer.upsertAsync(storeKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Store saved')

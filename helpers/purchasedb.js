@@ -84,9 +84,10 @@ PurchaseDb.prototype.exists = function(token){
  * Create purchase with information
  * @param {string} token
  * @param {object} params
+ * @param {integer} life
  * @return {promise}
  */
-PurchaseDb.prototype.create = function(token,params){
+PurchaseDb.prototype.create = function(token,params,life){
   //create purchase
   var couch
   debug(token,'create')
@@ -94,8 +95,17 @@ PurchaseDb.prototype.create = function(token,params){
     couch = couchWrap(token)
     if(!couch) throw new UserError('Could not validate purchase token')
     debug(token,'couch wrapped')
+    params.life = life
+    params.afterLife = config.purchase.afterLife
+    params.expirationDate = '' + (+new Date() + life)
     params.createdAt = new Date().toJSON()
-    return couch.upsertAsync(token,params)
+    return couch.upsertAsync(
+      token,
+      params,
+      {
+        expiry: ((life || config.purchase.life) + config.purchase.afterLife)
+      }
+    )
   })
     .then(function(result){
       debug(token,'create result',result)

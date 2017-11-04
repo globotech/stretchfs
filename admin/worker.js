@@ -43,7 +43,7 @@ app.set('view engine','pug')
 
 //load middleware
 app.use(compress())
-app.use(bodyParser.urlencoded({extended: false}))
+app.use(bodyParser.urlencoded({extended: true}))
 app.use(bodyParser.json())
 app.use(cookieParser(config.admin.cookie.secret))
 app.use(expressSession({
@@ -143,6 +143,14 @@ app.get('/inventory',function(req,res){ res.redirect('/inventory/list') })
 app.post('/session/list',routes.session.listAction)
 app.get('/session/list',routes.session.list)
 app.get('/session',function(req,res){ res.redirect('/session/list') })
+
+//purchases
+app.post('/purchase/list',routes.purchase.listAction)
+app.post('/purchase/save',routes.purchase.save)
+app.get('/purchase/list',routes.purchase.list)
+app.get('/purchase/create',routes.purchase.create)
+app.get('/purchase/edit',routes.purchase.edit)
+app.get('/purchase',function(req,res){ res.redirect('/purchase/list') })
 
 //jobs
 app.post('/job/list',routes.job.listAction)

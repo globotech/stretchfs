@@ -18,6 +18,13 @@ block content
           th Action
         each row in list
           - var percentComplete = 0
+          - row.status = row.status || 'unknown'
+          - row.statusDescription = row.statusDescription || 'unknown'
+          - row.stepTotal = parseInt(row.stepTotal || 1)
+          - row.stepComplete = parseInt(row.stepComplete || 0)
+          - row.frameTotal = parseInt(row.frameTotal || 1)
+          - row.frameComplete = parseInt(row.frameComplete || 0)
+          - row.frameDescription = row.frameDescription || 'uknown'
           - if('processing' === row.status)
           -   percentComplete = ((row.frameComplete / row.frameTotal) * 100).toFixed(2)
           - if('complete' === row.status) percentComplete = 100
@@ -37,7 +44,7 @@ block content
                 div
                   small.text-muted= S('' + metrics.frameDescription).truncate(75)
               .progress.progress-striped(style='margin-bottom: 0;')
-                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='100', style='width: #{percentComplete}%;')
+                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='99', style='width: #{percentComplete}%;')
                   | #{percentComplete}%
               if 'processing' === row.status
                 div

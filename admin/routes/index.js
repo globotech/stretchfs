@@ -23,6 +23,13 @@ exports.inventory = require('./inventory')
 
 
 /**
+ * Purchase
+ * @type {exports}
+ */
+exports.purchase = require('./purchase')
+
+
+/**
  * Jobs
  * @type {exports}
  */

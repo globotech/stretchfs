@@ -39,25 +39,28 @@ var jobNotification = function(handle,status,statusDescription,silent){
   var jobResult = {}
   return ooseJob.getAsync(handle)
     .then(function(result){
-      var promises = []
       jobResult = result
       jobResult.value.status = status
       jobResult.value.statusDescription = statusDescription
+      //notify database of our change
+      return ooseJob.upsertAsync(handle,jobResult.value,{cas: jobResult.cas})
+    })
+    .then(function(){
+      //notify our callbacks
       if(!silent){
         //parse out the job description
-        var description = jobResult.description
+        var description = jobResult.value.description
         //make sure they have a subscription url
         if(!description.callback || !description.callback.request)
           return jobResult
         var req = description.callback.request
         req.json = jobResult.value
         //we want to send a notification back to our consumer
-        promises.push(request(req))
+        return request(req)
+          .catch(function(err){
+            debug('failed to issue callback request',err)
+          })
       }
-      //notify database of our change
-      promises.push(
-        ooseJob.upsertAsync(handle,jobResult.value,{cas: jobResult.cas}))
-      return P.all(promises)
     })
 }
 
@@ -110,11 +113,13 @@ var findJobsByWorker = function(workerKey,status,category,limit,prioritize){
  * Kills all the processes, we don't want process leaking.
  * @param {string} handle
  * @param {string} jobFolder
+ * @return {*}
  */
 var cleanupProcesses = function(handle,jobFolder){
   var jobPIDs;
   if(jobFolder){
     try {
+      if(!fs.existsSync(jobFolder + '/pids.json')) return
       jobPIDs = JSON.parse(
         fs.readFileSync(jobFolder + '/pids.json').toString('utf-8'))
       if(jobPIDs && jobPIDs.length){
@@ -196,6 +201,7 @@ var superviseJobProcessing = function(){
       var jobKey = couch.schema.job(job.handle)
       //check the runtime of the job and kill it if needed
       var jobTime
+      var jobFolder = jobHelper.folder(job.handle)
       var time = Math.floor(Date.now() /1000)
       jobTime = Math.floor(+(new Date(job.startedAt)) /1000)
       if(jobTime + jobTime.maxExecutionTime < time){
@@ -205,6 +211,17 @@ var superviseJobProcessing = function(){
             result.value.statusDescription =
               'Time exceeded for this job to finish.'
             result.value.error = 'Time exceeded for this job to finish.'
+            result.value.erroredAt = new Date().toJSON()
+            return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+          })
+      }
+      if(fs.existsSync(jobFolder + '/crash')){
+        return ooseJob.getAsync(jobKey)
+          .then(function(result){
+            result.value.status = 'queued_error'
+            result.value.statusDescription =
+              'The job was found crashed'
+            result.value.error = fs.readFileSync(jobFolder + '/crash')
             result.value.erroredAt = new Date().toJSON()
             return ooseJob.upsertAsync(jobKey,result.value,{cas: result.cas})
           })
@@ -230,7 +247,7 @@ var superviseJobError = function(){
       debug('found job for queued error',job)
       var handle = job.handle
       var jobFolder = jobHelper.folder(handle)
-      var error
+      var error = job.error
       //kill the job process
       if(jobsProcessing[handle]){
         cleanupProcesses(handle,jobFolder)
@@ -240,11 +257,14 @@ var superviseJobError = function(){
       return rimraf(jobFolder)
         .then(function(){
           //tell master the job has been reported an error
-          return jobNotification(handle,'error',error)
+          return jobNotification(handle,'error',JSON.stringify(error))
         })
     })
     .then(function(){
       debug('jobs have been cleaned up from errors and errors reported')
+    })
+    .catch(function(err){
+      console.log('crash',err)
     })
 }
 
@@ -458,6 +478,12 @@ var superviseJobStart = function(){
               'JOB_FOLDER': jobFolder,
               'JOB_HANDLE': handle,
               'PATH' : process.env.PATH
+            }
+            if(process.env.DEBUG){
+              env.DEBUG = process.env.DEBUG
+            }
+            if(process.env.NODE_DEBUG){
+              env.NODE_DEBUG = process.env.NODE_DEBUG
             }
             if(process.env.OOSE_CONFIG){
               env.OOSE_CONFIG = process.env.OOSE_CONFIG
