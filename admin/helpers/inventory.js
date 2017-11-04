@@ -35,11 +35,21 @@ var _intarg = function(arg,minimumDefault){
  * @return {P}
  */
 exports.hashQuery = function(cb,db,type,search){
-  if(!type) throw new Error('Must know database type to list')
-  if(!cb || !db) throw new Error('Must have couch helper and couch db to list')
-  if(!search) search = ''
-  else search = search + '%'
-  var qstring = 'SELECT `hash`' +
+  //validate and pre-process arguments
+  if(!cb || !db)
+    throw new Error('Must have couchbase helper and bucket-handle to list')
+  if(!type)
+    throw new Error('Must know bucket type to list')
+  var clause = {where:''}
+  clause.from = ' FROM ' + cb.getName(type,true)
+  var s = []
+  if(!!search){
+    s.push((-1 === search.indexOf('%'))?search + '%':search)
+    clause.where = ' WHERE `hash` LIKE $1'
+  }
+  clause.groupby = ' GROUP BY `hash`'
+  var query = cb.N1Query.fromString(
+    'SELECT `hash`' +
     ',ARRAY_AGG(meta().id) AS id' +
     ',ARRAY_AGG(DISTINCT CONCAT(`prism`,":",`store`)) AS loc' +
     ',ARRAY_AGG(DISTINCT `size`) AS size' +
@@ -48,11 +58,9 @@ exports.hashQuery = function(cb,db,type,search){
     ',ARRAY_AGG(DISTINCT `relativePath`) AS relativePath' +
     ',ARRAY_MAX(ARRAY_AGG(DISTINCT `createdAt`)) AS createdAt' +
     ',ARRAY_MAX(ARRAY_AGG(DISTINCT `updatedAt`)) AS updatedAt' +
-    ' FROM ' + cb.getName(type,true) +
-    ' WHERE `hash` LIKE $1' +
-    ' GROUP BY `hash`'
-  var query = cb.N1Query.fromString(qstring)
-  return db.queryAsync(query,[search])
+    clause.from + clause.where + clause.groupby
+  )
+  return db.queryAsync(query,s)
     .then(function(result){
       var r = result.shift()
       //sanitize (collapse single member arrays)
@@ -85,38 +93,60 @@ exports.listMain = function(cb,db,type,search,orderField,orderAsc,start,limit){
   if(!type)
     throw new Error('Must know bucket type to list')
   var clause = {where:'',orderby:''}
-  clause.from = ' FROM ' + cb.getName(type,true) + ' b '
+  clause.from = ' FROM ' + cb.getName(type,true)
   var s = []
   if(!!search){
     s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
-    clause.where = ' WHERE META(b).id LIKE $1 '
+    clause.where = ' WHERE META().id LIKE $1'
   }
   if(orderField){
     clause.orderby = ' ORDER BY `' + orderField + '`' +
-      (orderAsc ? ' ASC ' : ' DESC ')
+      (orderAsc ? ' ASC' : ' DESC')
   }
+  clause.groupby = ' GROUP BY `hash`'
   start = _intarg(start,0)
   limit = _intarg(limit,10)
   clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + start
   //build queries
   var queries = {}
   queries.total = cb.N1Query.fromString(
-    'SELECT COUNT(b) AS _count' + clause.from + clause.where
+    'SELECT ARRAY_COUNT(ARRAY_AGG(DISTINCT `hash`)) AS _count' +
+    clause.from + clause.where
   )
   queries.data = cb.N1Query.fromString(
-    'SELECT META(b).id AS _id, b.*' + clause.from + clause.where +
+    'SELECT `hash`' +
+    ',ARRAY_AGG(meta().id) AS id' +
+    ',ARRAY_AGG(DISTINCT CONCAT(`prism`,":",`store`)) AS loc' +
+    ',ARRAY_AGG(DISTINCT `size`) AS size' +
+    ',ARRAY_AGG(DISTINCT `mimeType`) AS mimeType' +
+    ',ARRAY_AGG(DISTINCT `mimeExtension`) AS mimeExtension' +
+    ',ARRAY_AGG(DISTINCT `relativePath`) AS relativePath' +
+    ',ARRAY_MAX(ARRAY_AGG(DISTINCT `createdAt`)) AS createdAt' +
+    ',ARRAY_MAX(ARRAY_AGG(DISTINCT `updatedAt`)) AS updatedAt' +
+    clause.from + clause.where + clause.groupby +
     clause.orderby + clause.pagination
+//  'SELECT META().id AS _id,*' + clause.from + clause.where +
+//    clause.orderby + clause.pagination
   )
   return P.all([
     db.queryAsync(queries.data,s),
     db.queryAsync(queries.total,s)
   ])
     .spread(function(data,total){
-      total = (total[0]) ? total[0]._count : 0
-      return {
-        rows: data,
-        count: total
+      var rv = {
+        rows: [],
+        count: (total[0]) ? total[0]._count : 0
       }
+      data.forEach(function(r){
+        //sanitize (collapse single member arrays)
+        keyList.forEach(function(key){
+          if(r[key] && 1 >= r[key].length){
+            r[key] = r[key][0]
+          }
+        })
+        rv.rows.push(r)
+      })
+      return rv
     })
 }
 

@@ -11,8 +11,7 @@ block content
           th
             input#toggle(type='checkbox')
           th Hash
-          th Prism
-          th Store
+          th Clones
           th MimeType
           th Size
           th Hits
@@ -21,12 +20,11 @@ block content
         each row in list
           tr
             td
-              input(type='checkbox', name='remove[]', value=row._id)
+              input(type='checkbox', name='remove[]', value=row.hash)
             td
               samp(class='text-center')
-                a(href='/inventory/edit?id=' + row._id)= row.hash
-            td= row.prism
-            td= row.store
+                a(href='/inventory/edit?id=' + row.hash)= row.hash
+            td= row.id.length
             td= row.mimeType
             td= row.size ? prettyBytes(row.size) : ''
             td= row.hits || 0

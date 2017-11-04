@@ -18,7 +18,7 @@ exports.list = function(req,res){
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
   inv.listMain(
-    couch,ooseInventory,couch.type.INVENTORY,search,'_id',true,start,limit)
+    couch,ooseInventory,couch.type.INVENTORY,search,'hash',true,start,limit)
     .then(function(result){
       res.render('inventory/list',{
         page: inv.pagination(start,result.count,limit),
