@@ -50,6 +50,7 @@ config.$load({
   couch: {
     protocol: 'couchbase://',
     host: '127.0.0.1',
+    dsnHost: null,
     port: '8091',
     username: '',
     password: '',

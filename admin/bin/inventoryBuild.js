@@ -27,6 +27,9 @@ var setupCounter = function(subRecord){
 
 console.log('Beginning to build inventory based off existing keys')
 listInventory.listBuild(couch,ooseInventory,couch.type.INVENTORY)
+  .then(function(result){
+    return result
+  })
   .each(function(row){
     //now either find or create a new inventory meta record
     //the idea of the records is that there is a parent meta record that

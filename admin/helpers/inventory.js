@@ -168,34 +168,11 @@ exports.listBuild = function(cb,db,type){
   clause.from = ' FROM ' + cb.getName(type,true)
   var s = []
   //build queries
-  var queries = {}
-  queries.total = cb.N1Query.fromString(
-    'SELECT ARRAY_COUNT(ARRAY_AGG(DISTINCT `hash`)) AS _count' +
-    clause.from + clause.where
-  )
-  queries.data = cb.N1Query.fromString(
-    'SELECT META(b.id) AS id' + clause.from
-  )
-  return P.all([
-    db.queryAsync(queries.data,s),
-    db.queryAsync(queries.total,s)
-  ])
-    .spread(function(data,total){
-      var rv = {
-        rows: [],
-        count: (total[0]) ? total[0]._count : 0
-      }
-      data.forEach(function(r){
-        //sanitize (collapse single member arrays)
-        keyList.forEach(function(key){
-          if(r[key] && 1 >= r[key].length){
-            r[key] = r[key][0]
-          }
-        })
-        rv.rows.push(r)
-      })
-      return rv
-    })
+  var dataQuery = 'SELECT META(b).id AS id FROM ' +
+    cb.getName(type,true) + ' AS b WHERE META(b).id LIKE "%:%" ' +
+    ' ORDER BY META(b).id ASC'
+  var query = cb.N1Query.fromString(dataQuery)
+  return db.queryAsync(query)
 }
 
 
