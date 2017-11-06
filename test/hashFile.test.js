@@ -57,7 +57,7 @@ describe('hashFile',function(){
       return hashFile.remove(content.hash)
     })
     it('should find a file by hash',function(){
-      return hashFile.find(content.hash)
+      return hashFile.find(content.hash,content.ext)
         .then(function(file){
           expect(file.hash).to.equal(content.hash)
           expect(file.ext.replace('.','')).to.equal(content.ext)
@@ -65,7 +65,7 @@ describe('hashFile',function(){
         })
     })
     it('should have details for a file',function(){
-      return hashFile.details(content.hash)
+      return hashFile.details(content.hash,content.ext)
         .then(function(details){
           expect(details.hash).to.equal(content.hash)
           expect(details.ext).to.equal(content.ext)

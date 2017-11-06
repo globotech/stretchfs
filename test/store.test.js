@@ -80,7 +80,9 @@ describe('store',function(){
       return client
         .postAsync({
           url: client.url('/content/remove'),
-          json: {hash: content.hash}
+          json: {
+            hash: content.hash
+          }
         })
         .spread(function(res,body){
           expect(body.success).to.equal('File removed')
@@ -91,7 +93,8 @@ describe('store',function(){
         .postAsync({
           url: client.url('/content/exists'),
           json: {
-            hash: content.hash
+            hash: content.hash,
+            ext: content.ext
           }
         })
         .spread(function(res,body){
@@ -104,7 +107,10 @@ describe('store',function(){
         .postAsync({
           url: client.url('/content/exists'),
           json: {
-            hash: [content.hash,content.sha1Bogus]
+            hash: [
+              content.hash + '.' + content.ext,
+              content.sha1Bogus
+            ]
           }
         })
         .spread(function(res,body){

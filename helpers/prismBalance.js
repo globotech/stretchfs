@@ -4,7 +4,6 @@ var debug = require('debug')('oose:prismBalance')
 
 var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
-var logger = require('./logger')
 
 //open couch buckets
 var couchInventory = couch.inventory()
@@ -171,102 +170,25 @@ exports.winner = function(token,prismList,skip,allowFull){
 exports.contentExists = function(hash){
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
   var existsKey = couch.schema.inventory(hash)
-  var existsKeyQ = existsKey + '%'
-  var existsRecord = {}
-  var count = 0
   debug(existsKey,'contentExists received')
-  var deadRecord = {
-    hash: hash,
-    mimeType: null,
-    mimeExtension: null,
-    relativePath: null,
-    exists: false,
-    count: 0,
-    size: 0,
-    map: []
-  }
-  var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
-    couch.getName(couch.type.INVENTORY,true) + ' b ' +
-    'WHERE META(b).id LIKE $1'
-  var query = couch.N1Query.fromString(qstring)
-  query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
-  return couchInventory.queryAsync(query,[existsKeyQ])
+  return couchInventory.getAsync(existsKey)
     .then(function(result){
-      debug(existsKey,'got inventory result',result)
-      return result
-    })
-    .map(function(row){
-      debug(existsKey,'got record',row)
-      count++
-      return couchInventory.getAsync(row._id)
-        .then(function(result){
-          return result.value
-        })
-        .catch(function(err){
-          if(!err || !err.code || 13 !== err.code) throw err
-        })
-    })
-    .then(function(inventoryList){
-      //debug(existsKey,'records',result)
-      if(!count || !inventoryList){
-        return deadRecord
-      } else {
-        return P.try(function(){
-          return inventoryList
-        })
-          .map(function(row){
-            debug(existsKey,'got inventory list record',row)
-            return P.all([
-              couchPeer.getAsync(couch.schema.prism(row.prism))
-                .then(function(result){
-                  return result.value
-                })
-                .catch(function(){
-                  return {name:row.prism,available:false}
-                }),
-              couchPeer.getAsync(
-                couch.schema.store(row.prism,row.store))
-                .then(function(result){
-                  return result.value
-                })
-                .catch(function(){
-                  return {name:row.store,available:false}
-                })
-            ])
-          })
-          .filter(function(row){
-            return (row[0].available && row[1].available)
-          })
-          .then(function(result){
-            var map = result.map(function(val){
-              //var avail = ((val[0].available) ? '+' : '-') +
-              //            ((val[1].available) ? '+' : '-')
-              //return val[0].name + ':' + val[1].name + avail
-              return val[0].name + ':' + val[1].name
-            })
-            var record = {
-              hash: inventoryList[0].hash,
-              mimeType: inventoryList[0].mimeType,
-              mimeExtension: inventoryList[0].mimeExtension,
-              relativePath: inventoryList[0].relativePath,
-              size: inventoryList[0].size,
-              count: map.length,
-              exists: true,
-              map: map
-            }
-            debug(existsKey,'inventory record',record)
-            return record
-          })
-      }
-    })
-    .then(function(result){
-      existsRecord = result
-      return existsRecord
+      result.value.exists = true
+      result.value.count = parseInt(result.value.count)
+      result.value.size = parseInt(result.value.size)
+      return result.value
     })
     .catch(function(err){
-      logger.log('error',err)
-      logger.log('error', err.stack)
-      logger.log('error', 'EXISTS ERROR: ' + err.message + '  ' + hash)
-      return deadRecord
+      if(13 !== err.code && 53 !== err.code) throw err
+      return {
+        hash: hash,
+        mimeType: null,
+        mimeExtension: null,
+        relativePath: null,
+        exists: false,
+        count: 0,
+        size: 0,
+        map: []
+      }
     })
 }

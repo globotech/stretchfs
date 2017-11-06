@@ -14,6 +14,7 @@ var temp = require('temp')
 var api = require('../../helpers/api')
 var NetworkError = oose.NetworkError
 var NotFoundError = oose.NotFoundError
+var couch = require('../../helpers/couchbase')
 var prismBalance = require('../../helpers/prismBalance')
 var promiseWhile = require('../../helpers/promiseWhile')
 var purchasedb = require('../../helpers/purchasedb')
@@ -30,6 +31,9 @@ var config = require('../../config')
 P.promisifyAll(temp)
 P.promisifyAll(purchasedb)
 
+//open some buckets
+var ooseInventory = couch.inventory()
+
 
 /**
  * Send a file to prism
@@ -41,8 +45,22 @@ P.promisifyAll(purchasedb)
 var sendToPrism = function(tmpfile,hash,extension){
   var prismList
   var winners = []
-  //actually stream the file to new peers
-  return prismBalance.prismList()//pick first winner
+  //create the new inventory record it will be completed by the peers
+  var inventoryKey = couch.schema.inventory(hash)
+  var inventory = {
+    hash: hash,
+    mimeExtension: extension,
+    map: [],
+    count: 0,
+    size: 0,
+    createdAt: new Date().toJSON(),
+    updatedAt: new Date().toJSON()
+  }
+  return ooseInventory.upsertAsync(inventoryKey,inventory,{cas: null})
+    .then(function(){
+      //actually stream the file to new peers
+      return prismBalance.prismList()//pick first winner
+    })
     .then(function(result){
       debug(hash,'sendToPrism prismList',result)
       prismList = result
@@ -352,9 +370,9 @@ exports.detail = function(req,res){
   })
     .map(function(hash){
       return prismBalance.contentExists(hash)
-    })
-    .each(function(row){
-      record[row.hash] = row
+        .then(function(result){
+          record[result.hash] = result
+        })
     })
     .then(function(){
       //backwards compatability
@@ -527,7 +545,10 @@ exports.purchase = function(req,res){
       purchase = {
         hash: '' + hash,
         ext: '' + ext,
-        referrer: '' + referrer.join(',')
+        referrer: '' + referrer.join(','),
+        hitCount: 0,
+        byteCount: 0,
+        lastCounterClear: new Date().toJSON()
       }
       return purchasedb.create(token,purchase,life)
     })
@@ -756,19 +777,19 @@ exports.contentStatic = function(req,res){
   if(req.query.addressType) addressType = req.query.addressType
   //default based on the request
   var ext = path.extname(filename).replace(/^\./,'')
-  var existsRecord
+  var inventory
   prismBalance.contentExists(hash)
     .then(function(result){
       if(!result.exists) throw new NotFoundError('Content does not exist')
       if(config.prism.denyStaticTypes.indexOf(ext) >= 0)
         throw new UserError('Invalid static file type')
-      existsRecord = result
+      inventory = result
       return storeBalance.winnerFromExists(hash,result,[],true)
     })
     .then(function(result){
       //set the extension based on the chosen winners relative path, this will
       //actually be accurate
-      ext = path.extname(existsRecord.relativePath).replace(/^\./,'')
+      ext = path.extname(inventory.relativePath).replace(/^\./,'')
       var proto = req.protocol
       if(req.get('X-Forwarded-Protocol')){
         proto = 'https' === req.get('X-Forwarded-Protocol') ? 'https' : 'http'
@@ -780,7 +801,7 @@ exports.contentStatic = function(req,res){
         host = (result.host6 || result.host) + ':[' + result.port + ']'
       }
       var url = proto + '://' + host +
-        '/static/' + existsRecord.hash + '/' + filename
+        '/static/' + inventory.hash + '/' + filename
       res.redirect(302,url)
     })
     .catch(NetworkError,function(err){

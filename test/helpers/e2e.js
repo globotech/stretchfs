@@ -504,6 +504,12 @@ exports.contentSend = function(prism){
     })
       .spread(client.validateResponse())
       .spread(function(res,body){
+        var map = []
+        //down convert map
+        body.map.forEach(function(row){
+          map.push(row.prism + ':' + row.store)
+        })
+        body.map = map
         //we are going to assign the first value of the map to the store from
         storeFrom = body.map[0]
         //now we want to establish where it will go i am going to use a dirty
@@ -579,14 +585,27 @@ exports.contentExists = function(prism,options){
         expect(body.hash).to.equal(content.hash)
         if(options.checkExists) expect(body.exists).to.equal(true)
         if(options.countGreaterEqual)
-          expect(body.count).to.be.least(options.count)
+          expect(parseInt(body.count)).to.be.least(parseInt(options.count))
         else if(options.checkExists)
-          expect(body.count).to.equal(options.count)
+          expect(parseInt(body.count)).to.equal(parseInt(options.count))
+        var prismExists
         if(options.deepChecks.indexOf('prism1') >= 0){
-          expect(body.map.join(',').indexOf('prism1')).to.be.least(0)
+          prismExists = false
+          body.map.forEach(function(row){
+            expect(row.prism).to.be.a('string')
+            expect(row.store).to.be.a('string')
+            if(row.prism === 'prism1') prismExists = true
+          })
+          expect(prismExists).to.equal(true)
         }
         if(options.deepChecks.indexOf('prism2') >= 0){
-          expect(body.map.join(',').indexOf('prism2')).to.be.least(0)
+          prismExists = false
+          body.map.forEach(function(row){
+            expect(row.prism).to.be.a('string')
+            expect(row.store).to.be.a('string')
+            if(row.prism === 'prism2') prismExists = true
+          })
+          expect(prismExists).to.equal(true)
         }
       })
   }
@@ -623,14 +642,27 @@ exports.contentExistsBulk = function(prism,options){
         expect(body.hash).to.equal(content.hash)
         if(options.checkExists) expect(body.exists).to.equal(true)
         if(options.countGreaterEqual)
-          expect(body.count).to.be.least(options.count)
+          expect(parseInt(body.count)).to.be.least(parseInt(options.count))
         else if(options.checkExists)
-          expect(body.count).to.equal(options.count)
+          expect(parseInt(body.count)).to.equal(parseInt(options.count))
+        var prismExists
         if(options.deepChecks.indexOf('prism1') !== -1){
-          expect(body.map.join(',').indexOf('prism1')).to.be.least(0)
+          prismExists = false
+          body.map.forEach(function(row){
+            expect(row.prism).to.be.a('string')
+            expect(row.store).to.be.a('string')
+            if(row.prism === 'prism1') prismExists = true
+          })
+          expect(prismExists).to.equal(true)
         }
         if(options.deepChecks.indexOf('prism2') !== -1){
-          expect(body.map.join(',').indexOf('prism2')).to.be.least(0)
+          prismExists = false
+          body.map.forEach(function(row){
+            expect(row.prism).to.be.a('string')
+            expect(row.store).to.be.a('string')
+            if(row.prism === 'prism2') prismExists = true
+          })
+          expect(prismExists).to.equal(true)
         }
       })
   }

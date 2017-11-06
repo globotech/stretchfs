@@ -46,8 +46,8 @@ exports.storeList = function(prism){
 exports.existsToArray = function(inventory,skip){
   if(!(skip instanceof Array)) skip = []
   var result = []
-  inventory.map.forEach(function(store){
-    if(skip.indexOf(store) < 0) result.push(store)
+  inventory.map.forEach(function(row){
+    if(skip.indexOf(row.store) < 0) result.push(row)
   })
   return result
 }
@@ -55,16 +55,17 @@ exports.existsToArray = function(inventory,skip){
 
 /**
  * Populate stores from array of names
- * @param {Array} stores
+ * @param {Array} storeList
  * @return {P}
  */
-exports.populateStores = function(stores){
+exports.populateStores = function(storeList){
   redis.incr(redis.schema.counter('prism','storeBalance:populateStores'))
   return P.try(function(){
-    return stores
+    return storeList
   })
-    .map(function(store){
-      return couchPeer.getAsync(couch.schema.store(store))
+    .map(function(row){
+      var storeKey = couch.schema.store(row.prism,row.store)
+      return couchPeer.getAsync(storeKey)
         .then(function(result){
           return result.value
         })

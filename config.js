@@ -106,6 +106,16 @@ config.$load({
     pingResponseTimeout: 2000, //ms
     peerListExpire: 60000 //cache the peer list for this long ms
   },
+  //inventory
+  inventory: {
+    keepDeadRecords: false, // keep missing inventory records
+    balance: {
+      concurrency: 4 //files to process concurrently
+    },
+    scan: {
+      throttle: 100 //ms between requests
+    }
+  },
   //job system
   job: {
     enabled: false,
@@ -216,8 +226,10 @@ config.$load({
       count: 1,
       maxConnections: 10000
     },
-    inventoryConcurrency: 64,
-    inventoryThrottle: 100, //ms between requests
+    stat: {
+      enabled: true,
+      syncFrequency: 30000 //30 seconds
+    },
     purchasePruneConcurrency: 512,
     verifyExpiration: 15552000000//ms  (180 days = 7776000000)
   }

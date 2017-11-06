@@ -12,6 +12,7 @@ var logger = require('../helpers/logger')
 var cluster
 var heartbeat
 var supervisor
+var stat
 
 var storeKey = couch.schema.store(config.store.prism,config.store.name)
 
@@ -44,6 +45,7 @@ if(require.main === module){
           env: env
         }
       })
+      stat = infant.parent('./stat')
       supervisor = infant.parent('./job/supervisor')
       //check if our needed folders exist
       couchPeer.getAsync(storeKey)
@@ -101,6 +103,11 @@ if(require.main === module){
           }
         })
         .then(function(){
+          if(config.store.stat.enabled){
+            return stat.startAsync()
+          }
+        })
+        .then(function(){
           logger.log('info', 'Store startup complete')
           done()
         })
@@ -118,6 +125,11 @@ if(require.main === module){
           var doc = result.value
           doc.available = false
           return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
+        })
+        .then(function(){
+          if(config.store.stat.enabled){
+            return stat.stopAsync()
+          }
         })
         .then(function(){
           couch.disconnect()

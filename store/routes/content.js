@@ -8,6 +8,7 @@ var mkdirp = require('mkdirp-then')
 var path = require('path')
 var promisePipe = require('promisepipe')
 var hashStream = require('sha1-stream')
+var requestStats = require('request-stats')
 
 var api = require('../../helpers/api')
 var couch = require('../../helpers/couchbase')
@@ -22,56 +23,156 @@ var rootFolder = path.resolve(config.root)
 var contentFolder = path.resolve(rootFolder + '/content')
 
 //open couch buckets
-var couchInventory = couch.inventory()
-var couchPeer = couch.peer()
+var ooseInventory = couch.inventory()
+var oosePeer = couch.peer()
 
 //make some promises
 P.promisifyAll(fs)
 
 var createInventory = function(fileDetail,verified){
   if('undefined' === typeof verified) verified = false
-  var inventoryKey = couch.schema.inventory(
+  var inventoryKey = couch.schema.inventory(fileDetail.hash)
+  var subInventoryKey = couch.schema.inventory(
     fileDetail.hash,
     config.store.prism,
     config.store.name
   )
-  var inventory = {
-    prism: config.store.prism,
-    store: config.store.name,
-    hash: fileDetail.hash,
-    mimeExtension: fileDetail.ext,
-    mimeType: mime.getType(fileDetail.ext),
-    relativePath: hashFile.toRelativePath(
-      fileDetail.hash,fileDetail.ext
-    ),
-    size: fileDetail.stat.size,
-    createdAt: new Date().toJSON()
-  }
-  if(verified) inventory.verifiedAt = verified
-  debug(inventoryKey,'creating inventory record',inventory)
-  return couchInventory.upsertAsync(inventoryKey,inventory)
+  var inventory = {value: {}, cas: null}
+  var subInventory = {value: {}, cas: null}
+  return ooseInventory.getAsync(inventoryKey)
+    .then(
+      function(result){
+        inventory = result
+        //update the map on the existing record
+        var mapExists = false
+        if(!inventory.value.map) inventory.value.map = []
+        inventory.value.map.forEach(function(row){
+          if(
+            row.prism === config.store.prism &&
+            row.store === config.store.name
+          ){
+            mapExists = true
+          }
+        })
+        if(!mapExists){
+          inventory.value.map.push({
+            prism: config.store.prism,
+            store: config.store.name
+          })
+        }
+        //update record
+        if(!inventory.value.mimeExtension)
+          inventory.value.mimeExtension = fileDetail.ext
+        if(!inventory.value.mimeType)
+          inventory.value.mimeType = mime.getType(fileDetail.ext)
+        if(!inventory.value.relativePath){
+          inventory.value.relativePath = hashFile.toRelativePath(
+            fileDetail.hash,fileDetail.ext
+          )
+        }
+        inventory.value.count = inventory.value.map.length
+        if(!inventory.value.size)
+          inventory.value.size = fileDetail.stat.size
+        inventory.value.updatedAt = new Date().toJSON()
+      },
+      function(err){
+        if(13 !== err.code) throw err
+        inventory.value = {
+          hash: fileDetail.hash,
+          mimeExtension: fileDetail.ext,
+          mimeType: mime.getType(fileDetail.ext),
+          relativePath: hashFile.toRelativePath(
+            fileDetail.hash,fileDetail.ext
+          ),
+          size: fileDetail.stat.size,
+          count: 1,
+          map: [
+            {prism: config.store.prism, store: config.store.name}
+          ],
+          createdAt: new Date().toJSON(),
+          updatedAt: new Date().toJSON()
+        }
+      }
+    )
     .then(function(){
+      //set verification
+      if(verified){
+        inventory.value.verified = true
+        inventory.value.verifiedAt = new Date().toJSON()
+      }
+      //setup sub record
+      subInventory.value = {
+        prism: config.store.prism,
+        store: config.store.name,
+        relativePath: hashFile.toRelativePath(
+          fileDetail.hash,fileDetail.ext
+        ),
+        hitCount: 0,
+        byteCount: 0,
+        lastCounterClear: new Date().toJSON(),
+        createdAt: new Date().toJSON(),
+        updatedAt: new Date().toJSON()
+      }
+      return ooseInventory.upsertAsync(
+        subInventoryKey,subInventory.value,{cas: subInventory.cas})
+    })
+    .then(function(){
+      return ooseInventory.upsertAsync(
+        inventoryKey,inventory.value,{cas: inventory.cas})
+    })
+    .then(function(){
+      //set key for compat
       inventory._id = inventoryKey
       return inventory
     })
+    .catch(function(err){
+      if(12 !== err.code) throw err
+      return createInventory(fileDetail,verified)
+    })
 }
 
-var updateInventory = function(fileDetail,inventoryKey,doc,verified){
+var updateSubInventory = function(fileDetail,inventoryKey,inventory,verified){
   if('undefined' === typeof verified) verified = false
-  var cas = doc.cas
-  doc = doc.value
-  doc.mimeExtension = fileDetail.ext
-  doc.mimeType = mime.getType(fileDetail.ext)
-  doc.relativePath = hashFile.toRelativePath(
-    fileDetail.hash,fileDetail.ext
-  )
-  doc.size = fileDetail.stat.size
-  if(verified) doc.verifiedAt = verified
-  doc.updatedAt = new Date().toJSON()
-  return couchInventory.upsertAsync(inventoryKey,doc,{cas: cas})
+  if(verified){
+    inventory.value.verifiedAt = new Date().toJSON()
+    inventory.value.verified = true
+  }
+  //update the map on the existing record
+  var mapExists = false
+  if(!inventory.value.map) inventory.value.map = []
+  inventory.value.map.forEach(function(row){
+    if(
+      row.prism === config.store.prism &&
+      row.store === config.store.name
+    ){
+      mapExists = true
+    }
+  })
+  if(!mapExists){
+    inventory.value.map.push({
+      prism: config.store.prism,
+      store: config.store.name
+    })
+  }
+  //update record
+  if(!inventory.value.mimeExtension)
+    inventory.value.mimeExtension = fileDetail.ext
+  if(!inventory.value.mimeType)
+    inventory.value.mimeType = mime.getType(fileDetail.ext)
+  if(!inventory.value.relativePath){
+    inventory.value.relativePath = hashFile.toRelativePath(
+      fileDetail.hash,fileDetail.ext
+    )
+  }
+  inventory.value.count = inventory.value.map.length
+  if(!inventory.value.size)
+    inventory.value.size = fileDetail.stat.size
+  inventory.value.updatedAt = new Date().toJSON()
+  return ooseInventory.upsertAsync(
+    inventoryKey,inventory.value,{cas: inventory.cas})
     .then(function(){
-      doc._id = inventoryKey
-      return doc
+      inventory._id = inventoryKey
+      return inventory
     })
 }
 
@@ -86,7 +187,7 @@ var verifyFile = function(fileDetail,force){
     config.store.prism,
     config.store.name
   )
-  return couchInventory.getAsync(inventoryKey)
+  return ooseInventory.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result.value
@@ -96,9 +197,10 @@ var verifyFile = function(fileDetail,force){
     .then(function(){
       //skip reading the file if possible
       if(!fileDetail.exists) return
-      if(inventory && inventory.verifiedAt && false === force && (
-          inventory.verifiedAt > (+new Date() - config.store.verifyExpiration)
-        )){
+      if(inventory && inventory.verifiedAt && false === force &&
+        +new Date(inventory.verifiedAt) >
+        (+new Date() - config.store.verifyExpiration)
+      ){
         verifySkipped = true
         return
       }
@@ -111,7 +213,7 @@ var verifyFile = function(fileDetail,force){
     .then(function(){
       //validate the file, if it doesnt match remove it
       if(!fileDetail.exists){
-        return couchInventory.removeAsync(inventoryKey)
+        return ooseInventory.removeAsync(inventoryKey)
           .catch(function(err){
             if(!err || !err.code || 13 !== err.code){
               logger.log('error',
@@ -125,15 +227,16 @@ var verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return couchInventory.removeAsync(inventoryKey)
+            return ooseInventory.removeAsync(inventoryKey)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
         //here we should get the inventory record, update it or create it
-        return couchInventory.getAsync(inventoryKey)
+        return ooseInventory.getAsync(inventoryKey)
           .then(
             function(result){
-              return updateInventory(fileDetail,inventoryKey,result,verifiedAt)
+              return updateSubInventory(
+                fileDetail,inventoryKey,result,verifiedAt)
             },
             //record does not exist, create it
             function(err){
@@ -183,9 +286,8 @@ exports.put = function(req,res){
   redis.incr(redis.schema.counter('store','content:put'))
   redis.incr(redis.schema.counter('store','content:filesUploaded'))
   var file = req.params.file
-  var ext = path.extname(req.params.file)
-  var expectedHash = path.basename(req.params.file,ext)
-  ext = ext.replace('.','')
+  var ext = file.split('.')[1]
+  var expectedHash = path.basename(file,path.extname(file))
   var hashType = req.params.hashType || config.defaultHashType || 'sha1'
   var fileDetail = {}
   debug('got new put',file)
@@ -196,7 +298,7 @@ exports.put = function(req,res){
       redis.schema.counter('store','content:bytesUploaded'),chunk.length)
   })
   var dest
-  hashFile.details(expectedHash)
+  hashFile.details(expectedHash,ext)
     .then(function(result){
       fileDetail = result
       fileDetail.ext = ext
@@ -221,27 +323,14 @@ exports.put = function(req,res){
         throw new Error('Checksum mismatch')
       }
       //get updated file details
-      return hashFile.details(sniff.hash)
+      return hashFile.details(sniff.hash,ext)
     })
     .then(function(result){
       fileDetail = result
       //get existing existence record and add to it or create one
-      debug(inventoryKey,'getting inventory record')
-      return couchInventory.getAsync(inventoryKey)
+      debug('creating inventory record')
+      return createInventory(fileDetail)
     })
-    .then(
-      //record exists, extend it
-      function(result){
-        var doc = result
-        debug(inventoryKey,'got inventory record',doc)
-        return updateInventory(fileDetail,inventoryKey,doc)
-      },
-      //record does not exist, create it
-      function(err){
-        if(!err || !err.code || 13 !== err.code) throw err
-        return createInventory(fileDetail)
-      }
-    )
     .then(function(){
       res.status(201)
       res.json({hash: sniff.hash})
@@ -250,7 +339,7 @@ exports.put = function(req,res){
       logger.log('error', 'Failed to upload content ' + err.message)
       logger.log('error', err.stack)
       fs.unlinkSync(dest)
-      return couchInventory.removeAsync(inventoryKey)
+      return ooseInventory.removeAsync(inventoryKey)
         .then(function(){
           redis.incr(redis.schema.counterError('store','content:put'))
           res.status(500)
@@ -272,13 +361,27 @@ exports.put = function(req,res){
  */
 exports.download = function(req,res){
   redis.incr(redis.schema.counter('store','content:download'))
-  hashFile.find(req.body.hash)
-    .then(function(file){
-      if(!file) throw new Error('File not found')
-      res.sendFile(file.path)
+  var inventory
+  ooseInventory.getAsync(req.body.hash)
+    .then(function(result){
+      inventory = result.value
+      var filePath = path.join(contentFolder,inventory.relativePath)
+      //occupy slot on peer
+      redis.sadd(redis.schema.peerSlot(),req.ip + ':' + inventory.hash)
+      //update hits
+      redis.incr(redis.schema.inventoryStat(inventory.hash,'hit'))
+      //add to stat collection
+      redis.sadd(redis.schema.inventoryStatCollect(),inventory.hash)
+      //register to track bytes sent
+      var inventoryByteKey = redis.schema.inventoryStat(inventory.hash,'byte')
+      requestStats(req,res,function(stat){
+        redis.incrby(inventoryByteKey,stat.res.bytes)
+        redis.srem(redis.schema.peerSlot(),req.ip + ':' + inventory.hash)
+      })
+      res.sendFile(filePath)
     })
     .catch(function(err){
-      if('File not found' === err.message){
+      if(13 === err.code){
         redis.incr(
           redis.schema.counterError('store','content:download:notFound'))
         res.status(404)
@@ -286,7 +389,7 @@ exports.download = function(req,res){
       } else {
         res.status(500)
         redis.incr(redis.schema.counterError('store','content:download'))
-        res.json({error: err.message})
+        res.json({message: err.message, error: err})
       }
     })
 }
@@ -300,23 +403,27 @@ exports.download = function(req,res){
 exports.exists = function(req,res){
   redis.incr(redis.schema.counter('store','content:exists'))
   var hash = req.body.hash
+  var ext = req.body.ext
   var singular = !(hash instanceof Array)
-  if(singular) hash = [hash]
+  if(singular) hash = [hash + '.' + ext]
   var promises = []
+  var hashParts = []
   for(var i = 0; i < hash.length; i++){
-    promises.push(hashFile.find(hash[i]))
+    hashParts = hash[i].split('.')
+    if(!hashParts) hashParts = [hash[i],'']
+    promises.push(hashFile.find(hashParts[0],hashParts[1]))
   }
   P.all(promises)
     .then(function(result){
       var exists = {}
       for(var i = 0; i < hash.length; i++){
-        exists[hash[i]] = {
+        exists[result[i].hash] = {
           exists: result[i].exists,
           ext: result[i].ext
         }
       }
       if(singular){
-        res.json({exists: exists[hash[0]]})
+        res.json({exists: exists[hash[0].split('.')[0]]})
       } else {
         res.json(exists)
       }
@@ -331,48 +438,79 @@ exports.exists = function(req,res){
  */
 exports.remove = function(req,res){
   redis.incr(redis.schema.counter('store','content:remove'))
-  var inventoryKey = couch.schema.inventory(
-    req.body.hash,config.store.prism,config.store.name)
+  var hash = req.body.hash
+  var inventoryKey = couch.schema.inventory(hash)
+  var subInventoryKey = couch.schema.inventory(
+    hash,config.store.prism,config.store.name)
   var fileDetail = {}
-  var verifyDetail = {}
-  hashFile.details(req.body.hash)
+  var inventory = {}
+  ooseInventory.getAndLockAsync(inventoryKey)
     .then(function(result){
-      fileDetail = result
-      if(false === fileDetail.exists) throw new Error('File not found')
-      return verifyFile(fileDetail,false)
+      inventory = result
+      //remove the file
+      return hashFile.remove(
+        inventory.value.hash,inventory.value.mimeExtension)
     })
-    .then(function(result){
-      verifyDetail = result
-      //make sure the file is valid before removing
-      if(verifyDetail.error || 'ok' !== verifyDetail.status){
-        var err = new Error('Verify failed')
-        err.verifyDetail = verifyDetail
-        throw err
+    .catch(function(err){
+      if(13 !== err.code) throw err
+      debug('file removal failed',err)
+    })
+    .then(function(){
+      //remove ourselves from the map
+      var map = []
+      inventory.value.map.forEach(function(row){
+        if(row.prism === config.store.prism && row.store === config.store.name){
+          return
+        }
+        map.push(row)
+      })
+      inventory.value.map = map
+      //reset the count
+      inventory.value.count = inventory.value.map.length
+      if(0 === inventory.value.count){
+        if(!config.inventory.keepDeadRecords){
+          //if there are no more copies remove the master
+          return ooseInventory.removeAsync(inventoryKey)
+        } else {
+          //keep a ghost record of the old inventory
+          inventory.value.map = []
+          inventory.value.count = 0
+          inventory.value.verified = false
+          inventory.value.verifiedAt = null
+          inventory.value.removedAt = new Date().toJSON()
+          return ooseInventory.upsertAsync(
+            inventoryKey,inventory.value,{cas: inventory.cas})
+        }
       }
-      //now remove the file
-      return P.all([
-        hashFile.remove(fileDetail.hash),
-        couchInventory.removeAsync(inventoryKey)
-      ])
+      else{
+        //update inventory record
+        return ooseInventory.upsertAsync(
+          inventoryKey,inventory.value,{cas: inventory.cas})
+      }
+    })
+    .catch(function(err){
+      if(13 !== err.code) throw err
+      debug('update failed',err)
+    })
+    .then(function(){
+      //now remove the sub record
+      return ooseInventory.removeAsync(subInventoryKey)
+    })
+    .catch(function(err){
+      if(13 !== err.code) throw err
+      debug('subrecord removal failed',err)
     })
     .then(function(){
       res.json({
         success: 'File removed',
-        fileDetail: fileDetail,
-        verifyDetail: verifyDetail
+        fileDetail: fileDetail
       })
     })
     .catch(function(err){
-      if('File not found' === err.message){
+      if(13 === err.code){
         redis.incr(redis.schema.counterError('store','content:remove:notFound'))
         res.status(404)
         res.json({error: err.message})
-      } else if('Verify failed' === err.message){
-        res.json({
-          error: 'File verify failed',
-          fileDetail: fileDetail,
-          verifyDetail: verifyDetail
-        })
       } else {
         redis.incr(redis.schema.counterError('store','content:remove'))
         res.json({error: err.message, err: err})
@@ -421,7 +559,7 @@ exports.detail = function(req,res){
   var hash = req.body.hash
   var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
-  couchInventory.getAsync(inventoryKey)
+  ooseInventory.getAsync(inventoryKey)
     .then(function(result){
       var record = result.value
       if(!record) throw new Error('File not found')
@@ -431,7 +569,7 @@ exports.detail = function(req,res){
       detail.relativePath = record.relativePath
       detail.prism = record.prism
       detail.store = record.store
-      return hashFile.details(record.hash)
+      return hashFile.details(record.hash,record.ext)
     })
     .then(function(result){
       detail.hashDetail = result
@@ -460,9 +598,10 @@ exports.detail = function(req,res){
 exports.verify = function(req,res){
   var file = req.body.file
   var hash = hashFile.fromPath(file)
+  var ext = file.split('.')[1]
   var force = req.body.force || false
   var fileDetail = {}
-  hashFile.details(hash)
+  hashFile.details(hash,ext)
     .then(function(result){
       fileDetail = result
       return verifyFile(fileDetail,force)
@@ -498,13 +637,14 @@ exports.verify = function(req,res){
 exports.send = function(req,res){
   var file = req.body.file
   var hash = hashFile.fromPath(file)
+  var ext = file.split('.')[1]
   var nameParts = req.body.store.split(':')
   var storeKey = couch.schema.store(nameParts[0],nameParts[1])
   var storeClient = null
   var store = {}
   var fileDetail = {}
   var verifyDetail = {}
-  couchPeer.getAsync(storeKey)
+  oosePeer.getAsync(storeKey)
     .then(
       function(result){
         store = result.value
@@ -516,7 +656,7 @@ exports.send = function(req,res){
       }
     )
     .then(function(){
-      return hashFile.details(hash)
+      return hashFile.details(hash,ext)
     })
     .then(function(result){
       fileDetail = result
@@ -525,7 +665,6 @@ exports.send = function(req,res){
     .then(function(result){
       verifyDetail = result
       if('ok' !== result.status){
-        console.log('Verify failed',result)
         throw new Error('Verify failed')
       }
       var rs = fs.createReadStream(
@@ -575,17 +714,31 @@ exports.static = function(req,res){
     config.store.name
   )
   debug('STATIC','checking for inventory',inventoryKey)
-  couchInventory.getAsync(inventoryKey)
+  ooseInventory.getAsync(inventoryKey)
     .then(function(result){
-      var doc = result.value
-      debug('STATIC','got file inventory, sending content',doc)
+      var inventory = result.value
+      debug('STATIC','got file inventory, sending content',inventory)
       if(req.query.attach){
         res.header(
           'Content-Disposition',
           'attachment; filename=' + req.query.attach
         )
       }
-      res.sendFile(path.join(contentFolder,doc.relativePath))
+      var filePath = path.join(contentFolder,inventory.relativePath)
+      //occupy slot on peer
+      redis.sadd(redis.schema.peerSlot(),req.ip + ':' + hash)
+      //update hits
+      redis.incr(redis.schema.inventoryStat(hash,'hit'))
+      //add to stat collection
+      redis.sadd(redis.schema.inventoryStatCollect(),hash)
+      //register to track bytes sent
+      var inventoryByteKey = redis.schema.inventoryStat(hash,'byte')
+      requestStats(req,res,function(stat){
+        redis.incrby(inventoryByteKey,stat.res.bytes)
+        redis.srem(redis.schema.peerSlot(),req.ip + ':' + hash)
+      })
+      //send file
+      res.sendFile(filePath)
     })
     .catch(function(err){
       if(!err || !err.code || 13 !== err.code) throw err
@@ -601,68 +754,47 @@ exports.static = function(req,res){
  * @param {object} res
  */
 exports.play = function(req,res){
-  var purchaseCacheCheck = function(token){
-    var purchaseUri = ''
-    var redisKey = redis.schema.purchaseCacheInternal(token)
-    return redis.getAsync(redisKey)
-      .then(function(result){
-        if(!result){
-          //build cache
-          var purchase = {}
-          var inventory = {}
-          return purchasedb.get(token)
-            .then(
-              //continue with purchase
-              function(result){
-                debug('PLAY','got purchase result',token,result)
-                purchase = result
-                //get inventory
-                return couchInventory.getAsync(couch.schema.inventory(
-                  purchase.hash,
-                  config.store.prism,
-                  config.store.name
-                ))
-              },
-              //purchase not found
-              function(err){
-                debug('PLAY','no purchase found',token,err.message)
-                if(!err || !err.code || 13 !== err.code) throw err
-                return false
-              }
-            )
-            .then(function(result){
-              result = result.value
-              debug('PLAY','got inventory result',token,result)
-              inventory = result
-              if(inventory && purchase &&
-                purchase.expirationDate >= (+new Date())
-              ){
-                purchaseUri = path.join(contentFolder,inventory.relativePath)
-              } else{
-                purchaseUri = '/404'
-              }
-              debug('PLAY','figured purchase URI',token,purchaseUri)
-              return redis.setAsync(redisKey,purchaseUri)
-            })
-            .then(function(){
-              return redis.expireAsync(redisKey,900)
-            })
-            .then(function(){
-              return purchaseUri
-            })
-        } else {
-          return result
-        }
-      })
-      .catch(function(err){
-        logger.log('error', err)
-        logger.log('error', err.stack)
-        return '/500'
-      })
-  }
   var token = req.params.token
+  var purchaseUri = ''
+  var purchase = {}
+  var inventory = {}
   debug('PLAY','got play request',token)
-  purchaseCacheCheck(token)
+  purchasedb.get(token)
+    .then(
+      //continue with purchase
+      function(result){
+        debug('PLAY','got purchase result',token,result)
+        purchase = result
+        //get inventory
+        return ooseInventory.getAsync(couch.schema.inventory(
+          purchase.hash,
+          config.store.prism,
+          config.store.name
+        ))
+      },
+      //purchase not found
+      function(err){
+        debug('PLAY','no purchase found',token,err.message)
+        if(!err || !err.code || 13 !== err.code) throw err
+        return false
+      }
+    )
+    .then(function(result){
+      result = result.value
+      debug('PLAY','got inventory result',token,result)
+      inventory = result
+      if(inventory && purchase &&
+        purchase.expirationDate >= (+new Date())
+      )
+      {
+        purchaseUri = path.join(contentFolder,inventory.relativePath)
+      }
+      else{
+        purchaseUri = '/404'
+      }
+      debug('PLAY','figured purchase URI',token,purchaseUri)
+      return purchaseUri
+    })
     .then(function(result){
       debug('PLAY','got play result',result)
       if('/404' === result){
@@ -682,7 +814,26 @@ exports.play = function(req,res){
             'attachment; filename=' + req.query.attach
           )
         }
-        res.sendFile(result)
+        //occupy slot on peer
+        redis.sadd(redis.schema.peerSlot(),
+          req.ip + ':' + inventory.hash + ':' + token)
+        //update hits
+        redis.incr(redis.schema.inventoryStat(purchase.hash,'hit'))
+        redis.incr(redis.schema.purchaseStat(token,'hit'))
+        //add to stat collection
+        redis.sadd(redis.schema.inventoryStatCollect(),purchase.hash)
+        redis.sadd(redis.schema.purchaseStatCollect(),token)
+        //register to track bytes sent
+        var inventoryByteKey = redis.schema.inventoryStat(purchase.hash,'byte')
+        var purchaseByteKey = redis.schema.purchaseStat(token,'byte')
+        requestStats(req,res,function(stat){
+          redis.incrby(purchaseByteKey,stat.res.bytes)
+          redis.incrby(inventoryByteKey,stat.res.bytes)
+          redis.srem(redis.schema.peerSlot(),
+            req.ip + ':' + inventory.hash + ':' +token)
+        })
+        //send file
+        res.sendFile(purchaseUri)
       }
     })
 }

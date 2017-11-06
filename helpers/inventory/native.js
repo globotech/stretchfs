@@ -115,7 +115,7 @@ module.exports = function(done){
         .then(function(){
           debug(hash,'inventory updated')
           //throttle the inventory
-          return miniSleep(config.store.inventoryThrottle)
+          return miniSleep(config.inventory.scan.throttle)
         })
         .catch(function(err){
           logger.log('error', hash + ' insertion FAILED ' + err.message)

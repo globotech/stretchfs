@@ -81,16 +81,18 @@ var verifyInventoryAsync = function(){
         .map(function(result){
           progress.tick()
           var record = result.value
-          var filePath = path.posix.resolve(contentFolder,record.relativePath)
           //check if file path exists
-          if(fs.existsSync(filePath)){
-            counter.valid++
-          } else {
+          if(!record.relativePath ||
+            !fs.existsSync(path.posix.resolve(
+              contentFolder,record.relativePath))
+          ){
             counter.invalid++
             return couchInventory.removeAsync(record._id)
               .catch(function(){
                 counter.warning++
               })
+          } else {
+            counter.valid++
           }
         })
     })

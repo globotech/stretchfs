@@ -131,6 +131,15 @@ RedisSchema.prototype.userSession = function(token){
 
 
 /**
+ * Peer slots
+ * @return {string}
+ */
+RedisSchema.prototype.peerSlot = function(){
+  return this.applyPrefix('peerSlot')
+}
+
+
+/**
  * Look up a purchase
  * @param {string} token
  * @return {string}
@@ -141,22 +150,22 @@ RedisSchema.prototype.purchase = function(token){
 
 
 /**
- * Purchase Cache by User Session
- * @param {string} token
+ * Purchase Stat Collection Set
  * @return {string}
  */
-RedisSchema.prototype.purchaseCache = function(token){
-  return this.applyPrefix('purchase:cache:' + token)
+RedisSchema.prototype.purchaseStatCollect = function(){
+  return this.applyPrefix('purchase:statCollect')
 }
 
 
 /**
- * Purchase Cache by User Session
- * @param {string} token
+ * Purchase Stat
+ * @param {string} hash
+ * @param {string} type
  * @return {string}
  */
-RedisSchema.prototype.purchaseCacheInternal = function(token){
-  return this.applyPrefix('purchase:cache:internal:' + token)
+RedisSchema.prototype.purchaseStat = function(hash,type){
+  return this.applyPrefix('purchase:' + (type || 'byte') + 'Count:' +hash)
 }
 
 
@@ -167,6 +176,26 @@ RedisSchema.prototype.purchaseCacheInternal = function(token){
  */
 RedisSchema.prototype.inventory = function(hash){
   return this.applyPrefix('inventory:' + hash)
+}
+
+
+/**
+ * Inventory Stat
+ * @param {string} hash
+ * @param {string} type
+ * @return {string}
+ */
+RedisSchema.prototype.inventoryStat = function(hash,type){
+  return this.applyPrefix('inventory:' + (type || 'byte') + 'Count:' +hash)
+}
+
+
+/**
+ * Inventory Stat Collection Set
+ * @return {string}
+ */
+RedisSchema.prototype.inventoryStatCollect = function(){
+  return this.applyPrefix('inventory:statCollect')
 }
 
 
