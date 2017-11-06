@@ -1,5 +1,5 @@
 'use strict';
-var debug = require('debug')('oose:inventory')
+var debug = require('debug')('stretchfs:inventory')
 var devNullStream = require('dev-null')
 var fs = require('graceful-fs')
 var hashStream = require('sha1-stream')
@@ -13,7 +13,7 @@ var logger = require('./logger')
 var config = require('../config')
 
 //open couch buckets
-var ooseInventory = couch.inventory()
+var stretchInventory = couch.inventory()
 
 
 /**
@@ -35,7 +35,7 @@ exports.createMasterInventory = function(hash,extension){
     createdAt: new Date().toJSON(),
     updatedAt: new Date().toJSON()
   }
-  return ooseInventory.upsertAsync(inventoryKey,inventory,{cas: null})
+  return stretchInventory.upsertAsync(inventoryKey,inventory,{cas: null})
 }
 
 
@@ -55,7 +55,7 @@ exports.createStoreInventory = function(fileDetail,verified){
   )
   var inventory = {value: {}, cas: null}
   var subInventory = {value: {}, cas: null}
-  return ooseInventory.getAsync(inventoryKey)
+  return stretchInventory.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result
@@ -137,11 +137,11 @@ exports.createStoreInventory = function(fileDetail,verified){
         createdAt: new Date().toJSON(),
         updatedAt: new Date().toJSON()
       }
-      return ooseInventory.upsertAsync(
+      return stretchInventory.upsertAsync(
         subInventoryKey,subInventory.value,{cas: subInventory.cas})
     })
     .then(function(){
-      return ooseInventory.upsertAsync(
+      return stretchInventory.upsertAsync(
         inventoryKey,inventory.value,{cas: inventory.cas})
     })
     .then(function(){
@@ -203,7 +203,7 @@ exports.updateStoreInventory = function(
   if(!inventory.value.size)
     inventory.value.size = fileDetail.stat.size
   inventory.value.updatedAt = new Date().toJSON()
-  return ooseInventory.upsertAsync(
+  return stretchInventory.upsertAsync(
     inventoryKey,inventory.value,{cas: inventory.cas})
     .then(function(){
       inventory._id = inventoryKey
@@ -229,7 +229,7 @@ exports.verifyFile = function(fileDetail,force){
     config.store.prism,
     config.store.name
   )
-  return ooseInventory.getAsync(inventoryKey)
+  return stretchInventory.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result.value
@@ -255,7 +255,7 @@ exports.verifyFile = function(fileDetail,force){
     .then(function(){
       //validate the file, if it doesnt match remove it
       if(!fileDetail.exists){
-        return ooseInventory.removeAsync(inventoryKey)
+        return stretchInventory.removeAsync(inventoryKey)
           .catch(function(err){
             if(!err || !err.code || 13 !== err.code){
               logger.log('error',
@@ -269,12 +269,12 @@ exports.verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return ooseInventory.removeAsync(inventoryKey)
+            return stretchInventory.removeAsync(inventoryKey)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
         //here we should get the inventory record, update it or create it
-        return ooseInventory.getAsync(inventoryKey)
+        return stretchInventory.getAsync(inventoryKey)
           .then(
             function(result){
               return exports.updateStoreInventory(
@@ -358,7 +358,7 @@ exports.detailStore = function(hash){
   }
   var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
-  return ooseInventory.getAsync(inventoryKey)
+  return stretchInventory.getAsync(inventoryKey)
     .then(function(result){
       var record = result.value
       if(!record) throw new Error('File not found')
@@ -388,7 +388,7 @@ exports.removeStoreInventory = function(hash){
   var subInventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
   var inventory = {}
-  return ooseInventory.getAndLockAsync(inventoryKey)
+  return stretchInventory.getAndLockAsync(inventoryKey)
     .then(function(result){
       inventory = result
       //remove the file
@@ -414,7 +414,7 @@ exports.removeStoreInventory = function(hash){
       if(0 === inventory.value.count){
         if(!config.inventory.keepDeadRecords){
           //if there are no more copies remove the master
-          return ooseInventory.removeAsync(inventoryKey)
+          return stretchInventory.removeAsync(inventoryKey)
         } else {
           //keep a ghost record of the old inventory
           inventory.value.map = []
@@ -422,13 +422,13 @@ exports.removeStoreInventory = function(hash){
           inventory.value.verified = false
           inventory.value.verifiedAt = null
           inventory.value.removedAt = new Date().toJSON()
-          return ooseInventory.upsertAsync(
+          return stretchInventory.upsertAsync(
             inventoryKey,inventory.value,{cas: inventory.cas})
         }
       }
       else{
         //update inventory record
-        return ooseInventory.upsertAsync(
+        return stretchInventory.upsertAsync(
           inventoryKey,inventory.value,{cas: inventory.cas})
       }
     })
@@ -438,7 +438,7 @@ exports.removeStoreInventory = function(hash){
     })
     .then(function(){
       //now remove the sub record
-      return ooseInventory.removeAsync(subInventoryKey)
+      return stretchInventory.removeAsync(subInventoryKey)
     })
     .catch(function(err){
       if(13 !== err.code) throw err

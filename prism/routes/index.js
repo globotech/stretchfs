@@ -11,7 +11,7 @@ var config = require('../../config')
  */
 exports.index = function(req,res){
   redis.incr(redis.schema.counter('prism','index'))
-  res.json({message: 'Welcome to OOSE version ' + config.version})
+  res.json({message: 'Welcome to StretchFS version ' + config.version})
 }
 
 

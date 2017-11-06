@@ -1,6 +1,6 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:store:inventory')
+var debug = require('debug')('stretchfs:store:inventory')
 var fs = require('graceful-fs')
 var infant = require('infant')
 var os = require('os')
@@ -159,7 +159,7 @@ var runInterval = function(done){
 
 if(require.main === module){
   infant.child(
-    'oose:' + config.store.name + ':scanInventory',
+    'stretchfs:' + config.store.name + ':scanInventory',
     function(done){
       //do immediate scan
       runInterval(done)

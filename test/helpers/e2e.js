@@ -5,7 +5,7 @@ var fs = require('graceful-fs')
 var http = require('http')
 var infant = require('infant')
 var ObjectManage = require('object-manage')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var path = require('path')
 var rmfr = require('rmfr')
 var url = require('url')
@@ -13,12 +13,12 @@ var url = require('url')
 var api = require('../../helpers/api')
 var couch = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
-var content = oose.mock.content
+var content = stretchfs.mock.content
 //var purchasedb = require('../../helpers/purchasedb')
 var redis = require('../../helpers/redis')()
 
-var NetworkError = oose.NetworkError
-var UserError = oose.UserError
+var NetworkError = stretchfs.NetworkError
+var UserError = stretchfs.UserError
 
 var config = require('../../config')
 
@@ -94,7 +94,7 @@ exports.purchase = {}
 exports.makeEnv = function(configFile){
   var env = new ObjectManage()
   env.$load(process.env)
-  env.OOSE_CONFIG = path.resolve(configFile)
+  env.STRETCH_CONFIG = path.resolve(configFile)
   return env.$strip()
 }
 
@@ -310,7 +310,7 @@ exports.checkPublic = function(prism){
       .spread(client.validateResponse())
       .spread(function(res,body){
         expect(body.message).to.equal(
-          'Welcome to OOSE version ' + config.version)
+          'Welcome to StretchFS version ' + config.version)
         return client.postAsync(client.url('/ping'))
       })
       .spread(client.validateResponse())

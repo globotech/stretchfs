@@ -1,10 +1,10 @@
 'use strict';
 var P = require('bluebird')
 var Busboy = require('busboy')
-var debug = require('debug')('oose:prism:content')
+var debug = require('debug')('stretchfs:prism:content')
 var fs = require('graceful-fs')
 var mime = require('mime')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var path = require('path')
 var promisePipe = require('promisepipe')
 var request = require('request')
@@ -12,8 +12,8 @@ var hashStream = require('sha1-stream')
 var temp = require('temp')
 
 var api = require('../../helpers/api')
-var NetworkError = oose.NetworkError
-var NotFoundError = oose.NotFoundError
+var NetworkError = stretchfs.NetworkError
+var NotFoundError = stretchfs.NotFoundError
 var inventory = require('../../helpers/inventory')
 var prismBalance = require('../../helpers/prismBalance')
 var promiseWhile = require('../../helpers/promiseWhile')
@@ -23,7 +23,7 @@ var hasher = require('../../helpers/hasher')
 var hashFile = require('../../helpers/hashFile')
 var storeBalance = require('../../helpers/storeBalance')
 var logger = require('../../helpers/logger')
-var UserError = oose.UserError
+var UserError = stretchfs.UserError
 
 var config = require('../../config')
 
@@ -111,7 +111,7 @@ exports.upload = function(req,res){
   busboy.on('file',function(key,file,name,encoding,mimetype){
     redis.incr(redis.schema.counter('prism','content:filesUploaded'))
     debug('upload, got file')
-    var tmpfile = temp.path({prefix: 'oose-' + config.prism.name + '-'})
+    var tmpfile = temp.path({prefix: 'stretchfs-' + config.prism.name + '-'})
     if(!data.hashType) data.hashType = config.defaultHashType || 'sha1'
     var sniff = hashStream.createStream(data.hashType)
     sniff.on('data',function(chunk){
@@ -209,7 +209,7 @@ exports.retrieve = function(req,res){
   var retrieveRequest = req.body.request
   var hashType = req.body.hashType || config.defaultHashType || 'sha1'
   var extension = req.body.extension || 'bin'
-  var tmpfile = temp.path({prefix: 'oose-' + config.prism.name + '-'})
+  var tmpfile = temp.path({prefix: 'stretchfs-' + config.prism.name + '-'})
   var sniff = hashStream.createStream(hashType)
   sniff.on('data',function(chunk){
     redis.incrby(
@@ -249,9 +249,9 @@ exports.retrieve = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:retrieve'))
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError|NetworkError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError|NetworkError',
+        'StretchFS-Message': err.message
       })
       res.json({
         error: 'Failed to check content existence: ' + err.message
@@ -261,9 +261,9 @@ exports.retrieve = function(req,res){
       fs.unlinkSync(tmpfile)
       res.status(501)
       res.set({
-        'OOSE-Code': 501,
-        'OOSE-Reason': 'UnknownError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 501,
+        'StretchFS-Reason': 'UnknownError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
       logger.log('error', 'Unhandled error on content retrieve ' + err.message)
@@ -320,18 +320,18 @@ exports.put = function(req,res){
     .catch(UserError,function(err){
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
     .catch(function(err){
       res.status(501)
       res.set({
-        'OOSE-Code': 501,
-        'OOSE-Reason': 'UnknownError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 501,
+        'StretchFS-Reason': 'UnknownError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
       logger.log('error', 'Unhandled error on content put ' + err.message)
@@ -373,18 +373,18 @@ exports.detail = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:detail'))
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
     .catch(function(err){
       res.status(501)
       res.set({
-        'OOSE-Code': 501,
-        'OOSE-Reason': 'UnknownError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 501,
+        'StretchFS-Reason': 'UnknownError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
       logger.log('error', 'Unhandled error on content detail ' + err.message)
@@ -462,9 +462,9 @@ exports.download = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:download:notFound'))
       res.status(404)
       res.set({
-        'OOSE-Code': 404,
-        'OOSE-Reason': 'NotFoundError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 404,
+        'StretchFS-Reason': 'NotFoundError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
@@ -472,18 +472,18 @@ exports.download = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:download'))
       res.set(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
     .catch(function(err){
       res.status(501)
       res.set({
-        'OOSE-Code': 501,
-        'OOSE-Reason': 'UnknownError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 501,
+        'StretchFS-Reason': 'UnknownError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
       logger.log('error', 'Unhandled error on content download  ' + err.message)
@@ -556,9 +556,9 @@ exports.purchase = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:purchase:network'))
       res.status(503)
       res.set({
-        'OOSE-Code': 503,
-        'OOSE-Reason': 'NetworkError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 503,
+        'StretchFS-Reason': 'NetworkError',
+        'StretchFS-Message': err.message
       })
       res.json({error: 'Failed to check existence: ' + err.message})
     })
@@ -566,9 +566,9 @@ exports.purchase = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:purchase:notFound'))
       res.status(404)
       res.set({
-        'OOSE-Code': 404,
-        'OOSE-Reason': 'NotFoundError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 404,
+        'StretchFS-Reason': 'NotFoundError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err})
     })
@@ -576,18 +576,18 @@ exports.purchase = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:purchase'))
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err})
     })
     .catch(function(err){
       res.status(501)
       res.set({
-        'OOSE-Code': 501,
-        'OOSE-Reason': 'UnknownError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 501,
+        'StretchFS-Reason': 'UnknownError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
       logger.log('error',
@@ -709,9 +709,9 @@ exports.deliver = function(req,res){
         redis.schema.counterError('prism','content:deliver:syntax'))
       res.status(400)
       res.set({
-        'OOSE-Code': 400,
-        'OOSE-Reason': 'SyntaxError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 400,
+        'StretchFS-Reason': 'SyntaxError',
+        'StretchFS-Message': err.message
       })
       res.json({error: 'Failed to parse purchase: ' + err.message})
     })
@@ -720,9 +720,9 @@ exports.deliver = function(req,res){
         redis.schema.counterError('prism','content:deliver:notFound'))
       res.status(404)
       res.set({
-        'OOSE-Code': 404,
-        'OOSE-Reason': 'NotFoundError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 404,
+        'StretchFS-Reason': 'NotFoundError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
@@ -730,9 +730,9 @@ exports.deliver = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:deliver'))
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
@@ -740,9 +740,9 @@ exports.deliver = function(req,res){
       res.status(501)
       res.json({error: err.message})
       res.set({
-        'OOSE-Code': 501,
-        'OOSE-Reason': 'Unknown error',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 501,
+        'StretchFS-Reason': 'Unknown error',
+        'StretchFS-Message': err.message
       })
       logger.log('error', 'Unhandled error on content deliver  ' + err.message)
       logger.log('error', err.stack)
@@ -795,9 +795,9 @@ exports.contentStatic = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:static:network'))
       res.status(503)
       res.set({
-        'OOSE-Code': 503,
-        'OOSE-Reason': 'NetworkError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 503,
+        'StretchFS-Reason': 'NetworkError',
+        'StretchFS-Message': err.message
       })
       res.json({
         error: 'Failed to check existence: ' + err.message
@@ -807,9 +807,9 @@ exports.contentStatic = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:static:notFound'))
       res.status(404)
       res.set({
-        'OOSE-Code': 404,
-        'OOSE-Reason': 'NotFoundError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 404,
+        'StretchFS-Reason': 'NotFoundError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
@@ -817,9 +817,9 @@ exports.contentStatic = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:static'))
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })
@@ -842,9 +842,9 @@ exports.purchaseRemove = function(req,res){
       redis.incr(redis.schema.counterError('prism','content:purchaseRemove'))
       res.status(500)
       res.set({
-        'OOSE-Code': 500,
-        'OOSE-Reason': 'UserError',
-        'OOSE-Message': err.message
+        'StretchFS-Code': 500,
+        'StretchFS-Reason': 'UserError',
+        'StretchFS-Message': err.message
       })
       res.json({error: err.message})
     })

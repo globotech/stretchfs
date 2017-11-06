@@ -7,7 +7,7 @@ var config = require('../config')
 
 if(require.main === module){
   child(
-    'oose:admin:master',
+    'stretchfs:admin:master',
     function(done){
       cluster = clusterSetup(
         './worker',

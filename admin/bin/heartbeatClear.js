@@ -1,5 +1,5 @@
 'use strict';
-var debug = require('debug')('oose:clearHeartbeat')
+var debug = require('debug')('stretchfs:clearHeartbeat')
 var infant = require('infant')
 
 var couch = require('../../helpers/couchbase')
@@ -40,7 +40,7 @@ var runInterval = function(done){
 
 if(require.main === module){
   infant.child(
-    'oose:clearHeartbeat',
+    'stretchfs:clearHeartbeat',
     function(done){
       //setup the interval for collection from master
       runInterval(done)

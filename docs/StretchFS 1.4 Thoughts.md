@@ -1,11 +1,11 @@
-# OOSE 1.4 Thoughts and Goals
+# StretchFS 1.4 Thoughts and Goals
 
 ## What is Currently Wrong
 
 ### Fix Tests to be more Reliable
 
 First and foremost, what needs to be addressed are the immediate fires with
-running the tests on the latest version of OOSE and node. Currently, I am seeing
+running the tests on the latest version of StretchFS and node. Currently, I am seeing
 many failure all across the test spectrum.
 
 ### Automatic Self Healing
@@ -30,7 +30,7 @@ information databases.
 ## Ping Net
 
 To address the first issue we are going to introduce a ping net. This means
-every instance of OOSE will participate in the ping net which will bring
+every instance of StretchFS will participate in the ping net which will bring
 consensus to what hosts are not available to the cluster.
 
 To me this is the most imperative function that needs to be implemented in order
@@ -42,7 +42,7 @@ instance.
 
 ### Peer Registry
 
-In order for hosts to know who to ping we need a registry. As OOSE implements
+In order for hosts to know who to ping we need a registry. As StretchFS implements
 a master to deal with authoritative issues a list of hosts can be easily
 obtained from the master. This will be part of the ping service coming online
 it will download the registry from the master. After the initial download the
@@ -65,7 +65,7 @@ available.
 
 Now that we have a peer registry, a poll center, and a way to decide if a host
 is unavailable we need a way to publish the changes. This will consist of using
-an API class that is made available through the helpers section of OOSE. The
+an API class that is made available through the helpers section of StretchFS. The
 client code will then need to call upon this API before making decisions about
 communicating with the host.
 

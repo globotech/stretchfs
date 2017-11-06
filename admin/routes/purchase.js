@@ -8,7 +8,7 @@ var purchasedb = require('../../helpers/purchasedb')
 var config = require('../../config')
 
 //open couch buckets
-var oosePurchase = couch.purchase()
+var stretchfsPurchase = couch.purchase()
 
 
 /**
@@ -22,7 +22,7 @@ exports.list = function(req,res){
   var search = req.query.search || ''
   list.listQuery(
     couch,
-    oosePurchase,
+    stretchfsPurchase,
     couch.type.PURCHASE,
     search,
     'META(b).id',
@@ -52,7 +52,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(purchaseKey){
-      return oosePurchase.removeAsync(purchaseKey)
+      return stretchfsPurchase.removeAsync(purchaseKey)
     })
     .then(function(){
       req.flash('success','Purchase(s) removed successfully')
@@ -78,7 +78,7 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var purchaseKey = req.query.id
-  oosePurchase.getAsync(purchaseKey)
+  stretchfsPurchase.getAsync(purchaseKey)
     .then(function(result){
       result.value._id = purchaseKey
       res.render('purchase/edit',{purchase: result.value})
@@ -101,7 +101,7 @@ exports.save = function(req,res){
   var doc
   P.try(function(){
     if(purchaseKey){
-      return oosePurchase.getAsync(purchaseKey)
+      return stretchfsPurchase.getAsync(purchaseKey)
     } else {
       purchaseKey = purchasedb.generate()
       return {
@@ -121,7 +121,7 @@ exports.save = function(req,res){
       if(data.ext) doc.ext = data.ext
       if(data.referrer) doc.referrer = data.referrer
       doc.updatedAt = new Date().toJSON()
-      return oosePurchase.upsertAsync(purchaseKey,doc,{cas: result.cas})
+      return stretchfsPurchase.upsertAsync(purchaseKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Purchase saved')

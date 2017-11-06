@@ -1,6 +1,6 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:store:inventory')
+var debug = require('debug')('stretchfs:store:inventory')
 var fs = require('graceful-fs')
 var mime = require('mime')
 var path = require('path')

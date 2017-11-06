@@ -1,44 +1,44 @@
-OOSE [![Build Status](https://travis-ci.org/nullivex/oose.svg?branch=master)](https://travis-ci.org/nullivex/oose)
+StrechFS [![Build Status](https://travis-ci.org/nullivex/stretchfs.svg?branch=master)](https://travis-ci.org/nullivex/stretchfs)
 ========
 
-Object Oriented Storage Engine
+Global File System
 
 ## Description
 
-I want to take some time to explain what OOSE is and how we use it. OOSE in a
+I want to take some time to explain what StretchFS is and how we use it. StretchFS in a
 short description, is a multi purpose, multi backed, multi OS, redundant,
 shared, sharded, cloud file system built on top of Node.JS with a
 kernel mentality.
 
 
 Now I will try to explain this in short amounts at a time.
-OOSE hashes (with SHA1 by default) files (not blocks, thus it is not a
+StretchFS hashes (with SHA1 by default) files (not blocks, thus it is not a
 viable block level storage system) and stores them across zones which are
 headed up by Prisms. It is purpose built to drive file based CDNs and archival
 storage networks.
 
 
-Prisms are the main directors of the OOSE system below each prism is one or
+Prisms are the main directors of the StretchFS system below each prism is one or
 more Store nodes. Prisms represent a group of Store nodes and manages that
-group itself. OOSE is designed to handle fault tolerance across zones. This
+group itself. StretchFS is designed to handle fault tolerance across zones. This
 intends on Prisms and their entire group of stores going offline. Individual
 Store outages do not affect operations. Prism outages will reduce the available
 clone counts for content hosted in that zone.
 
 
-OOSE is based on the Google File System model however instead of blocking by
-64MB chunks, OOSE hashes entire files.
+StretchFS is based on the Google File System model however instead of blocking by
+64MB chunks, StretchFS hashes entire files.
 
 
-What can OOSE be used for?
+What can StretchFS be used for?
 
 
-OOSE is great for delivering videos. In fact, that is its primary purpose for
+StretchFS is great for delivering videos. In fact, that is its primary purpose for
 existence. However, it is built as a multi purpose system that can host, save,
 and stream any type of file.
 
 
-### Some other uses for OOSE
+### Some other uses for StretchFS
 * Archival storage or backup networks.
 * Network shared multimedia hosting.
 * Business video hosting for advertising.
@@ -48,13 +48,13 @@ and stream any type of file.
 * Large scale cloud storage networks.
 * High concurrency, high user, high performance file based CDNs.
 
-More to come for OOSE.
+More to come for StretchFS.
 
 ## Installation
 
 ```
-$ git clone git@github.com:nullivex/oose.git
-$ cd oose
+$ git clone git@github.com:nullivex/stretchfs.git
+$ cd stretchfs
 $ npm install
 ```
 
@@ -100,7 +100,7 @@ package.
 
 The following can be used to see all messages (typically used in dev)
 ```
-$ DEBUG=oose:* node app
+$ DEBUG=stretchfs:* node app
 ```
 
 From there follow the debug filtering rules defined
@@ -110,7 +110,7 @@ From there follow the debug filtering rules defined
 
 ### 3.0.0 [View Issues](https://bugs.nullivex.com/roadmap_page.php?version_id=5)
 
-* Introduce new send component to aid in dropping NGINX OpenResty from the OOSE
+* Introduce new send component to aid in dropping NGINX OpenResty from the StretchFS
 standard build.
 * Prism now listens on multiple ports to support CDN functionality without the
 need for a proxy.
@@ -122,16 +122,16 @@ server software.
 * Clonetool dropped
 * bin/createPurchasedb.js dropped
 * Replace Couchdb with Couchbase to provide a more consistent database model.
- OOSE does is not compatible with eventual consistency which adds various
- failures that OOSE does not know how to handle properly and results in false
+ StretchFS does is not compatible with eventual consistency which adds various
+ failures that StretchFS does not know how to handle properly and results in false
  404s. These result from poor timing. The solution is to use couchbase which
- will provide OOSE with consistent results, better timing / scaling.
+ will provide StretchFS with consistent results, better timing / scaling.
 * Drop nano / couchdb / cradle
 * Implement Couchbase helper
 * Update config to work with Couchbase
 * Update tests to work with Couchbase
 * Update Travis-CI to work with Couchbase
-* Merge Shredder 2.0 into OOSE renaming it to the OOSE Job system. OOSE will
+* Merge Shredder 2.0 into StretchFS renaming it to the StretchFS Job system. StretchFS will
 no longer depend on an outside source for compute jobs.
 
 ### 2.4.0
@@ -201,7 +201,7 @@ reliability and debugging.
 * Drop MySQL, as being replaced by CouchDB
 * Implement CouchDB for cluster consistency
 * Scan content existence directly into CouchDB
-* Drop OOSE backed content existence system
+* Drop StretchFS backed content existence system
 * Variable hash typing added the following ciphers are supported
   * sha512
   * sha384
@@ -275,7 +275,7 @@ backward compatible with singular requests.
 * Bug fixes
 
 ### 0.5.6
- [View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.5.6+is%3Aclosed)
+ [View Issues](https://github.com/nullivex/stretchfs/issues?q=milestone%3A0.5.6+is%3Aclosed)
 * Fix inventory handling of stream for builds
 * Shredder workers now implement the helpers/child system
 * Fixes #134 related to hash update fails
@@ -305,7 +305,7 @@ logic handling to prevent failures under load and unstable network conditions
 * Inventory now runs in parallel with configurable concurrence
 
 ### 0.5.0
-[View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.5.0+is%3Aclosed)
+[View Issues](https://github.com/nullivex/stretchfs/issues?q=milestone%3A0.5.0+is%3Aclosed)
 * Removed mesh in favor of more exposed communications
 * Implemented multicast helper
 * Implemented axon for TCP p2p communication
@@ -321,14 +321,14 @@ logic handling to prevent failures under load and unstable network conditions
 * Introduction of unit testing, more test coverage to follow
 
 ### 0.4.0
-[View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.4.0+is%3Aclosed)
+[View Issues](https://github.com/nullivex/stretchfs/issues?q=milestone%3A0.4.0+is%3Aclosed)
 * Upgraded to Express 4 system wide
 * Upgraded to object-manage 0.8 system wide
 * Dropped restler in favor of request
 * Work in progress...
 
 ### 0.3.0
-[View Issues](https://github.com/nullivex/oose/issues?q=milestone%3A0.3.0+is%3Aclosed)
+[View Issues](https://github.com/nullivex/stretchfs/issues?q=milestone%3A0.3.0+is%3Aclosed)
 * Fix next peer selection to be a list
 * Added start param support to export (MP4 pseudo streaming)
 * Added looking glass (lg) for cluster status

@@ -12,13 +12,13 @@ html
       link(rel='stylesheet', type='text/css', href='//bowercdn.net/c/pickadate-3.5.2/lib/compressed/themes/default.date.css')
       link(rel='stylesheet', type='text/css', href='//bowercdn.net/c/pickadate-3.5.2/lib/compressed/themes/default.time.css')
       link(rel='stylesheet', type='text/css', href='/css/layout.css')
-    title OOSE Admin
+    title StretchFS Admin
   body
     if staff
       //navbar
       .navbar.navbar-fixed-top.navbar-inverse(role='navigation')
         .container
-          a.navbar-brand(href='/') OOSE
+          a.navbar-brand(href='/') StretchFS
           ul.nav.navbar-nav
             li
               a(href='/prism/list') Prisms
@@ -46,7 +46,7 @@ html
     //main content
     block content
     .text-center
-      small(style='font-size: 9px;') &copy; OOSE. Version #{version}
+      small(style='font-size: 9px;') &copy; StretchFS. Version #{version}
     //load scripts
     block js
       script(src='//bowercdn.net/c/jquery-1.11.1/dist/jquery.min.js')

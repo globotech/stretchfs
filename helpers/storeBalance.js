@@ -1,9 +1,9 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:storeBalance')
-var oose = require('oose-sdk')
+var debug = require('debug')('stretchfs:storeBalance')
+var stretchfs = require('oose-sdk')
 
-var NotFoundError = oose.NotFoundError
+var NotFoundError = stretchfs.NotFoundError
 var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 

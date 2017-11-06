@@ -1,11 +1,11 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:purchasedb')
+var debug = require('debug')('stretchfs:purchasedb')
 var moment = require('moment')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var Password = require('node-password').Password
 
-var UserError = oose.UserError
+var UserError = stretchfs.UserError
 
 var couchbase = require('./couchbase')
 
@@ -21,7 +21,7 @@ var couchPurchase = couchbase.purchase()
  * @return {object}
  */
 var couchWrap = function(token){
-  //here need to enumerate couch servers and choose the right connection
+  //here need to enumerate couch servers and chstretchfs the right connection
   //using the token to set the proper zone and database then returning the
   //configured couch object that can be used to work with the purchases as
   //if they were local
@@ -184,11 +184,11 @@ PurchaseDb.prototype.generate = function(zone){
   //will map zone identifiers with couch configurations, if no configuration
   //exists for a particular zone it will fall through to the default couch
   //configuration
-  //databases will be named using oose-purchase-<zone><date>
+  //databases will be named using stretchfs-purchase-<zone><date>
   //example purchase token
   // a20161110a7ch2nx9djn
   //example database name
-  // oose-purchase-a20161110
+  // stretchfs-purchase-a20161110
   //now for token generation, this will involve first finding out what zone our
   //particular prism is on, that will popular the first char, then we will
   //find the date and finally generate the salt

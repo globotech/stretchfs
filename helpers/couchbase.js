@@ -1,7 +1,7 @@
 'use strict';
 var P = require('bluebird')
 var couchbase = require('couchbase')
-var debug = require('debug')('oose:couchbase')
+var debug = require('debug')('stretchfs:couchbase')
 
 var N1Query = couchbase.N1qlQuery
 
@@ -47,7 +47,7 @@ var client = {
     HEARTBEAT: 'heartbeat',
     INVENTORY: 'inventory',
     JOB: 'job',
-    OOSE: 'oose',
+    StretchFS: 'stretchfs',
     PEER: 'peer',
     PURCHASE: 'purchase'
   },
@@ -76,7 +76,7 @@ var client = {
             {ignoreIfExists: true})
         })
     },
-    oose: function(manager){
+    stretchfs: function(manager){
       return manager.createPrimaryIndexAsync({ignoreIfExists: true})
     },
     peer: function(manager){
@@ -278,13 +278,13 @@ client.job = function(){
 
 
 /**
- * Setup the OOSE DB
+ * Setup the StretchFS DB
  * @return {Object}
  */
-client.oose = function(){
+client.stretchfs = function(){
   return client.openBucket(
-    config.couch.bucket.oose.name,
-    config.couch.bucket.oose.secret
+    config.couch.bucket.stretchfs.name,
+    config.couch.bucket.stretchfs.secret
   )
 }
 

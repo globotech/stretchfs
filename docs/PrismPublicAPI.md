@@ -91,7 +91,7 @@
 
 ### Content Retrieve
 
-Download content directly to OOSE from a remote server.
+Download content directly to StretchFS from a remote server.
 
 * **URI** `/content/retrieve`
 * **METHOD** `POST`

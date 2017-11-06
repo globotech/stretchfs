@@ -3,10 +3,10 @@ var P = require('bluebird')
 var expect = require('chai').expect
 var fs = require('graceful-fs')
 var mkdirp = require('mkdirp-then')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var path = require('path')
 
-var content = oose.mock.content
+var content = stretchfs.mock.content
 var hashFile = require('../helpers/hashFile')
 
 var config = require('../config')

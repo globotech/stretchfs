@@ -17,7 +17,7 @@ exports.sendJSON = function(req,res){
       var keys = Object.keys(result.data)
       for(var i = 0; i < keys.length; i++){
         stat.$set(
-          keys[i].replace(/:/g,'.').replace('oose.counter.',''),
+          keys[i].replace(/:/g,'.').replace('stretchfs.counter.',''),
           result.data[keys[i]]
         )
       }

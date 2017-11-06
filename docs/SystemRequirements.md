@@ -3,15 +3,15 @@
 Currently this doc refers to the installation procedure we use on our production systems which run Gentoo x64.
 
 ## Supported Systems
-OOSE is tested working with the following systems.
+StretchFS is tested working with the following systems.
 
 * Debian Linux Stretch
 * Windows 10
 
-Also OOSE should theoretically work on Darwin and Mac OS X (however we have yet to get a chance to test it yet)
+Also StretchFS should theoretically work on Darwin and Mac OS X (however we have yet to get a chance to test it yet)
 
 ## Recommended Systems
-We develop OOSE on Windows however since we dont believe Windows creates a very manageable server environment we choose to run all our production server software on Linux. In this particular instance we use Gentoo Linux for its customization and optimization through host level compilation.
+We develop StretchFS on Windows however since we dont believe Windows creates a very manageable server environment we chstretchfs to run all our production server software on Linux. In this particular instance we use Gentoo Linux for its customization and optimization through host level compilation.
 
 ## Installation of a Storage Peer
 The below software requirements are only for a storage peer that does not host any of the hardware redundant services.

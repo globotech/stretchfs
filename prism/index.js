@@ -18,7 +18,7 @@ P.promisifyAll(infant)
 
 if(require.main === module){
   infant.child(
-    'oose:' + config.prism.name + ':master',
+    'stretchfs:' + config.prism.name + ':master',
     function(done){
       logger.log('info', 'Beginning prism startup')
       cluster = infant.cluster(
@@ -30,9 +30,9 @@ if(require.main === module){
         }
       )
       var env = process.env
-      env.OOSE_HB_TYPE = 'prism'
-      env.OOSE_HB_KEY = config.prism.name
-      env.OOSE_HB_PRISM = ''
+      env.StretchFS_HB_TYPE = 'prism'
+      env.StretchFS_HB_KEY = config.prism.name
+      env.StretchFS_HB_PRISM = ''
       heartbeat = infant.parent('../helpers/heartbeat',{
         respawn: false,
         fork: {

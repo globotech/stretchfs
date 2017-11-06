@@ -139,7 +139,7 @@ app.get('/:token/:filename',routes.content.deliver)
 
 
 /**
-* Start oose prism
+* Start stretchfs prism
 * @param {function} done
 */
 exports.start = function(done){
@@ -157,7 +157,7 @@ exports.start = function(done){
 
 
 /**
- * Stop oose prism
+ * Stop stretchfs prism
  * @param {function} done
  */
 exports.stop = function(done){
@@ -173,7 +173,7 @@ exports.stop = function(done){
 if(require.main === module){
   worker(
     server,
-    'oose:' + config.prism.name + ':worker',
+    'stretchfs:' + config.prism.name + ':worker',
     function(done){
       exports.start(done)
     },

@@ -1,19 +1,19 @@
 #!/bin/bash
 
 if [[ '' == "$1" || 'help' == "$1" || '-h' == "$1" || '--help' == "$1" ]]; then
-  echo "OOSE Instance Installation Tool"
+  echo "StretchFS Instance Installation Tool"
   echo "  Note: Make sure to run the prepareDebian.sh script before continuing"
   echo "  Note: Make sure to run the installStoreDebian.sh script before continuing"
   echo
-  echo "  ./prepareStoreDiskDebian.sh <oose_dir> <disk> <mount> <host>"
-  echo "  eg: ./prepareStoreDiskDebian.sh /opt/oose /dev/sda /media/om101 192.168.200.2"
+  echo "  ./prepareStoreDiskDebian.sh <stretchfs_dir> <disk> <mount> <host>"
+  echo "  eg: ./prepareStoreDiskDebian.sh /opt/stretchfs /dev/sda /media/om101 192.168.200.2"
   echo
   exit
 fi
 
-echo "Welcome to OOSE Instance Installation Preparation"
+echo "Welcome to StretchFS Instance Installation Preparation"
 
-oosedir="$1"
+stretchfsdir="$1"
 disk="$2"
 diskRelative="$(basename $disk)"
 partition="${disk}1"
@@ -103,16 +103,16 @@ echo "}" >> $configFile
 echo "done"
 
 echo -n "Create $mount/dt.json for loading... "
-cp $oosedir/nginx/store_dt.json $mount/dt.json
-sed -i "s@OOSENAME@$name@g" $mount/dt.json
-sed -i "s@OOSEDIR@$oosedir@g" $mount/dt.json
-sed -i "s@OOSECONFIGFILE@$configFile@g" $mount/dt.json
+cp $stretchfsdir/nginx/store_dt.json $mount/dt.json
+sed -i "s@StretchFSNAME@$name@g" $mount/dt.json
+sed -i "s@StretchFSDIR@$stretchfsdir@g" $mount/dt.json
+sed -i "s@StretchFSCONFIGFILE@$configFile@g" $mount/dt.json
 sed -i "s@MOUNTDIR@$mount@g" $mount/dt.json
 sed -i "s@LOGFILE@$mount/log@g" $mount/dt.json
 echo "done"
 
-echo -n "Copying files on to disk from $oosedir... "
-cp -a $oosedir/nginx/html/* $mount/store/purchased
+echo -n "Copying files on to disk from $stretchfsdir... "
+cp -a $stretchfsdir/nginx/html/* $mount/store/purchased
 echo "done"
 
 echo -n "Applying disk tuning to sysfs for $disk... "

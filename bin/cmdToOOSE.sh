@@ -7,4 +7,4 @@ while read svr; do
   echo "----------------------------------------"
   ssh $svr "$cmd" < /dev/null
   echo
-done < oose_server_list
+done < stretchfs_server_list

@@ -8,13 +8,13 @@ var Table = require('cli-table')
 var program = require('commander')
 var fs = require('graceful-fs')
 var MemoryStream = require('memory-stream')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var path = require('path')
 var prettyBytes = require('pretty-bytes')
 var ProgressBar = require('progress')
 var promisePipe = require('promisepipe')
 
-var UserError = oose.UserError
+var UserError = stretchfs.UserError
 
 var couchdb = require('../../helpers/couchbase')
 var hasher = require('../../helpers/hasher')
@@ -24,7 +24,7 @@ var FileOp = require('../../helpers/FileOp')
 
 var config = require('../../config')
 
-var cacheKeyTempFile = '/tmp/oosectkeycache'
+var cacheKeyTempFile = '/tmp/stretchfsctkeycache'
 
 //store our master peerList
 var peerList = {}
@@ -476,7 +476,8 @@ var fileStream = new MemoryStream()
 var fileList = []
 var fileCount = 0
 P.try(function(){
-  var welcomeMessage = 'Welcome to the OOSE v' + config.version + ' clonetool!'
+  var welcomeMessage = 'Welcome to the StretchFS v' +
+    config.version + ' clonetool!'
   console.log(welcomeMessage)
   console.log('--------------------')
   if(program.detail){

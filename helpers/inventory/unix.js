@@ -1,6 +1,6 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:store:inventory')
+var debug = require('debug')('stretchfs:store:inventory')
 var cp = require('child_process')
 var fs = require('graceful-fs')
 var mime = require('mime')

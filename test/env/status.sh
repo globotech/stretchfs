@@ -2,9 +2,9 @@
 
 domain="$1"
 if [ -z "$domain" ]; then
-  domain="oose.io"
+  domain="stretchfs.com"
 fi
-script_name="OOSE"
+script_name="StretchFS"
 http_proto="https://"
 host_name="`hostname`"
 host_host="`hostname -f`"
@@ -14,7 +14,7 @@ host_ptr="`dig @8.8.8.8 +short PTR $host_ip`"
 
 echo "Welcome to the $script_name Environment Status"
 echo "We are on $host_host using $host_ip as $host_name"
-echo "We thank DNS for all of that information, use it loosely"
+echo "We thank DNS for all of that information, use it lstretchfsly"
 echo "-----------------------------------"
 echo -n "Currently:"
 date
@@ -60,6 +60,6 @@ echo "Systems check complete"
 
 echo "Starting self tests"
 
-node /opt/oose/test/env/test.js
+node /opt/stretchfs/test/env/test.js
 
 echo "Self tests complete, please review any errors."

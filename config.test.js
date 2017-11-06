@@ -22,7 +22,7 @@ module.exports = {
         secret: 'password',
         ramQuotaMB: 128
       },
-      oose: {
+      stretchfs: {
         secret: 'password',
         ramQuotaMB: 128
       },

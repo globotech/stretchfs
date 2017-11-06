@@ -12,7 +12,7 @@ var couch = require('../../helpers/couchbase')
 P.promisifyAll(bcrypt)
 
 //open some buckets
-var couchOOSE = couch.oose()
+var couchStretchFS = couch.stretchfs()
 
 var config = require('../../config')
 
@@ -28,7 +28,7 @@ program
       logger.log('info','Creating staff member')
       if(!opts.email || !opts.password)
         throw new Error('Email and password are required')
-      var staffKey = couch.schema.ooseStaff(opts.email)
+      var staffKey = couch.schema.stretchfsStaff(opts.email)
       var doc = {
         email: opts.email,
         password: bcrypt.hashSync(
@@ -37,7 +37,7 @@ program
         active: true,
         createdAt: new Date().toJSON()
       }
-      return couchOOSE.upsertAsync(staffKey,doc)
+      return couchStretchFS.upsertAsync(staffKey,doc)
     })
       .then(function(){
         logger.log('info','Staff member created!')
@@ -58,8 +58,8 @@ program
   .description('Update existing staff member')
   .action(function(opts){
     if(!opts.email) throw new Error('Email is required')
-    var staffKey = couch.schema.ooseStaff(opts.email)
-    couchOOSE.getAsync(staffKey)
+    var staffKey = couch.schema.stretchfsStaff(opts.email)
+    couchStretchFS.getAsync(staffKey)
       .then(function(result){
         var doc = result.value
         if(opts.newEmail) doc.email = opts.newEmail
@@ -70,7 +70,7 @@ program
         }
         if(opts.name) doc.name = opts.name
         doc.updatedAt = new Date().toJSON()
-        return couchOOSE.upsertAsync(staffKey,doc,{cas: result.cas})
+        return couchStretchFS.upsertAsync(staffKey,doc,{cas: result.cas})
       })
       .then(function(){
         logger.log('info','Staff member updated successfully!')
@@ -87,8 +87,8 @@ program
   .description('Remove staff member')
   .action(function(opts){
     if(!opts.email) throw new Error('Email is required... exiting')
-    var staffKey = couch.schema.ooseStaff(opts.email)
-    couchOOSE.removeAsync(staffKey)
+    var staffKey = couch.schema.stretchfsStaff(opts.email)
+    couchStretchFS.removeAsync(staffKey)
       .then(function(){
         logger.log('info','Staff member removed successfully!')
         process.exit()
@@ -103,15 +103,15 @@ program
   .description('List staff members')
   .action(function(){
     var qstring = 'SELECT b.* FROM ' +
-      couch.getName(couch.type.OOSE,true) + ' b ' +
+      couch.getName(couch.type.StretchFS,true) + ' b ' +
       ' WHERE META(b).id LIKE $1'
     var query = couch.N1Query.fromString(qstring)
     var table = new Table({
       head: ['Email','Name','Active']
     })
     var staffCount = 0
-    var staffKey = couch.schema.ooseStaff() + '%'
-    return couchOOSE.queryAsync(query,[staffKey])
+    var staffKey = couch.schema.stretchfsStaff() + '%'
+    return couchStretchFS.queryAsync(query,[staffKey])
       .each(function(row){
         staffCount++
         table.push([row.email,row.name,row.active ? 'Yes' : 'No'])

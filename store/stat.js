@@ -1,6 +1,6 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:store:stat')
+var debug = require('debug')('stretchfs:store:stat')
 var child = require('infant').child
 
 var redis = require('../helpers/redis')()
@@ -11,8 +11,8 @@ var config = require('../config')
 var syncInterval
 
 //open some buckets
-var ooseInventory = couch.inventory()
-var oosePurchase = couch.purchase()
+var stretchInventory = couch.inventory()
+var stretchfsPurchase = couch.purchase()
 
 
 /**
@@ -25,12 +25,12 @@ var oosePurchase = couch.purchase()
 var updateInventoryStat = function(hash,hitCount,byteCount){
   var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
-  return ooseInventory.getAndLock(inventoryKey)
+  return stretchInventory.getAndLock(inventoryKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
       result.value.lastUpdated = new Date().toJSON()
-      return ooseInventory.upsertAsync(
+      return stretchInventory.upsertAsync(
         inventoryKey,result.value,{cas: result.cas})
     })
 }
@@ -45,12 +45,12 @@ var updateInventoryStat = function(hash,hitCount,byteCount){
  */
 var updatePurchaseStat = function(token,hitCount,byteCount){
   var purchaseKey = couch.schema.purchase(token)
-  return oosePurchase.getAndLock(purchaseKey)
+  return stretchfsPurchase.getAndLock(purchaseKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
       result.value.lastUpdated = new Date().toJSON()
-      return oosePurchase.upsertAsync(
+      return stretchfsPurchase.upsertAsync(
         purchaseKey,result.value,{cas: result.cas})
     })
 }
@@ -172,7 +172,7 @@ exports.stop = function(done){
 
 if(require.main === module){
   child(
-    'oose:' + config.store.name + ':stat:worker',
+    'stretchfs:' + config.store.name + ':stat:worker',
     function(done){
       exports.start(done)
     },

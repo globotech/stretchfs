@@ -8,7 +8,7 @@
  * @constructor
  */
 var RedisSchema = function(prefix){
-  if(!prefix) prefix = 'oose'
+  if(!prefix) prefix = 'stretchfs'
   this.prefix = prefix
 }
 
@@ -82,16 +82,6 @@ RedisSchema.prototype.storeHits = function(token,store){
 
 
 /**
- * Store entry
- * @param {string} store
- * @return {string}
- */
-RedisSchema.prototype.storeEntry = function(store){
-  return this.applyPrefix('storeEntry:' + store)
-}
-
-
-/**
  * Content existence cache
  * @param {string} hash
  * @return {string}
@@ -117,16 +107,6 @@ RedisSchema.prototype.masterUp = function(){
  */
 RedisSchema.prototype.user = function(username){
   return this.applyPrefix('user:' + username)
-}
-
-
-/**
- * Look up a user session by token
- * @param {string} token
- * @return {string}
- */
-RedisSchema.prototype.userSession = function(token){
-  return this.applyPrefix('userSession:' + token)
 }
 
 

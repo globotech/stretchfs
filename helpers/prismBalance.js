@@ -1,6 +1,6 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('oose:prismBalance')
+var debug = require('debug')('stretchfs:prismBalance')
 
 var couch = require('./couchbase')
 var redis = require('../helpers/redis')()

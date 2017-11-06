@@ -23,7 +23,7 @@ P.promisifyAll(infant)
 
 if(require.main === module){
   infant.child(
-    'oose:' + config.store.name + ':master',
+    'stretchfs:' + config.store.name + ':master',
     function(done){
       logger.log('info','Beginning store startup')
       //bootstrap to start
@@ -36,9 +36,9 @@ if(require.main === module){
         }
       )
       var env = process.env
-      env.OOSE_HB_TYPE = 'store'
-      env.OOSE_HB_KEY = config.store.name
-      env.OOSE_HB_PRISM = config.store.prism
+      env.StretchFS_HB_TYPE = 'store'
+      env.StretchFS_HB_KEY = config.store.name
+      env.StretchFS_HB_PRISM = config.store.prism
       heartbeat = infant.parent('../helpers/heartbeat',{
         respawn: false,
           fork: {

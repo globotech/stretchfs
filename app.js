@@ -104,7 +104,7 @@ exports.stop = function(done){
 
 if(require.main === module){
   Child.child(
-    'oose:' + config.host + ':main',
+    'stretchfs:' + config.host + ':main',
     function(done){
       exports.start(done)
     },

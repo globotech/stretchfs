@@ -211,31 +211,31 @@ CouchSchema.prototype.job = function(handle){
 
 
 /**
- * OOSE User
+ * StretchFS User
  * @param {string} name
  * @return {string}
  */
-CouchSchema.prototype.ooseUser = function(name){
+CouchSchema.prototype.stretchfsUser = function(name){
   return this.applyPrefix('user:' + (name || ''))
 }
 
 
 /**
- * OOSE Token
+ * StretchFS Token
  * @param {string} token
  * @return {string}
  */
-CouchSchema.prototype.ooseToken = function(token){
+CouchSchema.prototype.stretchfsToken = function(token){
   return this.applyPrefix('token:' + (token || ''))
 }
 
 
 /**
- * OOSE Staff (admin user)
+ * StretchFS Staff (admin user)
  * @param {string} name
  * @return {string}
  */
-CouchSchema.prototype.ooseStaff = function(name){
+CouchSchema.prototype.stretchfsStaff = function(name){
   return this.applyPrefix('staff:' + (name || ''))
 }
 

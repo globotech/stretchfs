@@ -39,7 +39,7 @@ describe('prism',function(){
         .postAsync(client.url('/'))
         .spread(function(res,body){
           expect(body.message).to.equal(
-            'Welcome to OOSE version ' + config.version)
+            'Welcome to StretchFS version ' + config.version)
         })
     })
     it('should ping',function(){

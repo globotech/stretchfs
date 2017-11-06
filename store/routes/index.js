@@ -13,7 +13,7 @@ var config = require('../../config')
  */
 exports.index = function(req,res){
   redis.incr(redis.schema.counter('store','index'))
-  res.json({message: 'Welcome to OOSE version ' + config.version})
+  res.json({message: 'Welcome to StretchFS version ' + config.version})
 }
 
 
@@ -41,7 +41,7 @@ exports.stats = function(req,res){
       var keys = Object.keys(result.data)
       for(var i = 0; i < keys.length; i++){
         stat.$set(
-          keys[i].replace(/:/g,'.').replace('oose.counter.',''),
+          keys[i].replace(/:/g,'.').replace('stretchfs.counter.',''),
           result.data[keys[i]]
         )
       }

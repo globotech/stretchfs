@@ -97,7 +97,7 @@ app.post('/content/verify',routes.content.verify)
 
 
 /**
-* Start oose store
+* Start stretchfs store
 * @param {function} done
 */
 exports.start = function(done){
@@ -115,7 +115,7 @@ exports.start = function(done){
 
 
 /**
- * Stop oose master
+ * Stop stretchfs master
  * @param {function} done
  */
 exports.stop = function(done){
@@ -128,7 +128,7 @@ exports.stop = function(done){
 if(require.main === module){
   worker(
     server,
-    'oose:' + config.store.name + ':worker',
+    'stretchfs:' + config.store.name + ':worker',
     function(done){
       exports.start(done)
     },

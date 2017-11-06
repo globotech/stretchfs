@@ -1,6 +1,6 @@
 'use strict';
 var program = require('commander')
-var debug = require('debug')('oose:hb')
+var debug = require('debug')('stretchfs:hb')
 var infant = require('infant')
 
 var api = require('../helpers/api')
@@ -45,7 +45,7 @@ var myDownVotes = {}
 //setup our identity
 var setupProgram = function(){
   program.version(config.version)
-    .description('OOSE Heartbeat')
+    .description('StretchFS Heartbeat')
     .option('-k --key <key>','System key for heartbeat eg: om101 or store1')
     .option('-p --prism <name>',
       'When type is store the parent prism name is needed here')
@@ -56,9 +56,9 @@ var setupProgram = function(){
     program.key = config.heartbeat.systemKey
     program.type = config.heartbeat.systemType
     if(!program.key || !program.type){
-      program.key = process.env.OOSE_HB_KEY || config.prism.name
-      program.type = process.env.OOSE_HB_TYPE || 'prism'
-      program.prism = process.env.OOSE_HB_PRISM || ''
+      program.key = process.env.StretchFS_HB_KEY || config.prism.name
+      program.type = process.env.StretchFS_HB_TYPE || 'prism'
+      program.prism = process.env.StretchFS_HB_PRISM || ''
     }
   }
 }
@@ -429,7 +429,7 @@ exports.stop = function(done){
 
 if(require.main === module){
   infant.child(
-    'oose:' + program.key + ':heartbeat',
+    'stretchfs:' + program.key + ':heartbeat',
     function(done){
       //do a sanity check we need both
       if(!program.key)

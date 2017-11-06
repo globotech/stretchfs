@@ -194,7 +194,7 @@ exports.stop = function(done){
 if(require.main === module){
   worker(
     server,
-    'oose:admin:worker',
+    'stretchfs:admin:worker',
     function(done){
       exports.start(done)
     },

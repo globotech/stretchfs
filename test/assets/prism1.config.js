@@ -6,7 +6,7 @@
  * @type {object}
  */
 module.exports = {
-  domain: 'oose-test',
+  domain: 'stretchfs-test',
   group: 'group1',
   root: __dirname + '/data/test/prism1',
   redis: {
@@ -14,7 +14,7 @@ module.exports = {
   },
   store: {
     enabled: false,
-    username: 'oose-store',
+    username: 'stretchfs-store',
     password: 'that',
     timeout: 2000
   },
@@ -22,7 +22,7 @@ module.exports = {
     enabled: true,
     host: '127.0.2.2',
     name: 'prism1',
-    username: 'oose-prism',
+    username: 'stretchfs-prism',
     password: 'it',
     timeout: 2000,
     workers: {count: 2, maxConnections: 1000000}

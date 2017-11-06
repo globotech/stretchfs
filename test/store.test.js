@@ -4,7 +4,7 @@ var expect = require('chai').expect
 var fs = require('graceful-fs')
 var infant = require('infant')
 var ObjectManage = require('object-manage')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var path = require('path')
 var promisePipe = require('promisepipe')
 var rmfr = require('rmfr')
@@ -13,7 +13,7 @@ var hashStream = require('sha1-stream')
 var api = require('../helpers/api')
 var purchasedb = require('../helpers/purchasedb')
 
-var content = oose.mock.content
+var content = stretchfs.mock.content
 
 var config = require('../config')
 config.$load(require(__dirname + '/assets/store1.config.js'))
@@ -21,7 +21,7 @@ config.$load(require(__dirname + '/assets/store1.config.js'))
 var makeEnv = function(configFile){
   var env = new ObjectManage()
   env.$load(process.env)
-  env.OOSE_CONFIG = path.resolve(configFile)
+  env.STRETCH_CONFIG = path.resolve(configFile)
   return env.$strip()
 }
 
@@ -54,7 +54,7 @@ describe('store',function(){
         .postAsync(client.url('/'))
         .spread(function(res,body){
           return P.all([
-            expect(body.message).to.equal('Welcome to OOSE version ' +
+            expect(body.message).to.equal('Welcome to StretchFS version ' +
               config.version)
           ])
         })

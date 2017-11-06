@@ -15,7 +15,7 @@ var logger = new winston.Logger({
       },
       formatter: function(err){
         // Return string will be passed to logger.
-        return '[' + err.timestamp() + ']' + ' ' + 'OOSE' +
+        return '[' + err.timestamp() + ']' + ' ' + 'StretchFS' +
           ' ' + err.level.toUpperCase() + ': ' + err.message + ' '
       }
     })

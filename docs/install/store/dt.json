@@ -1,11 +1,11 @@
 {
-  "name": "OOSENAME",
-  "cwd": "OOSEDIR",
+  "name": "StretchFSNAME",
+  "cwd": "StretchFSDIR",
   "user": "node",
   "command": "node app",
   "env": {
     "NODE_ENV": "production",
-    "OOSE_CONFIG": "OOSECONFIGFILE",
+    "STRETCH_CONFIG": "StretchFSCONFIGFILE",
     "SHELL": "/bin/bash",
     "USER": "node",
     "PATH": "/usr/local/bin:/usr/bin:/bin:/opt/bin",

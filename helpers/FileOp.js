@@ -2,7 +2,7 @@
 var P = require('bluebird')
 //var debug = require('debug')('helper:FileOp')
 var ObjectManage = require('object-manage')
-var oose = require('oose-sdk')
+var stretchfs = require('oose-sdk')
 var random = require('random-js')()
 var prettyBytes = require('pretty-bytes')
 
@@ -86,7 +86,7 @@ FileOp.prototype.setupStore = function(store){
   opts.$load(config.store)
   opts.$load(store)
   opts = opts.$strip()
-  return oose.api.setupAccess('store',opts)
+  return stretchfs.api.setupAccess('store',opts)
 }
 
 

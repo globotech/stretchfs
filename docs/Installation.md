@@ -1,6 +1,6 @@
-# OOSE Installation
+# StretchFS Installation
 
-These instructions pertain to our production OOSE cluster and may vary. For
+These instructions pertain to our production StretchFS cluster and may vary. For
 other installations.
 
 ## Prereqs
@@ -11,7 +11,7 @@ other installations.
 
 ## Procedure
 
-* Checkout code to `/opt/oose`
+* Checkout code to `/opt/stretchfs`
 * Create file systems and mounts for all drives in `/media/om<xxx>`
 * Create a destination for the prism at `/opt/op<xxx>`
 * Create `config.om<xxx>.js` files in all the media folders

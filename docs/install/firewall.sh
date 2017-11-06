@@ -6,7 +6,7 @@ IP6TABLES="ip6tables"
 mgmtsrcs="199.87.232.0/24 104.221.221.0/24"
 mgmt6srcs="2604:4480::c757:e800/120 2604:4480::68dd:dd00/120"
 
-echo "Welcome to OOSE Firewall installation tool"
+echo "Welcome to StretchFS Firewall installation tool"
 
 pubeth="$1"
 mgmtip="$2"
@@ -109,12 +109,12 @@ ipt_both -A OUTPUT -o "$pubeth"  -p tcp -m multiport --dports 22,80,443 -m state
 ipt_both -A INPUT -i "$pubeth" -p tcp -m multiport --sports 22,80,443 -m state --state ESTABLISHED -j ACCEPT
 echo "done"
 
-echo -n "Allow Inbound OOSE... "
+echo -n "Allow Inbound StretchFS... "
 ipt_both -A INPUT -i "$pubeth" -p tcp -m multiport --dports 5970,5971,5972 -m state --state NEW,ESTABLISHED -j ACCEPT
 ipt_both -A OUTPUT -o "$pubeth"  -p tcp -m multiport --sports 5970,5971,5972 -m state --state ESTABLISHED -j ACCEPT
 echo "done"
 
-echo -n "Allow Outbound OOSE... "
+echo -n "Allow Outbound StretchFS... "
 ipt_both -A OUTPUT -o "$pubeth" -p tcp -m multiport --dports 5970,5971,5972 -m state --state NEW,ESTABLISHED -j ACCEPT
 ipt_both -A INPUT -i "$pubeth" -p tcp -m multiport --sports 5970,5971,5972 -m state --state ESTABLISHED -j ACCEPT
 echo "done"
@@ -153,5 +153,5 @@ else
   exit
 fi
 
-echo "OOSE firewall installation complete"
+echo "StretchFS firewall installation complete"
 exit
