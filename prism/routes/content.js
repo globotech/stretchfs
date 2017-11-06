@@ -14,7 +14,7 @@ var temp = require('temp')
 var api = require('../../helpers/api')
 var NetworkError = oose.NetworkError
 var NotFoundError = oose.NotFoundError
-var couch = require('../../helpers/couchbase')
+var inventory = require('../../helpers/inventory')
 var prismBalance = require('../../helpers/prismBalance')
 var promiseWhile = require('../../helpers/promiseWhile')
 var purchasedb = require('../../helpers/purchasedb')
@@ -31,9 +31,6 @@ var config = require('../../config')
 P.promisifyAll(temp)
 P.promisifyAll(purchasedb)
 
-//open some buckets
-var ooseInventory = couch.inventory()
-
 
 /**
  * Send a file to prism
@@ -46,19 +43,7 @@ var sendToPrism = function(tmpfile,hash,extension){
   var prismList
   var winners = []
   //create the new inventory record it will be completed by the peers
-  var inventoryKey = couch.schema.inventory(hash)
-  var inventory = {
-    hash: hash,
-    mimeExtension: extension,
-    map: [],
-    count: 0,
-    size: 0,
-    minCount: config.inventory.defaultMinCount || 2,
-    desiredCount: config.inventory.defaultDesiredCount || 2,
-    createdAt: new Date().toJSON(),
-    updatedAt: new Date().toJSON()
-  }
-  return ooseInventory.upsertAsync(inventoryKey,inventory,{cas: null})
+  return inventory.createMasterInventory(hash)
     .then(function(){
       //actually stream the file to new peers
       return prismBalance.prismList()//pick first winner
