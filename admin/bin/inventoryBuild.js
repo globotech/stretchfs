@@ -3,6 +3,8 @@ var couch = require('../../helpers/couchbase')
 
 var listInventory = require('../helpers/inventory')
 
+var config = require('../../config')
+
 //open some buckets
 var ooseInventory = couch.inventory()
 
@@ -82,11 +84,18 @@ listInventory.listBuild(couch,ooseInventory,couch.type.INVENTORY)
           if(!result.value.mimeExtension){
             result.value.mimeExtension = subRecord.value.mimeExtension
           }
+          if(!result.value.minCount){
+            result.value.minCount = config.inventory.defaultMinCount || 2
+          }
+          if(!result.value.desiredCount){
+            result.value.desiredCount =
+              config.inventory.defaultDesiredCount || 2
+          }
           if(!result.value.relativePath){
             result.value.relativePath = subRecord.value.relativePath
           }
           //update replica count
-          result.value.replicaCount = result.map.length
+          result.value.count = result.map.length
           result.value.updatedAt = new Date().toJSON()
           return result
         },
@@ -102,7 +111,9 @@ listInventory.listBuild(couch,ooseInventory,couch.type.INVENTORY)
               map: [
                 {prism: subRecord.value.prism, store: subRecord.value.store}
               ],
-              replicaCount: 1,
+              count: 1,
+              minCount: config.inventory.defaultMinCount || 2,
+              desiredCount: config.inventory.defaultDesiredCount || 2,
               createdAt: new Date().toJSON(),
               updatedAt: new Date().toJSON()
             },

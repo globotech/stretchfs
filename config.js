@@ -108,6 +108,8 @@ config.$load({
   },
   //inventory
   inventory: {
+    defaultMinCount: 2, //minimum copy count
+    defaultDesiredCount: 2, //desired copy count
     keepDeadRecords: false, // keep missing inventory records
     balance: {
       concurrency: 4 //files to process concurrently

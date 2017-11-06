@@ -70,6 +70,12 @@ var createInventory = function(fileDetail,verified){
             fileDetail.hash,fileDetail.ext
           )
         }
+        if(!inventory.value.minCount)
+          inventory.value.minCount = config.inventory.defaultMinCount || 2
+        if(!inventory.value.desiredCount){
+          inventory.valuu.desiredCount =
+            config.inventory.defaultDesiredCount || 2
+        }
         inventory.value.count = inventory.value.map.length
         if(!inventory.value.size)
           inventory.value.size = fileDetail.stat.size
@@ -86,6 +92,8 @@ var createInventory = function(fileDetail,verified){
           ),
           size: fileDetail.stat.size,
           count: 1,
+          minCount: config.inventory.defaultMinCount || 2,
+          desiredCount: config.inventory.defaultDesiredCount || 2,
           map: [
             {prism: config.store.prism, store: config.store.name}
           ],

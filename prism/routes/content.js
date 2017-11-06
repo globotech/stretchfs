@@ -53,6 +53,8 @@ var sendToPrism = function(tmpfile,hash,extension){
     map: [],
     count: 0,
     size: 0,
+    minCount: config.inventory.defaultMinCount || 2,
+    desiredCount: config.inventory.defaultDesiredCount || 2,
     createdAt: new Date().toJSON(),
     updatedAt: new Date().toJSON()
   }
