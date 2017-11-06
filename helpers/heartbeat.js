@@ -106,10 +106,12 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   //get down votes that have already been set for this host
   return createDownVote()
     .then(function(){
-      var qstring = 'SELECT b.* FROM ' +
-        couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
-      var query = couch.N1Query.fromString(qstring)
+      var clause = {}
+      clause.from = ' FROM ' + couch.getName(couch.type.HEARTBEAT,true)
+      clause.where = ' WHERE META().id LIKE $1'
+      var query = couch.N1Query.fromString(
+        'SELECT *' + clause.from + clause.where
+      )
       downKey = downKey + '%'
       return couchHeartbeat.queryAsync(query,[downKey])
     })
@@ -186,10 +188,12 @@ var runHeartbeat = function(systemKey,systemType){
       .then(function(){
         //remove down votes
         var downKey = couch.schema.downVote(peer.name)
-        var qstring = 'DELETE FROM ' +
-          couch.getName(couch.type.HEARTBEAT,true) +
-          ' b WHERE META(b).id LIKE $1'
-        var query = couch.N1Query.fromString(qstring)
+        var clause = {}
+        clause.from = ' FROM ' + couch.getName(couch.type.HEARTBEAT,true)
+        clause.where = ' WHERE META().id LIKE $1'
+        var query = couch.N1Query.fromString(
+          'DELETE' + clause.from + clause.where
+        )
         downKey = downKey + '%'
         //remove local downvote
         delete myDownVotes[downKey]
@@ -292,10 +296,12 @@ var runVotePrune = function(systemKey,systemType){
     if(vote.systemType && vote.systemType !== systemType) return false
     return (voteExpiresAfter <= currentTimestamp)
   }
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
-    'WHERE META(b).id LIKE $1'
-  var query = couch.N1Query.fromString(qstring)
+  var clause = {}
+  clause.from = ' FROM ' + couch.getName(couch.type.HEARTBEAT,true)
+  clause.where = ' WHERE META().id LIKE $1'
+  var query = couch.N1Query.fromString(
+    'SELECT *' + clause.from + clause.where
+  )
   downVoteKey = downVoteKey + '%'
   return couchHeartbeat.queryAsync(query,[downVoteKey])
     .then(function(result){
@@ -365,10 +371,12 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     )
     .then(function(){
       //Time to delete the downvote log
-      var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.HEARTBEAT,true) +
-        ' b WHERE META(b).id LIKE $1'
-      var query = couch.N1Query.fromString(qstring)
+      var clause = {}
+      clause.from = ' FROM ' + couch.getName(couch.type.HEARTBEAT,true)
+      clause.where = ' WHERE META().id LIKE $1'
+      var query = couch.N1Query.fromString(
+        'DELETE' + clause.from + clause.where
+      )
       downKey = downKey + '%'
       return couchHeartbeat.queryAsync(query,[downKey])
     })

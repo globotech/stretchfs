@@ -15,9 +15,10 @@ var runInterval = function(done){
   //first lets get all the purchases
   var purchaseKey = couch.schema.purchase()
   debug('requesting purchases',purchaseKey)
-  var qstring = 'DELETE FROM ' + couch.getName(couch.type.PURCHASE,true) +
-    ' b WHERE META(b).id LIKE $1'
-  var query = couch.N1Query.fromString(qstring)
+  var clause = {}
+  clause.from = ' FROM ' + couch.getName(couch.type.PURCHASE,true)
+  clause.where = ' WHERE META().id LIKE $1'
+  var query = couch.N1Query.fromString('DELETE' + clause.from + clause.where)
   purchaseKey = purchaseKey + '%'
   var couchPurchase = couch.purchase()
   couchPurchase.queryAsync(query,[purchaseKey])
@@ -50,4 +51,3 @@ if(require.main === module){
     }
   )
 }
-

@@ -25,7 +25,7 @@ exports.list = function(req,res){
     stretchfsPurchase,
     couch.type.PURCHASE,
     search,
-    'META(b).id',
+    '_id',
     true,
     offset,
     limit

@@ -242,14 +242,24 @@ exports.remove = function(hash,ext){
     .then(function(result){
       if(false === result.exists){
         //not found no need to remove
-        return true
       } else {
         try {
           fs.unlinkSync(result.path)
         } catch(e){
           //nothing
         }
-        return true
       }
+      if(result.path){
+        var _path = result.path
+        var _fail = false
+        while(!_fail){
+          try {
+            fs.rmdirSync(_path = path.dirname(_path))
+          } catch(e){
+            _fail = true
+          }
+        }
+      }
+      return true
     })
 }

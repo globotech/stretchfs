@@ -102,10 +102,12 @@ program
   .command('list')
   .description('List staff members')
   .action(function(){
-    var qstring = 'SELECT b.* FROM ' +
-      couch.getName(couch.type.StretchFS,true) + ' b ' +
-      ' WHERE META(b).id LIKE $1'
-    var query = couch.N1Query.fromString(qstring)
+    var clause = {}
+    clause.from = ' FROM ' + couch.getName(couch.type.StretchFS,true)
+    clause.where = ' WHERE META().id LIKE $1'
+    var query = couch.N1Query.fromString(
+      'SELECT *' + clause.from + clause.where
+    )
     var table = new Table({
       head: ['Email','Name','Active']
     })

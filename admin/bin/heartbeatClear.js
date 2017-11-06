@@ -15,9 +15,10 @@ var runInterval = function(done){
   //first lets get all the purchases
   var hbKey = couch.schema.downVote()
   debug('requesting votes',hbKey)
-  var qstring = 'DELETE FROM ' + couch.getName(couch.type.HEARTBEAT,true) +
-    ' b WHERE META(b).id LIKE $1'
-  var query = couch.N1Query.fromString(qstring)
+  var clause = {}
+  clause.from = ' FROM ' + couch.getName(couch.type.HEARTBEAT,true)
+  clause.where = ' WHERE META().id LIKE $1'
+  var query = couch.N1Query.fromString('DELETE' + clause.from + clause.where)
   hbKey = hbKey + '%'
   var couchHeartbeat = couch.heartbeat()
   couchHeartbeat.queryAsync(query,[hbKey])
@@ -50,4 +51,3 @@ if(require.main === module){
     }
   )
 }
-
