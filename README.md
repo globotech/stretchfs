@@ -110,6 +110,7 @@ From there follow the debug filtering rules defined
 
 ### 3.0.0 [View Issues](https://bugs.nullivex.com/roadmap_page.php?version_id=5)
 
+* Renamed to StretchFS, RIP OOSE :(
 * Introduce new send component to aid in dropping NGINX OpenResty from the StretchFS
 standard build.
 * Prism now listens on multiple ports to support CDN functionality without the
@@ -136,6 +137,7 @@ no longer depend on an outside source for compute jobs.
 
 ### 2.4.0
 
+* Final release as OOSE
 * Removal of the idea of keeping symlinks for reverse lookups, uses globby
 * Store removal function upgraded
 * Adds content verification to verify integrity of content on disk
