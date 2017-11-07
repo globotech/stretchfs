@@ -8,10 +8,10 @@
 module.exports = {
   couch: {
     admin: {
-      username: 'root',
+      username: 'Administrator',
       password: 'password'
     },
-    username: 'test',
+    username: 'stretchfs',
     password: 'password',
     bucket: {
       inventory: {
