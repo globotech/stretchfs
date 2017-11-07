@@ -17,7 +17,7 @@ before_script:
   - sudo dpkg -i couchbase-server-community_5.0.0-ubuntu14.04_amd64.deb
   - sudo service couchbase-server start
   # Init cluster
-  - sleep 1
+  - sleep 3
   - /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-username=root --cluster-password=password --cluster-ramsize=1024 --cluster-index-ramsize=256 --cluster-fts-ramsize=256 --services=data,index,query,fts
   # Init couchbase
   - DEBUG=stretchfs:couchbase node admin/bin/cbSetup.js
