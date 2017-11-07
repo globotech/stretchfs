@@ -5,7 +5,7 @@ var fs = require('graceful-fs')
 var infant = require('infant')
 var mkdirp = require('mkdirp-then')
 var request = require('request-promise')
-var rimraf = require('rimraf-promise')
+var rimraf = require('rmfr')
 
 var config = require('../../config')
 var couch = require('../../helpers/couchbase')

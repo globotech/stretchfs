@@ -33,7 +33,7 @@ config.$load({
   },
   api: {
     maxSockets: 64,
-    sessionTokenName: 'X-OOSE-Token'
+    sessionTokenName: 'X-STRETCHFS-Token'
   },
   /**
    * Databases
