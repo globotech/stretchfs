@@ -18,7 +18,7 @@ before_script:
   - sudo service couchbase-server start
   # Init cluster
   - sleep 3
-  - /opt/couchbase/bin/couchbase-cli cluster-init --cluster 127.0.0.1:8091 --cluster-username=root --cluster-password=password --cluster-ramsize=1024 --cluster-index-ramsize=256 --cluster-fts-ramsize=256 --cluster-name=localhost --index-storage-setting=standard --services=data,index,query,fts
+  - /opt/couchbase/bin/couchbase-cli cluster-init --cluster 127.0.0.1:8091 --cluster-username=root --cluster-password=password --cluster-ramsize=1024 --cluster-index-ramsize=256 --cluster-fts-ramsize=256 --cluster-name=localhost --index-storage-setting=default --services=data,index,query,fts
   # Init couchbase
   - DEBUG=stretchfs:couchbase node admin/bin/cbSetup.js
   - DEBUG=stretchfs:couchbase node admin/bin/userCreate.js localhost bigpassword
