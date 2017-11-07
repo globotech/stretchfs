@@ -11,7 +11,7 @@ before_script:
   - sudo wget -O /etc/apt/sources.list.d/couchbase.list http://packages.couchbase.com/ubuntu/couchbase-ubuntu1404.list
   - "sudo wget http://packages.couchbase.com/ubuntu/couchbase.key && sudo cat couchbase.key | sudo apt-key add -"
   - sudo apt-get update
-  - sudo apt-get install libcouchbase2 libcouchbase-dev
+  - sudo apt-get install libcouchbase2 libcouchbase-dev python-httplib2
   # Couchbase Server
   - sudo wget https://packages.couchbase.com/releases/5.0.0/couchbase-server-community_5.0.0-ubuntu14.04_amd64.deb
   - sudo dpkg -i couchbase-server-community_5.0.0-ubuntu14.04_amd64.deb
