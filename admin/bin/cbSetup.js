@@ -11,9 +11,11 @@ var roles = []
 couch.createBuckets()
   .then(function(result){
     roles = result
-    console.log('Bucket creation complete, waiting 5 seconds')
+    var waitSeconds = 5
+    if(process.env.TEST) waitSeconds = 30
+    console.log('Bucket creation complete, waiting ' + waitSeconds + ' seconds')
     return new P(function(resolve){
-      setTimeout(resolve,5000)
+      setTimeout(resolve,waitSeconds * 1000)
     })
   })
   .then(function(){
