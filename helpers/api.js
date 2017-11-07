@@ -1,5 +1,5 @@
 'use strict';
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 
 var config = require('../config')
 

@@ -2,7 +2,7 @@
 var P = require('bluebird')
 var debug = require('debug')('stretchfs:purchasedb')
 var moment = require('moment')
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 var Password = require('node-password').Password
 
 var UserError = stretchfs.UserError

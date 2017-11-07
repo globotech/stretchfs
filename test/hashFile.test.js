@@ -3,7 +3,7 @@ var P = require('bluebird')
 var expect = require('chai').expect
 var fs = require('graceful-fs')
 var mkdirp = require('mkdirp-then')
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 var path = require('path')
 
 var content = stretchfs.mock.content

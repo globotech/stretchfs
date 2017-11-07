@@ -5,7 +5,7 @@ var fs = require('graceful-fs')
 var http = require('http')
 var infant = require('infant')
 var ObjectManage = require('object-manage')
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 var path = require('path')
 var rmfr = require('rmfr')
 var url = require('url')
@@ -14,7 +14,6 @@ var api = require('../../helpers/api')
 var couch = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
 var content = stretchfs.mock.content
-//var purchasedb = require('../../helpers/purchasedb')
 var redis = require('../../helpers/redis')()
 
 var NetworkError = stretchfs.NetworkError

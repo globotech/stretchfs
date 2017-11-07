@@ -1,7 +1,7 @@
 'use strict';
 var fs = require('graceful-fs')
 var ObjectManage = require('object-manage')
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 var os = require('os')
 var pkg = require('./package.json')
 

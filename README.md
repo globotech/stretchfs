@@ -237,7 +237,7 @@ cluster.
 ### 1.2.0
 * Purchases now require file extension to ensure consistency of purchases.
 * File detail can be used to ascertain an unknown mime type from a sha1
-* `oose-sdk` 1.2.0 has been released in conjunction with this release.
+* `stretchfs-sdk` 1.2.0 has been released in conjunction with this release.
 * All clients that purchase content need to request purchases with file
 extension, this is a breaking change.
 * Exists now takes timeout and retryCount at call time to ensure that scripts
@@ -248,8 +248,8 @@ exist will get a more reliable result.
 * Many bug fixes from initial production deployment
 * Exists now takes bulk requests with an array of sha1's and is still
 backward compatible with singular requests.
-* Upgrade to oose-sdk 1.1.0 which implements the Prism helper
-* Sessions are now sticky and can be generated through the oose-sdk
+* Upgrade to stretchfs-sdk 1.1.0 which implements the Prism helper
+* Sessions are now sticky and can be generated through the stretchfs-sdk
 * Finished clonetool for managing content cluster wide
 * Added storeInventory tool for displaying and repairing store content
 * Added prunePurchases tool for keeping purchases from leaking

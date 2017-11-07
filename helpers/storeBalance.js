@@ -1,7 +1,7 @@
 'use strict';
 var P = require('bluebird')
 var debug = require('debug')('stretchfs:storeBalance')
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 
 var NotFoundError = stretchfs.NotFoundError
 var couch = require('./couchbase')

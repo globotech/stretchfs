@@ -2,7 +2,7 @@
 var P = require('bluebird')
 //var debug = require('debug')('helper:FileOp')
 var ObjectManage = require('object-manage')
-var stretchfs = require('oose-sdk')
+var stretchfs = require('stretchfs-sdk')
 var random = require('random-js')()
 var prettyBytes = require('pretty-bytes')
 
