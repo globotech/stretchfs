@@ -19,9 +19,7 @@ var CouchSchema = function(prefix){
  */
 CouchSchema.prototype.PEER_TYPES = {
   'prism': 'prism',
-  'store': 'store',
-  'send': 'send',
-  'supervisor': 'supervisor'
+  'store': 'store'
 }
 
 
@@ -119,50 +117,6 @@ CouchSchema.prototype.store = function(prism,name){
 
 
 /**
- * Send Key
- * @param {string} prism
- * @param {string} store
- * @param {string} name
- * @return {string}
- */
-CouchSchema.prototype.send = function(prism,store,name){
-  return this.applyPrefix(
-    this.PEER_TYPES.send + ':' + prism + ':' + store + ':' + name
-  )
-}
-
-
-/**
- * Supervisor Key
- * @param {string} name
- * @return {string}
- */
-CouchSchema.prototype.supervisor = function(name){
-  return this.applyPrefix('supervisor:' + (name || ''))
-}
-
-
-/**
- * Supervisor Key
- * @param {string} name
- * @return {string}
- */
-CouchSchema.prototype.supervisor = function(name){
-  return this.applyPrefix('supervisor:' + (name || ''))
-}
-
-
-/**
- * Supervisor Key
- * @param {string} name
- * @return {string}
- */
-CouchSchema.prototype.supervisor = function(name){
-  return this.applyPrefix('supervisor:' + (name || ''))
-}
-
-
-/**
  * DownVote Key
  * @param {string} castee
  * @param {string} caster
@@ -206,7 +160,7 @@ CouchSchema.prototype.inventory = function(hash,prism,store){
  * @return {string}
  */
 CouchSchema.prototype.job = function(handle){
-  return this.applyPrefix(handle || '')
+  return this.applyPrefix('job:' + handle || '')
 }
 
 

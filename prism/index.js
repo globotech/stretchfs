@@ -11,7 +11,7 @@ var heartbeat
 var prismKey = couch.schema.prism(config.prism.name)
 
 //open couch buckets
-var couchPeer = couch.peer()
+var couchStretch = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(infant)
@@ -40,7 +40,7 @@ if(require.main === module){
         }
       })
       if(!config.prism.ghost){
-        couchPeer.getAsync(prismKey)
+        couchStretch.getAsync(prismKey)
           .then(
             //if we exist lets mark ourselves available
             function(result){
@@ -51,13 +51,13 @@ if(require.main === module){
               doc.available = true
               doc.active = true
               doc.updatedAt = new Date().toJSON()
-              return couchPeer.upsertAsync(prismKey,doc,{cas: result.cas})
+              return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
               if(!err || !err.code || 13 !== err.code) throw err
               //now register ourselves or mark ourselves available
-              return couchPeer.upsertAsync(prismKey,{
+              return couchStretch.upsertAsync(prismKey,{
                 name: config.prism.name,
                 host: config.prism.host || '127.0.0.1',
                 port: config.prism.port,
@@ -96,11 +96,11 @@ if(require.main === module){
       logger.log('info','Beginning prism shutdown')
       if(!config.prism.ghost){
         //mark ourselves as down
-        couchPeer.getAsync(prismKey)
+        couchStretch.getAsync(prismKey)
           .then(function(result){
             var doc = result.value
             doc.available = false
-            return couchPeer.upsertAsync(prismKey,doc,{cas: result.cas})
+            return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
           })
           .then(function(){
             couch.disconnect()

@@ -22,8 +22,8 @@ var rootFolder = path.resolve(config.root)
 var contentFolder = path.resolve(rootFolder + '/content')
 
 //open couch buckets
-var stretchInventory = couch.inventory()
-var stretchfsPeer = couch.peer()
+var couchInventory = couch.inventory()
+var couchStretch = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(fs)
@@ -91,7 +91,7 @@ exports.put = function(req,res){
       logger.log('error', 'Failed to upload content ' + err.message)
       logger.log('error', err.stack)
       fs.unlinkSync(dest)
-      return stretchInventory.removeAsync(inventoryKey)
+      return couchInventory.removeAsync(inventoryKey)
         .then(function(){
           redis.incr(redis.schema.counterError('store','content:put'))
           res.status(500)
@@ -219,7 +219,7 @@ exports.send = function(req,res){
   var storeClient = null
   var store = {}
   var fileDetail = {}
-  stretchfsPeer.getAsync(storeKey)
+  couchStretch.getAsync(storeKey)
     .then(
       function(result){
         store = result.value
@@ -305,7 +305,7 @@ exports.remove = function(req,res){
 exports.download = function(req,res){
   redis.incr(redis.schema.counter('store','content:download'))
   var inventory
-  stretchInventory.getAsync(req.body.hash)
+  couchInventory.getAsync(req.body.hash)
     .then(function(result){
       inventory = result.value
       var filePath = path.join(contentFolder,inventory.relativePath)
@@ -354,7 +354,7 @@ exports.static = function(req,res){
     config.store.name
   )
   debug('STATIC','checking for inventory',inventoryKey)
-  stretchInventory.getAsync(inventoryKey)
+  couchInventory.getAsync(inventoryKey)
     .then(function(result){
       var inventory = result.value
       debug('STATIC','got file inventory, sending content',inventory)
@@ -406,7 +406,7 @@ exports.play = function(req,res){
         debug('PLAY','got purchase result',token,result)
         purchase = result
         //get inventory
-        return stretchInventory.getAsync(couch.schema.inventory(
+        return couchInventory.getAsync(couch.schema.inventory(
           purchase.hash,
           config.store.prism,
           config.store.name

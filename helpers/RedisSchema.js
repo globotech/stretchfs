@@ -42,24 +42,6 @@ RedisSchema.prototype.statKeys = function(){
 
 
 /**
- * Prism list Key
- * @return {string}
- */
-RedisSchema.prototype.prismList = function(){
-  return this.applyPrefix('prismList')
-}
-
-
-/**
- * Store list Key
- * @return {string}
- */
-RedisSchema.prototype.storeList = function(){
-  return this.applyPrefix('storeList')
-}
-
-
-/**
  * Prism hits (for load balancing)
  * @param {string} token
  * @param {string} prism
@@ -79,36 +61,6 @@ RedisSchema.prototype.prismHits = function(token,prism){
 RedisSchema.prototype.storeHits = function(token,store){
   return this.applyPrefix('storeHits:' + token + ':' + store)
 }
-
-
-/**
- * Content existence cache
- * @param {string} hash
- * @return {string}
- */
-RedisSchema.prototype.contentExists = function(hash){
-  return this.applyPrefix('contentExists:' + hash)
-}
-
-
-/**
- * Check if the master is up
- * @return {string}
- */
-RedisSchema.prototype.masterUp = function(){
-  return this.applyPrefix('masterUp')
-}
-
-
-/**
- * Look up a user session by token
- * @param {string} username
- * @return {string}
- */
-RedisSchema.prototype.user = function(username){
-  return this.applyPrefix('user:' + username)
-}
-
 
 /**
  * Peer slots

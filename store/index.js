@@ -16,7 +16,8 @@ var stat
 
 var storeKey = couch.schema.store(config.store.prism,config.store.name)
 
-var couchPeer = couch.peer()
+//open some buckets
+var couchStretch = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(infant)
@@ -48,7 +49,7 @@ if(require.main === module){
       stat = infant.parent('./stat')
       supervisor = infant.parent('./job/supervisor')
       //check if our needed folders exist
-      couchPeer.getAsync(storeKey)
+      couchStretch.getAsync(storeKey)
         .then(
           //if we exist lets mark ourselves available
           function(result){
@@ -60,13 +61,13 @@ if(require.main === module){
             doc.available = true
             doc.active = true
             doc.updatedAt = new Date().toJSON()
-            return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
+            return couchStretch.upsertAsync(storeKey,doc,{cas: result.cas})
           },
           //if we dont exist lets make sure thats why and create ourselves
           function(err){
             if(!err || !err.code || 13 !== err.code) throw err
             //now register ourselves or mark ourselves available
-            return couchPeer.upsertAsync(storeKey,{
+            return couchStretch.upsertAsync(storeKey,{
               prism: config.store.prism,
               name: config.store.name,
               host: config.store.host || '127.0.0.1',
@@ -120,11 +121,11 @@ if(require.main === module){
     function(done){
       logger.log('info','Beginning store shutdown')
       //mark ourselves as down
-      couchPeer.getAsync(storeKey)
+      couchStretch.getAsync(storeKey)
         .then(function(result){
           var doc = result.value
           doc.available = false
-          return couchPeer.upsertAsync(storeKey,doc,{cas: result.cas})
+          return couchStretch.upsertAsync(storeKey,doc,{cas: result.cas})
         })
         .then(function(){
           if(config.store.stat.enabled){

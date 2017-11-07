@@ -12,7 +12,7 @@ var couch = require('../../helpers/couchbase')
 var config = require('../../config')
 
 //open some buckets
-var stretchJob = couch.job()
+var couchStretch = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(infant)
@@ -69,7 +69,7 @@ var removeJobPID = function(pid){
  */
 var sendStatus = function(){
   debug(jobHandle,'send status',jobStatus.status,jobStatus.statusDescription)
-  return stretchJob.getAsync(jobKey)
+  return couchStretch.getAsync(jobKey)
     .then(function(result){
       result.value.status = jobStatus.status
       result.value.statusDescription = jobStatus.statusDescription
@@ -78,7 +78,7 @@ var sendStatus = function(){
       result.value.frameTotal = jobStatus.frameTotal
       result.value.frameComplete = jobStatus.frameComplete
       result.value.frameDescription = jobStatus.frameDescription
-      return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+      return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
     })
     .catch(function(err){
       if(12 === err.code) return sendStatus()
@@ -94,11 +94,11 @@ statusInterval = setInterval(sendStatus,statusFrequency)
  * @return {P}
  */
 var sendJobLog = function(){
-  return stretchJob.getAsync(jobKey)
+  return couchStretch.getAsync(jobKey)
     .then(function(result){
       result.value.log = jobLog
       result.value.lastLogUpdate = jobLogLastUpdate
-      return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+      return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
     })
     .catch(function(err){
       if(12 === err.code) return sendJobLog()
@@ -133,7 +133,7 @@ var errorHandlerAsync = function(err){
   //put into an error instance regardless
   if(!(err instanceof Error)) err = new Error(err)
   //now update the database with the error
-  return stretchJob.getAndLockAsync(jobKey)
+  return couchStretch.getAndLockAsync(jobKey)
     .then(function(result){
       result.value.status = 'queued_error'
       result.value.statusDescription = err.message
@@ -141,7 +141,7 @@ var errorHandlerAsync = function(err){
       result.value.erroredAt = new Date().toJSON()
       result.value.log = jobLog
       result.value.lastLogUpdate = jobLogLastUpdate
-      return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+      return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
     })
     .then(function(){
       //send the error to the upstream log
@@ -331,11 +331,11 @@ var jobObtainResources = function(){
     }
   }
   var obtainResource = function(req,resourceFile,ws){
-    return stretchJob.getAndLockAsync(jobKey)
+    return couchStretch.getAndLockAsync(jobKey)
       .then(function(result){
         if(!result.value.manifest) result.value.manifest = [resourceFile]
         else result.value.manifest.push(resourceFile)
-        return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+        return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
       })
       .then(function(){
         return jobObtainResource(req)
@@ -425,11 +425,11 @@ var jobAugmentResources = function(){
   })
     .each(function(cmd){
       var resourceFile = jobFolder + '/' + cmd.resource
-      return stretchJob.getAndLockAsync(jobKey)
+      return couchStretch.getAndLockAsync(jobKey)
         .then(function(result){
           if(!result.value.manifest) result.value.manifest = [resourceFile]
           else result.value.manifest.push(resourceFile)
-          return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+          return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
         })
         .then(function(){
           return augmentResource(cmd)
@@ -452,7 +452,7 @@ var jobProcessComplete = function(){
   clearInterval(statusInterval)
   //shutdown the log updater
   clearInterval(jobLogInterval)
-  return stretchJob.getAndLockAsync(jobKey)
+  return couchStretch.getAndLockAsync(jobKey)
     .then(function(result){
       result.value.status = 'queued_complete'
       result.value.statusDescription = 'Job has been processed successfully'
@@ -463,7 +463,7 @@ var jobProcessComplete = function(){
       result.value.frameComplete = jobStatus.stepTotal
       result.value.log = jobLog
       result.value.logLastUpdate = jobLogLastUpdate
-      return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+      return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
     })
 }
 

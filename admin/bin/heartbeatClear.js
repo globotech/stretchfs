@@ -16,12 +16,12 @@ var runInterval = function(done){
   var hbKey = couch.schema.downVote()
   debug('requesting votes',hbKey)
   var clause = {}
-  clause.from = ' FROM ' + couch.getName(couch.type.HEARTBEAT,true)
+  clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
   clause.where = ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString('DELETE' + clause.from + clause.where)
   hbKey = hbKey + '%'
-  var couchHeartbeat = couch.heartbeat()
-  couchHeartbeat.queryAsync(query,[hbKey])
+  var couchStretch = couch.stretchfs()
+  couchStretch.queryAsync(query,[hbKey])
     .then(function(result){
       var deleted = result.length
       logger.log('info','Deletion complete, ' + deleted + ' records removed')

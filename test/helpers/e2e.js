@@ -22,9 +22,8 @@ var UserError = stretchfs.UserError
 var config = require('../../config')
 
 //open couch buckets
-var couchHeartbeat = couch.heartbeat()
 var couchInventory = couch.inventory()
-var couchPeer = couch.peer()
+var couchStretch = couch.stretchfs()
 
 
 /**
@@ -177,29 +176,29 @@ exports.before = function(that){
     .then(function(){
       var key = couch.schema.prism()
       var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.PEER,true) + ' b ' +
+        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couchPeer.queryAsync(query,[key])
+      return couchStretch.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.store()
       var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.PEER,true) + ' b ' +
+        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couchPeer.queryAsync(query,[key])
+      return couchStretch.queryAsync(query,[key])
     })
     .then(function(){
       var key = couch.schema.downVote()
       var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.HEARTBEAT,true) + ' b ' +
+        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
-      return couchHeartbeat.queryAsync(query,[key])
+      return couchStretch.queryAsync(query,[key])
     })
     .then(function(){
       return P.all([
@@ -227,7 +226,7 @@ exports.after = function(that){
   logger.log('info','Stopping mock cluster...')
   var clconf = exports.clconf
   var removePeerEntry = function(peerKey){
-    return couchPeer.removeAsync(peerKey)
+    return couchStretch.removeAsync(peerKey)
   }
   return P.all([
     exports.server.store4.stopAsync(),

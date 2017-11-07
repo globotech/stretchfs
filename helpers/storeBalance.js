@@ -8,7 +8,7 @@ var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 
 //open couch buckets
-var couchPeer = couch.peer()
+var couchStretch = couch.stretchfs()
 
 
 /**
@@ -21,11 +21,11 @@ exports.storeList = function(prism){
   var storeKey = couch.schema.store(prism)
   debug(storeKey,'getting store list')
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.PEER,true) + ' b ' +
+    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   storeKey = storeKey + '%'
-  return couchPeer.queryAsync(query,[storeKey])
+  return couchStretch.queryAsync(query,[storeKey])
     .then(function(result){
       debug(storeKey,'got store list result',result)
       return result
@@ -65,7 +65,7 @@ exports.populateStores = function(storeList){
   })
     .map(function(row){
       var storeKey = couch.schema.store(row.prism,row.store)
-      return couchPeer.getAsync(storeKey)
+      return couchStretch.getAsync(storeKey)
         .then(function(result){
           return result.value
         })

@@ -19,7 +19,7 @@ var workerKey = couch.schema.store(config.store.prism,config.store.name)
 debug('coming up with a new identity for job processing',workerKey)
 
 //open some buckets
-var stretchJob = couch.job()
+var couchStretch = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(fs)
@@ -37,13 +37,13 @@ P.promisifyAll(infant)
 var jobNotification = function(handle,status,statusDescription,silent){
   if('undefined' === typeof silent) silent = false
   var jobResult = {}
-  return stretchJob.getAsync(handle)
+  return couchStretch.getAsync(handle)
     .then(function(result){
       jobResult = result
       jobResult.value.status = status
       jobResult.value.statusDescription = statusDescription
       //notify database of our change
-      return stretchJob.upsertAsync(handle,jobResult.value,{cas: jobResult.cas})
+      return couchStretch.upsertAsync(handle,jobResult.value,{cas: jobResult.cas})
     })
     .then(function(){
       //notify our callbacks
@@ -76,13 +76,13 @@ var jobNotification = function(handle,status,statusDescription,silent){
 var findJobs = function(status,category,limit,prioritize){
   debug('querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.JOB,true) + ' b ' +
+    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
     'WHERE b.status = $1 ' +
     (category ? ' AND b.category = $2' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +
     (limit ? ' LIMIT ' + limit : '')
   var query = couch.N1Query.fromString(qstring)
-  return stretchJob.queryAsync(query,[status,category])
+  return couchStretch.queryAsync(query,[status,category])
 }
 
 
@@ -99,13 +99,13 @@ var findJobsByWorker = function(workerKey,status,category,limit,prioritize){
   debug(workerKey,
     'querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.JOB,true) + ' b ' +
+    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
     'WHERE b.workerKey = $1 AND b.status = $2 ' +
     (category ? ' AND b.category = $3' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +
     (limit ? ' LIMIT ' + limit : '')
   var query = couch.N1Query.fromString(qstring)
-  return stretchJob.queryAsync(query,[workerKey,status,category])
+  return couchStretch.queryAsync(query,[workerKey,status,category])
 }
 
 
@@ -205,25 +205,25 @@ var superviseJobProcessing = function(){
       var time = Math.floor(Date.now() /1000)
       jobTime = Math.floor(+(new Date(job.startedAt)) /1000)
       if(jobTime + jobTime.maxExecutionTime < time){
-        return stretchJob.getAsync(jobKey)
+        return couchStretch.getAsync(jobKey)
           .then(function(result){
             result.value.status = 'queued_error'
             result.value.statusDescription =
               'Time exceeded for this job to finish.'
             result.value.error = 'Time exceeded for this job to finish.'
             result.value.erroredAt = new Date().toJSON()
-            return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+            return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
           })
       }
       if(fs.existsSync(jobFolder + '/crash')){
-        return stretchJob.getAsync(jobKey)
+        return couchStretch.getAsync(jobKey)
           .then(function(result){
             result.value.status = 'queued_error'
             result.value.statusDescription =
               'The job was found crashed'
             result.value.error = fs.readFileSync(jobFolder + '/crash')
             result.value.erroredAt = new Date().toJSON()
-            return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+            return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
           })
       }
     })
@@ -290,11 +290,11 @@ var superviseJobComplete = function(){
         delete jobsProcessing[handle]
       }
       //remove the completion flag
-      return stretchJob.getAsync(couch.schema.job(handle))
+      return couchStretch.getAsync(couch.schema.job(handle))
         .then(function(result){
           result.value.status = 'cleanup'
           result.value.completedAt = new Date().toJSON()
-          return stretchJob.upsertAsync(handle,result.value,{cas: result.cas})
+          return couchStretch.upsertAsync(handle,result.value,{cas: result.cas})
         })
         .then(function(){
           //tell master the job has been completed
@@ -332,7 +332,7 @@ var superviseJobRemove = function(){
       //destroy the job folder
       return rimraf(jobFolder)
         .then(function(){
-          return stretchJob.removeAsync(handle)
+          return couchStretch.removeAsync(handle)
         })
     })
     .then(function(){
@@ -464,13 +464,13 @@ var superviseJobStart = function(){
           })
           .then(function(){
             //update database
-            return stretchJob.getAsync(jobKey)
+            return couchStretch.getAsync(jobKey)
           })
           .then(function(result){
             result.value.status = 'processing'
             result.value.statusDescription = 'The worker is starting'
             result.value.startedAt = new Date().toJSON()
-            return stretchJob.upsertAsync(jobKey,result.value,{cas: result.cas})
+            return couchStretch.upsertAsync(jobKey,result.value,{cas: result.cas})
           })
           .then(function(){
             //actually finally start the process to handle the job
@@ -548,12 +548,12 @@ var superviseJobAssign = function(){
       return result
     })
     .each(function(job){
-      return stretchJob.getAndLockAsync(job.handle)
+      return couchStretch.getAndLockAsync(job.handle)
         .then(function(result){
           result.value.status = 'queued_start'
           result.value.workerName = config.store.name
           result.value.workerKey = workerKey
-          return stretchJob.upsertAsync(
+          return couchStretch.upsertAsync(
             job.handle,result.value,{cas: result.cas})
         })
     })

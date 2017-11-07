@@ -7,7 +7,7 @@ var redis = require('../helpers/redis')()
 
 //open couch buckets
 var couchInventory = couch.inventory()
-var couchPeer = couch.peer()
+var couchStretch = couch.stretchfs()
 
 
 /**
@@ -22,11 +22,11 @@ exports.peerList = function(){
   return P.all([
     (function(){
       var qstring = 'SELECT b.* FROM ' +
-        couch.getName(couch.type.PEER,true) + ' b ' +
+        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       prismKey = prismKey + '%'
-      return couchPeer.queryAsync(query,[prismKey])
+      return couchStretch.queryAsync(query,[prismKey])
         .then(function(result){
           return result
         })
@@ -37,11 +37,11 @@ exports.peerList = function(){
     }()),
     (function(){
       var qstring = 'SELECT b.* FROM ' +
-        couch.getName(couch.type.PEER,true) + ' b ' +
+        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
         'WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       storeKey = storeKey + '%'
-      return couchPeer.queryAsync(query,[storeKey])
+      return couchStretch.queryAsync(query,[storeKey])
         .then(function(result){
           return result
         })
@@ -70,11 +70,11 @@ exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couch.schema.prism()
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.PEER,true) + ' b ' +
+    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   prismKey = prismKey + '%'
-  return couchPeer.queryAsync(query,[prismKey])
+  return couchStretch.queryAsync(query,[prismKey])
     .then(function(result){
       return result
     })
@@ -92,9 +92,9 @@ exports.prismList = function(){
 exports.storeListByPrism = function(prism){
   redis.incr(redis.schema.counter('prism','prismBalance:storeListByPrism'))
   var storeKey = couch.schema.store(prism)
-  return couchPeer.all({startkey: storeKey, endkey: storeKey + '\uffff'})
+  return couchStretch.all({startkey: storeKey, endkey: storeKey + '\uffff'})
     .map(function(row){
-      return couchPeer.getAsync(row.key)
+      return couchStretch.getAsync(row.key)
     })
     .filter(function(row){
       row = row.value

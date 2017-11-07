@@ -6,7 +6,7 @@ var listInventory = require('../helpers/inventory')
 var config = require('../../config')
 
 //open some buckets
-var stretchInventory = couch.inventory()
+var couchInventory = couch.inventory()
 
 
 /**
@@ -28,7 +28,7 @@ var setupCounter = function(subRecord){
 }
 
 console.log('Beginning to build inventory based off existing keys')
-listInventory.listBuild(couch,stretchInventory,couch.type.INVENTORY)
+listInventory.listBuild(couch,couchInventory,couch.type.INVENTORY)
   .then(function(result){
     return result
   })
@@ -43,7 +43,7 @@ listInventory.listBuild(couch,stretchInventory,couch.type.INVENTORY)
     var hashKey
     var subKey = row.id
     var subRecord
-    return stretchInventory.getAsync(subKey)
+    return couchInventory.getAsync(subKey)
       .then(function(result){
         subRecord = result
         //identify converted records and skip
@@ -52,7 +52,7 @@ listInventory.listBuild(couch,stretchInventory,couch.type.INVENTORY)
         }
         //from here we extract the hash a look for the meta record
         hashKey = couch.schema.inventory(subRecord.value.hash)
-        return stretchInventory.getAndLockAsync(hashKey)
+        return couchInventory.getAndLockAsync(hashKey)
       })
       .then(
         function(result){
@@ -122,7 +122,7 @@ listInventory.listBuild(couch,stretchInventory,couch.type.INVENTORY)
         }
       )
       .then(function(result){
-        return stretchInventory.upsertAsync(
+        return couchInventory.upsertAsync(
           hashKey,result.value,{cas: result.cas})
       })
       .then(function(){
@@ -134,7 +134,7 @@ listInventory.listBuild(couch,stretchInventory,couch.type.INVENTORY)
         delete subRecord.value.size
         //add the hit counters
         setupCounter(subRecord)
-        return stretchInventory.upsertAsync(
+        return couchInventory.upsertAsync(
           subKey,subRecord.value,{cas: subRecord.cas})
       })
       .catch(function(err){

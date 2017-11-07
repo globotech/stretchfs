@@ -11,8 +11,8 @@ var config = require('../config')
 var syncInterval
 
 //open some buckets
-var stretchInventory = couch.inventory()
-var stretchfsPurchase = couch.purchase()
+var couchInventory = couch.inventory()
+var couchPurchase = couch.purchase()
 
 
 /**
@@ -25,12 +25,12 @@ var stretchfsPurchase = couch.purchase()
 var updateInventoryStat = function(hash,hitCount,byteCount){
   var inventoryKey = couch.schema.inventory(
     hash,config.store.prism,config.store.name)
-  return stretchInventory.getAndLock(inventoryKey)
+  return couchInventory.getAndLock(inventoryKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
       result.value.lastUpdated = new Date().toJSON()
-      return stretchInventory.upsertAsync(
+      return couchInventory.upsertAsync(
         inventoryKey,result.value,{cas: result.cas})
     })
 }
@@ -45,12 +45,12 @@ var updateInventoryStat = function(hash,hitCount,byteCount){
  */
 var updatePurchaseStat = function(token,hitCount,byteCount){
   var purchaseKey = couch.schema.purchase(token)
-  return stretchfsPurchase.getAndLock(purchaseKey)
+  return couchPurchase.getAndLock(purchaseKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
       result.value.lastUpdated = new Date().toJSON()
-      return stretchfsPurchase.upsertAsync(
+      return couchPurchase.upsertAsync(
         purchaseKey,result.value,{cas: result.cas})
     })
 }

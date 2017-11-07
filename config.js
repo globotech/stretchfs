@@ -52,36 +52,25 @@ config.$load({
     host: '127.0.0.1',
     dsnHost: null,
     port: '8091',
+    admin: {
+      username: '',
+      password: ''
+    },
     username: '',
     password: '',
     prefix: '',
     connectionTimeout: 60000,
     operationTimeout: 30000,
     bucket: {
-      heartbeat: {
-        name: 'stretchfs-heartbeat',
-        secret: '',
-        ramQuotaMB: 128
-      },
-      job: {
-        name: 'stretchfs-job',
-        secret: '',
-        ramQuotaMB: 512
-      },
-      inventory: {
-        name: 'stretchfs-inventory',
-        secret: '',
-        ramQuotaMB: 512
-      },
       stretchfs: {
         name: 'stretchfs',
         secret: '',
         ramQuotaMB: 256
       },
-      peer: {
-        name: 'stretchfs-peer',
+      inventory: {
+        name: 'stretchfs-inventory',
         secret: '',
-        ramQuotaMB: 128
+        ramQuotaMB: 512
       },
       purchase: {
         name: 'stretchfs-purchase',

@@ -9,8 +9,8 @@ var couch = require('../../helpers/couchbase')
 
 var config = require('../../config')
 
-var stretchJob = couch.job()
-var stretchfsPeer = couch.peer()
+//open some buckets
+var couchStretch = couch.stretchfs()
 
 //make some promises
 request = P.promisify(request)
@@ -23,7 +23,7 @@ request = P.promisify(request)
  */
 exports.detail = function(req,res){
   var handle = req.body.handle
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       res.json(result.value)
@@ -58,7 +58,7 @@ exports.create = function(req,res){
         session: req.session
       }
     }
-    return stretchJob.upsertAsync(jobHandle,job,{expiry: config.job.recordLife})
+    return couchStretch.upsertAsync(jobHandle,job,{expiry: config.job.recordLife})
   })
     .then(function(){
       res.json(job)
@@ -81,7 +81,7 @@ exports.update = function(req,res){
   var status = req.body.status
   var force = req.query.force || false
   var job = new ObjectManage()
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for update')
       job.$load(result.value)
@@ -91,7 +91,7 @@ exports.update = function(req,res){
       if(priority) job.priority = priority
       if(status && force) job.status = status
       job.updatedAt = new Date().toJSON()
-      return stretchJob.upsertAsync(handle,job.$strip(),{cas: result.cas})
+      return couchStretch.upsertAsync(handle,job.$strip(),{cas: result.cas})
     })
     .then(function(){
       res.json(job.$strip())
@@ -109,7 +109,7 @@ exports.update = function(req,res){
  */
 exports.remove = function(req,res){
   var handle = req.body.handle
-  stretchJob.removeAsync(handle)
+  couchStretch.removeAsync(handle)
     .then(function(){
       res.json({success: 'Job removed', count: 1})
     })
@@ -127,14 +127,14 @@ exports.remove = function(req,res){
 exports.start = function(req,res){
   var handle = req.body.handle
   var job = {}
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for start')
       job = result.value
       if('staged' !== job.status)
         throw new Error('Job cannot be started after being started')
       job.status = 'queued'
-      return stretchJob.upsertAsync(handle,job,{cas: result.cas})
+      return couchStretch.upsertAsync(handle,job,{cas: result.cas})
     })
     .then(function(){
       res.json(job)
@@ -162,7 +162,7 @@ exports.retry = function(req,res){
     'processing',
     'archived'
   ]
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for retry')
       job = result.value
@@ -178,7 +178,7 @@ exports.retry = function(req,res){
         job.worker = null
       }
       job.retriedAt = new Date().toJSON()
-      return stretchJob.upsertAsync(handle,job,{cas: result.cas})
+      return couchStretch.upsertAsync(handle,job,{cas: result.cas})
     })
     .then(function(){
       res.json(job)
@@ -197,7 +197,7 @@ exports.retry = function(req,res){
 exports.abort = function(req,res){
   var handle = req.body.handle
   var job = {}
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for abort')
       job = result.value
@@ -205,7 +205,7 @@ exports.abort = function(req,res){
         throw new Error('Job cannot be aborted when not processing')
       job.status = 'queued_abort'
       job.abortedAt = new Date().toJSON()
-      return stretchJob.upsertAsync(handle,job,{cas: result.cas})
+      return couchStretch.upsertAsync(handle,job,{cas: result.cas})
     })
     .then(function(){
       res.json(job)
@@ -226,7 +226,7 @@ exports.contentExists = function(req,res){
   var file = req.body.file
   var job = {}
   var exists = false
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       job = result.value
@@ -253,11 +253,11 @@ exports.contentDownload = function(req,res){
   var file = req.params.file
   var job = {}
   var worker = {}
-  stretchJob.getAsync(handle)
+  couchStretch.getAsync(handle)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       job = result.value
-      return stretchfsPeer.getAsync(job.workerKey)
+      return couchStretch.getAsync(job.workerKey)
     })
     .then(function(result){
       worker = result.value

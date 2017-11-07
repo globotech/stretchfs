@@ -12,6 +12,7 @@ var config = require('../config')
 
 var buckets = {}
 var dsn = ''
+var isAuthenticated = false
 
 
 /**
@@ -44,30 +45,28 @@ var cluster = connectCouchbase(config.couch)
 var client = {
   cluster: cluster,
   type: {
-    HEARTBEAT: 'heartbeat',
     INVENTORY: 'inventory',
-    JOB: 'job',
-    StretchFS: 'stretchfs',
-    PEER: 'peer',
+    STRETCHFS: 'stretchfs',
     PURCHASE: 'purchase'
   },
   initBucket: {
-    heartbeat: function(manager){
-      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
-    },
     inventory: function(manager){
-      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+      return manager.createPrimaryIndexAsync({
+        name: 'inventoryPrimary', ignoreIfExists: true
+      })
         .then(function(){
           return manager.createIndexAsync(
-            'inventory',['mimeType','size'],{ignoreIfExists: true}
+            'inventorySizeType',['mimeType','size'],{ignoreIfExists: true}
           )
         })
     },
-    job: function(manager){
-      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+    stretchfs: function(manager){
+      return manager.createPrimaryIndexAsync({
+        name: 'stretchfsPrimary', ignoreIfExists: true
+      })
         .then(function(){
           return manager.createIndexAsync(
-            'job',['category','priority','status'],{ignoreIfExists: true})
+            'jobAssign',['category','priority','status'],{ignoreIfExists: true})
         })
         .then(function(){
           return manager.createIndexAsync(
@@ -76,14 +75,10 @@ var client = {
             {ignoreIfExists: true})
         })
     },
-    stretchfs: function(manager){
-      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
-    },
-    peer: function(manager){
-      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
-    },
     purchase: function(manager){
-      return manager.createPrimaryIndexAsync({ignoreIfExists: true})
+      return manager.createPrimaryIndexAsync({
+        name: 'purchasePrimary', ignoreIfExists: true
+      })
     }
   }
 }
@@ -92,13 +87,17 @@ var client = {
 /**
  * Open Couchbase bucket
  * @param {string} name
- * @param {string} secret
  * @return {object}
  */
-client.openBucket = function(name,secret){
-  debug('opening bucket',name,secret)
+client.openBucket = function(name){
+  debug('opening bucket',name)
   if(buckets[name]) return buckets[name]
-  buckets[name] = P.promisifyAll(cluster.openBucket(name,secret,function(err){
+  if(!isAuthenticated){
+    debug('authenticating cluster',config.couch.username,config.couch.password)
+    cluster.authenticate(config.couch.username,config.couch.password)
+    isAuthenticated = true
+  }
+  buckets[name] = P.promisifyAll(cluster.openBucket(name,function(err){
     if(!err){
       debug('connected to',name)
       return
@@ -106,7 +105,7 @@ client.openBucket = function(name,secret){
     logger.log(
       'error',
       'Failed to connect to Couchbase bucket ' + dsn + ' ' +
-      name + ' with secret ***** ' + err.message
+      name + ': ' + err.message
     )
   }))
   return buckets[name]
@@ -162,12 +161,25 @@ client.disconnect = function(){
 
 
 /**
- * Get a promisified manager
+ * Get a promise friendly bucket manager
  * @param {object} bucket
  * @return {P}
  */
-client.getManager = function(bucket){
+client.getBucketManager = function(bucket){
   return P.promisifyAll(bucket().manager())
+}
+
+
+/**
+ * Get cluster manager
+ * @return {p}
+ */
+client.getClusterManager = function(){
+  debug('setup cluster manager',
+    config.couch.admin.username,config.couch.admin.password)
+  return P.promisifyAll(
+    cluster.manager(config.couch.admin.username,config.couch.admin.password)
+  )
 }
 
 
@@ -187,8 +199,10 @@ client.createIndexes = function(){
   })
     .each(function(name){
       debug('Initializing bucket',name)
-      var manager = client.getManager(client[name])
+      var manager = client.getBucketManager(client[name])
       var initFn = client.initBucket[name]
+      //skip undefined init functions
+      if(!initFn) return
       debug('Got manager',name)
       return initFn(manager)
         .then(function(result){
@@ -206,10 +220,8 @@ client.createIndexes = function(){
  * @return {P}
  */
 client.createBuckets = function(){
-  var manager = P.promisifyAll(
-    cluster.manager(config.couch.username,config.couch.password)
-  )
-  debug('setup manager',config.couch.username,config.couch.password)
+  var manager = client.getClusterManager()
+  var userRoles = []
   return P.try(function(){
     var types = []
     for(var type in client.type){
@@ -225,10 +237,10 @@ client.createBuckets = function(){
         ramQuotaMB: config.couch.bucket[name].ramQuotaMB,
         authType: 'sasl',
         bucketType: 'couchbase',
-        replicaNumber: 1,
-        saslPassword: config.couch.bucket[name].secret
+        replicaNumber: 1
       }
       debug('Creating bucket',bucketName,bucketParams)
+      userRoles.push({role: 'bucket_full_access', bucket_name: bucketName})
       return manager.createBucketAsync(bucketName,bucketParams)
         .then(function(result){
           debug('Bucket creation complete',result.statusCode,result.body)
@@ -238,18 +250,30 @@ client.createBuckets = function(){
             console.log('Couchbase bucket creation error',err)
         })
     })
+    .then(function(result){
+      debug('user creation complete',result)
+      return userRoles
+    })
+
+
 }
 
 
 /**
- * Setup the Heartbeat DB
- * @return {Object}
+ * Create cluster user
+ * @param {string} username
+ * @param {string} password
+ * @param {array} roles
+ * @return {P}
  */
-client.heartbeat = function(){
-  return client.openBucket(
-    config.couch.bucket.heartbeat.name,
-    config.couch.bucket.heartbeat.secret
-  )
+client.createUser = function(username,password,roles){
+  var manager = client.getClusterManager()
+  debug('creating cluster user',username,password,roles)
+  return manager.upsertUserAsync('local',username,{
+    name: 'StretchFS Manager',
+    password: password,
+    roles: roles
+  })
 }
 
 
@@ -266,18 +290,6 @@ client.inventory = function(){
 
 
 /**
- * Setup the Job DB
- * @return {Object}
- */
-client.job = function(){
-  return client.openBucket(
-    config.couch.bucket.job.name,
-    config.couch.bucket.job.secret
-  )
-}
-
-
-/**
  * Setup the StretchFS DB
  * @return {Object}
  */
@@ -285,18 +297,6 @@ client.stretchfs = function(){
   return client.openBucket(
     config.couch.bucket.stretchfs.name,
     config.couch.bucket.stretchfs.secret
-  )
-}
-
-
-/**
- * Setup the Peer DB
- * @return {Object}
- */
-client.peer = function(){
-  return client.openBucket(
-    config.couch.bucket.peer.name,
-    config.couch.bucket.peer.secret
   )
 }
 

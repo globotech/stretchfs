@@ -12,7 +12,7 @@ var config = require('../config')
 var basePath = path.resolve(config.root + '/content')
 
 //open some buckets
-var stretchInventory = couch.inventory()
+var couchInventory = couch.inventory()
 
 
 /**
@@ -172,7 +172,7 @@ exports.details = function(hash,ext){
   var inventoryKey = couch.schema.inventory(hash)
   return P.try(function(){
     if(!ext){
-      return stretchInventory.getAsync(inventoryKey)
+      return couchInventory.getAsync(inventoryKey)
         .then(function(result){
           return exports.find(hash,result.value.mimeExtension)
         })
