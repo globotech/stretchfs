@@ -241,7 +241,7 @@ exports.verifyFile = function(fileDetail,force){
       if(!fileDetail.exists) return
       if(inventory && inventory.verifiedAt && false === force &&
         +new Date(inventory.verifiedAt) >
-        (+new Date() - config.store.verifyExpiration)
+        (+new Date() - config.inventory.verifyExpiration)
       ){
         verifySkipped = true
         return

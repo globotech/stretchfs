@@ -106,7 +106,8 @@ config.$load({
     scan: {
       concurrency: 4, //files to process concurrently
       throttle: 100 //ms between requests
-    }
+    },
+    verifyExpiration: 15552000000//ms  (180 days = 7776000000)
   },
   //job system
   job: {
@@ -221,9 +222,7 @@ config.$load({
     stat: {
       enabled: true,
       syncFrequency: 30000 //30 seconds
-    },
-    purchasePruneConcurrency: 512,
-    verifyExpiration: 15552000000//ms  (180 days = 7776000000)
+    }
   }
 })
 
