@@ -237,8 +237,8 @@ if(fs.existsSync(__dirname + '/config.local.js')){
 }
 
 //load instance overrides
-if(process.env.STRETCH_CONFIG){
-  config.$load(require(process.env.STRETCH_CONFIG))
+if(process.env.STRETCHFS_CONFIG){
+  config.$load(require(process.env.STRETCHFS_CONFIG))
 }
 
 
