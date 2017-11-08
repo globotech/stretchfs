@@ -30,7 +30,7 @@ P.promisifyAll(fs)
 P.promisifyAll(infant)
 
 describe('store',function(){
-  this.timeout(10000)
+  this.timeout(30000)
   var storeServer = infant.parent('../store',{
     fork: {env: makeEnv(__dirname + '/assets/store1.config.js')}
   })

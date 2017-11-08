@@ -20,7 +20,7 @@ var user = {
 
 
 describe('prism',function(){
-  this.timeout(10000)
+  this.timeout(30000)
   var prismServer = infant.parent('../prism')
   var client
   //start servers and create a user
