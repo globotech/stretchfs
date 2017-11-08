@@ -17,7 +17,7 @@ couch.createBuckets()
   })
   .then(function(){
     var waitSeconds = 5
-    if(process.env.TRAVIS) waitSeconds = 60
+    if(process.env.TRAVIS) waitSeconds = 15
     console.log('User creation complete, waiting ' + waitSeconds + ' seconds')
     return new P(function(resolve){
       setTimeout(resolve,waitSeconds * 1000)
