@@ -24,11 +24,5 @@ module.exports = {
         ramQuotaMB: 128
       }
     }
-  },
-  prism: {
-    enabled: true
-  },
-  store: {
-    enabled: true
   }
 }

@@ -82,7 +82,7 @@ var verifyInventoryAsync = function(){
           progress.tick()
           var record = result.value
           //check if file path exists
-          if(!record.relativePath ||
+          if(!record || !record.relativePath ||
             !fs.existsSync(path.posix.resolve(
               contentFolder,record.relativePath))
           ){
