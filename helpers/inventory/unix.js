@@ -3,17 +3,13 @@ var P = require('bluebird')
 var debug = require('debug')('stretchfs:store:inventory')
 var cp = require('child_process')
 var fs = require('graceful-fs')
-var mime = require('mime')
 var path = require('path')
 var ProgressBar = require('progress')
 
-var couch = require('../couchbase')
+var inventoryHelper = require('../inventory')
 var logger = require('../logger')
 
 var config = require('../../config')
-
-//open couch buckets
-var couchInventory = couch.inventory()
 
 
 /**
@@ -112,14 +108,8 @@ module.exports = function(done){
       filePath = path.posix.resolve(filePath)
       debug('got a hit',filePath)
       var relativePath = path.posix.relative(contentFolder,filePath)
-      var linkPath = filePath.replace(/\..+$/,'')
       var stat = fs.statSync(filePath)
       counter.bytes += stat.size
-      if(!fs.existsSync(linkPath)){
-        counter.repaired++
-        debug('repaired link path for',filePath)
-        fs.symlinkSync(filePath,linkPath)
-      }
       var hash = relativePath.replace(/[\\\/]/g,'').replace(/\..+$/,'')
       var ext = relativePath.match(/\.(.+)$/)
       if(ext && ext[0]) ext = ext[0]
@@ -132,34 +122,13 @@ module.exports = function(done){
       //there
       else {
         counter.valid++
-        debug(hash,'inventory scan found',ext,relativePath,linkPath)
-        //since nodes
-        var inventoryKey = couch.schema.inventory(
-          hash,config.store.prism,config.store.name)
-        return couchInventory.getAsync(inventoryKey)
-          .then(
-            function(doc){
-              doc = doc.value
-              debug(hash,'inventory record exists',doc)
-            },
-            function(err){
-              //make sure we only catch 404s and let others bubble
-              if(!err || !err.code || 13 !== err.code) throw err
-              var doc = {
-                store: config.store.name,
-                prism: config.store.prism,
-                hash: hash,
-                mimeExtension: ext,
-                mimeType: mime.getType(ext),
-                relativePath: relativePath
-              }
-              debug(hash,'creating inventory record',doc)
-              counter.created++
-              return couchInventory.upsertAsync(inventoryKey,doc)
-            }
-          )
-          .then(function(){
-            debug(hash,'inventory updated')
+        debug(hash,'inventory scan found',ext,relativePath)
+        return hash.details(hash,ext)
+          .then(function(result){
+            return inventoryHelper.createStoreInventory(result,false)
+          })
+          .then(function(result){
+            debug(hash,'inventory updated',result)
             //sleep the inventory scan
             return miniSleep(config.store.inventoryThrottle)
           })

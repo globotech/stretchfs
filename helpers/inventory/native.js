@@ -2,17 +2,13 @@
 var P = require('bluebird')
 var debug = require('debug')('stretchfs:store:inventory')
 var fs = require('graceful-fs')
-var mime = require('mime')
 var path = require('path')
 var readdirp = require('readdirp')
 
-var couch = require('../couchbase')
+var inventoryHelper = require('../inventory')
 var logger = require('../logger')
 
 var config = require('../../config')
-
-//open couch buckets
-var couchInventory = couch.inventory()
 
 
 /**
@@ -64,16 +60,9 @@ module.exports = function(done){
     debug('got a hit',entry)
     debug('pausing stream for processing')
     stream.pause()
-    var filePath = entry.fullPath
     var relativePath = entry.path
-    var linkPath = filePath.replace(/\..+$/,'')
     var stat = entry.stat
     counter.bytes += stat.size
-    if(!fs.existsSync(linkPath)){
-      counter.repaired++
-      debug('repaired link path for',filePath)
-      fs.symlinkSync(filePath,linkPath)
-    }
     var ext = relativePath.match(/\.(.+)$/)[0]
     var hash = relativePath.replace(/[\\\/]/g,'').replace(/\..+$/,'')
     //skip invalid inventory entries
@@ -86,36 +75,16 @@ module.exports = function(done){
     //there
     else {
       counter.valid++
-      debug(hash,'inventory scan found',ext,relativePath,linkPath)
+      debug(hash,'inventory scan found',ext,relativePath)
       //since nodes
-      var inventoryKey = couch.schema.inventory(
-        hash,config.store.prism,config.store.name)
-      couchInventory.getAsync(inventoryKey)
-        .then(
-          function(doc){
-            doc = doc.value
-            debug(hash,'inventory record exists',doc)
-          },
-          function(err){
-            //make sure we only catch 404s and let others bubble
-            if(!err || !err.code || 13 !== err.code) throw err
-            var doc = {
-              store: config.store.name,
-              prism: config.store.prism,
-              hash: hash,
-              mimeExtension: ext,
-              mimeType: mime.getType(ext),
-              relativePath: relativePath
-            }
-            debug(hash,'creating inventory record',doc)
-            counter.created++
-            return couchInventory.upsertAsync(inventoryKey,doc)
-          }
-        )
-        .then(function(){
-          debug(hash,'inventory updated')
-          //throttle the inventory
-          return miniSleep(config.inventory.scan.throttle)
+      return hash.details(hash,ext)
+        .then(function(result){
+          return inventoryHelper.createStoreInventory(result,false)
+        })
+        .then(function(result){
+          debug(hash,'inventory updated',result)
+          //sleep the inventory scan
+          return miniSleep(config.store.inventoryThrottle)
         })
         .catch(function(err){
           logger.log('error', hash + ' insertion FAILED ' + err.message)
