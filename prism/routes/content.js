@@ -115,6 +115,9 @@ exports.upload = function(req,res){
     redis.incr(redis.schema.counter('prism','content:filesUploaded'))
     debug('upload, got file')
     var tmpfile = temp.path({prefix: 'stretchfs-' + config.prism.name + '-'})
+    if('application/octet-stream' === mimetype){
+      mimetype = mime.getType(name)
+    }
     if(!data.hashType) data.hashType = config.defaultHashType || 'sha1'
     var sniff = hashStream.createStream(data.hashType)
     sniff.on('data',function(chunk){
