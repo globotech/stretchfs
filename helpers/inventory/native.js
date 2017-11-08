@@ -5,6 +5,7 @@ var fs = require('graceful-fs')
 var path = require('path')
 var readdirp = require('readdirp')
 
+var hashFile = require('../hashFile')
 var inventoryHelper = require('../inventory')
 var logger = require('../logger')
 
@@ -77,7 +78,7 @@ module.exports = function(done){
       counter.valid++
       debug(hash,'inventory scan found',ext,relativePath)
       //since nodes
-      return hash.details(hash,ext)
+      return hashFile.details(hash,ext)
         .then(function(result){
           return inventoryHelper.createStoreInventory(result,false)
         })
