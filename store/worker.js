@@ -87,6 +87,8 @@ app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
 app.use(basicAuth(config.store.username,config.store.password))
 
 //content functions
+app.get('/content/pizza',routes.content.pizza)
+app.get('/content/speedtest',routes.content.speedTest)
 app.put('/content/put/:file',routes.content.put)
 app.post('/content/download',routes.content.download)
 app.post('/content/exists',routes.content.exists)

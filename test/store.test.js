@@ -88,6 +88,26 @@ describe('store',function(){
           expect(body.success).to.equal('File removed')
         })
     })
+    it('should do a speed test',function(){
+      return client
+        .getAsync(client.url('/content/speedtest?size=10k'))
+        .spread(function(res,body){
+          expect(body.length).to.equal(10000)
+        })
+    })
+    it('should have pizza',function(){
+      return client
+        .getAsync(client.url('/content/pizza'))
+        .spread(function(res,body){
+          expect(body).to.equal(
+            '<html><head><title>Pizza</title></head>' +
+            '<body style="margin: 0; padding: 0">' +
+            '<img src="' +
+            fs.readFileSync(__dirname + '/assets/pizza.txt') +
+            '"/></body></html>'
+          )
+        })
+    })
     it('should check if content exists',function(){
       return client
         .postAsync({

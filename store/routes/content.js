@@ -1,6 +1,7 @@
 'use strict';
 var P = require('bluebird')
 var debug = require('debug')('stretchfs:store:content')
+var devZeroStream = require('dev-zero-stream')
 var fs = require('graceful-fs')
 var mkdirp = require('mkdirp-then')
 var path = require('path')
@@ -336,6 +337,40 @@ exports.download = function(req,res){
         res.json({message: err.message, error: err})
       }
     })
+}
+
+
+/**
+ * Speed test
+ * @param {object} req
+ * @param {object} res
+ */
+exports.speedTest = function(req,res){
+  var size = req.query.size
+  //convert size from friendly denominations
+  if(size.match(/g/i)) size = parseInt(size) * 1000000000
+  if(size.match(/m/i)) size = parseInt(size) * 1000000
+  if(size.match(/k/i)) size = parseInt(size) * 1000
+  //limit size to 1g
+  if(size > 1000000000) size = 1000000000
+  //stream back some zeros for them fast
+  var stream = devZeroStream(size)
+  stream.pipe(res)
+}
+
+
+/**
+ * Get some Pizza
+ * @param {object} req
+ * @param {object} res
+ */
+exports.pizza = function(req,res){
+  res.send('<html><head><title>Pizza</title></head>' +
+    '<body style="margin: 0; padding: 0">' +
+    '<img src="' +
+    fs.readFileSync(__dirname + '../../../test/assets/pizza.txt') +
+    '"/></body></html>'
+  )
 }
 
 
