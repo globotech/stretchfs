@@ -64,6 +64,7 @@ var verifyInventoryAsync = function(){
   var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
     couch.getName(couch.type.INVENTORY,true) + ' AS b WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
+  query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   var inventoryKey = '%' + config.store.name
   return couchInventory.queryAsync(query,[inventoryKey])
     .then(function(result){
