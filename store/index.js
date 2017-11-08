@@ -14,7 +14,7 @@ var heartbeat
 var supervisor
 var stat
 
-var storeKey = couch.schema.store(config.store.prism,config.store.name)
+var storeKey = couch.schema.store(config.store.name)
 
 //open some buckets
 var couchStretch = couch.stretchfs()
@@ -37,9 +37,9 @@ if(require.main === module){
         }
       )
       var env = process.env
-      env.StretchFS_HB_TYPE = 'store'
-      env.StretchFS_HB_KEY = config.store.name
-      env.StretchFS_HB_PRISM = config.store.prism
+      env.STRETCHFS_HB_TYPE = 'store'
+      env.STRETCHFS_HB_KEY = config.store.name
+      env.STRETCHFS_HB_PRISM = config.store.prism
       heartbeat = infant.parent('../helpers/heartbeat',{
         respawn: false,
           fork: {
@@ -58,8 +58,8 @@ if(require.main === module){
             doc.name = config.store.name
             doc.host = config.store.host || '127.0.0.1'
             doc.port = config.store.port
-            doc.available = true
-            doc.active = true
+            if(doc.roles.indexOf('active') < 0) doc.roles.push('active')
+            if(doc.roles.indexOf('online') < 0) doc.roles.push('online')
             doc.updatedAt = new Date().toJSON()
             return couchStretch.upsertAsync(storeKey,doc,{cas: result.cas})
           },
@@ -72,9 +72,9 @@ if(require.main === module){
               name: config.store.name,
               host: config.store.host || '127.0.0.1',
               port: config.store.port,
-              writable: true,
-              available: true,
-              active: true,
+              usage: {free: 1000000, total: 100000000},
+              slot: {count: 0, list: []},
+              roles: config.store.defaultRoles,
               createdAt: new Date().toJSON(),
               updatedAt: new Date().toJSON()
             })
@@ -124,7 +124,14 @@ if(require.main === module){
       couchStretch.getAsync(storeKey)
         .then(function(result){
           var doc = result.value
-          doc.available = false
+          var activeIndex = doc.roles.indexOf('active')
+          if(activeIndex >= 0){
+            doc.roles.splice(activeIndex,1)
+          }
+          var onlineIndex = doc.roles.indexOf('online')
+          if(onlineIndex >= 0){
+            doc.roles.splice(onlineIndex,1)
+          }
           return couchStretch.upsertAsync(storeKey,doc,{cas: result.cas})
         })
         .then(function(){

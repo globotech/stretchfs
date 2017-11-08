@@ -19,7 +19,8 @@ exports.list = function(req,res){
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
   list.listQuery(
-    couch,couchStretch,couch.type.STRETCHFS,search,'handle',true,start,limit
+    couch,couchStretch,couch.type.STRETCHFS,
+    couch.schema.job(search),'handle',true,start,limit
   )
     .then(function(result){
       res.render('job/list',{

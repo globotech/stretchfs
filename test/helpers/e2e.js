@@ -176,8 +176,8 @@ exports.before = function(that){
     .then(function(){
       var key = couch.schema.prism()
       var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
+        couch.getName(couch.type.STRETCHFS,true) +
+        ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
       return couchStretch.queryAsync(query,[key])
@@ -185,8 +185,8 @@ exports.before = function(that){
     .then(function(){
       var key = couch.schema.store()
       var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
+        couch.getName(couch.type.STRETCHFS,true) +
+        ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
       return couchStretch.queryAsync(query,[key])
@@ -194,8 +194,8 @@ exports.before = function(that){
     .then(function(){
       var key = couch.schema.downVote()
       var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
+        couch.getName(couch.type.STRETCHFS,true) +
+        ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       key = key + '%'
       return couchStretch.queryAsync(query,[key])
@@ -241,14 +241,10 @@ exports.after = function(that){
       return P.all([
         removePeerEntry(couch.schema.prism(clconf.prism1.prism.name)),
         removePeerEntry(couch.schema.prism(clconf.prism2.prism.name)),
-        removePeerEntry(couch.schema.store(
-          clconf.store1.store.prism,clconf.store1.store.name)),
-        removePeerEntry(couch.schema.store(
-          clconf.store2.store.prism,clconf.store2.store.name)),
-        removePeerEntry(couch.schema.store(
-          clconf.store3.store.prism,clconf.store3.store.name)),
-        removePeerEntry(couch.schema.store(
-          clconf.store4.store.prism,clconf.store4.store.name))
+        removePeerEntry(couch.schema.store(clconf.store1.store.name)),
+        removePeerEntry(couch.schema.store(clconf.store2.store.name)),
+        removePeerEntry(couch.schema.store(clconf.store3.store.name)),
+        removePeerEntry(couch.schema.store(clconf.store4.store.name))
       ])
     })
     .then(function(){
@@ -502,32 +498,24 @@ exports.contentSend = function(prism){
     })
       .spread(client.validateResponse())
       .spread(function(res,body){
-        var map = []
-        //down convert map
-        body.map.forEach(function(row){
-          map.push(row.prism + ':' + row.store)
-        })
-        body.map = map
         //we are going to assign the first value of the map to the store from
         storeFrom = body.map[0]
         //now we want to establish where it will go i am going to use a dirty
         //array here to save time
         var cluster = [
-          'prism1:store1',
-          'prism1:store2',
-          'prism2:store3',
-          'prism2:store4'
+          'store1',
+          'store2',
+          'store3',
+          'store4'
         ]
         cluster.forEach(function(store){
-          if(store && body.map.indexOf(store) < 0 && !storeTo){
+          if(-1 === body.map.indexOf(store) && !storeTo){
             storeTo = store
           }
         })
         //now we need to get the configuration details so lets figure out the
         //store so we can just locally call the config
-        var storeShortname = storeFrom.split(':')[1]
-        storeClient = api.setupAccess(
-          'store',exports.clconf[storeShortname].store)
+        storeClient = api.setupAccess('store',exports.clconf[storeFrom].store)
         return storeClient.postAsync({
           url: storeClient.url('/content/send'),
           json: {
@@ -541,9 +529,7 @@ exports.contentSend = function(prism){
         expect(body.success).to.equal('Clone sent')
         expect(body.fileDetail.hash).to.equal(content.hash)
         expect(body.fileDetail.ext).to.equal(content.ext)
-        var storeShortname = storeTo.split(':')[1]
-        storeClient = api.setupAccess(
-          'store',exports.clconf[storeShortname].store)
+        storeClient = api.setupAccess('store',exports.clconf[storeTo].store)
         return storeClient.postAsync({
           url: storeClient.url('/content/remove'),
           json: {
@@ -583,25 +569,23 @@ exports.contentExists = function(prism,options){
         expect(body.hash).to.equal(content.hash)
         if(options.checkExists) expect(body.exists).to.equal(true)
         if(options.countGreaterEqual)
-          expect(parseInt(body.count)).to.be.least(parseInt(options.count))
+          expect(parseInt(body.copies)).to.be.least(parseInt(options.count))
         else if(options.checkExists)
-          expect(parseInt(body.count)).to.equal(parseInt(options.count))
+          expect(parseInt(body.copies)).to.equal(parseInt(options.count))
         var prismExists
         if(options.deepChecks.indexOf('prism1') >= 0){
           prismExists = false
           body.map.forEach(function(row){
-            expect(row.prism).to.be.a('string')
-            expect(row.store).to.be.a('string')
-            if(row.prism === 'prism1') prismExists = true
+            expect(row).to.be.a('string')
+            prismExists = true //legacy check
           })
           expect(prismExists).to.equal(true)
         }
         if(options.deepChecks.indexOf('prism2') >= 0){
           prismExists = false
           body.map.forEach(function(row){
-            expect(row.prism).to.be.a('string')
-            expect(row.store).to.be.a('string')
-            if(row.prism === 'prism2') prismExists = true
+            expect(row).to.be.a('string')
+            prismExists = true //legacy check
           })
           expect(prismExists).to.equal(true)
         }
@@ -640,25 +624,21 @@ exports.contentExistsBulk = function(prism,options){
         expect(body.hash).to.equal(content.hash)
         if(options.checkExists) expect(body.exists).to.equal(true)
         if(options.countGreaterEqual)
-          expect(parseInt(body.count)).to.be.least(parseInt(options.count))
+          expect(parseInt(body.copies)).to.be.least(parseInt(options.count))
         else if(options.checkExists)
-          expect(parseInt(body.count)).to.equal(parseInt(options.count))
+          expect(parseInt(body.copies)).to.equal(parseInt(options.count))
         var prismExists
         if(options.deepChecks.indexOf('prism1') !== -1){
-          prismExists = false
+          prismExists = true
           body.map.forEach(function(row){
-            expect(row.prism).to.be.a('string')
-            expect(row.store).to.be.a('string')
-            if(row.prism === 'prism1') prismExists = true
+            expect(row).to.be.a('string')
           })
           expect(prismExists).to.equal(true)
         }
         if(options.deepChecks.indexOf('prism2') !== -1){
-          prismExists = false
+          prismExists = true
           body.map.forEach(function(row){
-            expect(row.prism).to.be.a('string')
-            expect(row.store).to.be.a('string')
-            if(row.prism === 'prism2') prismExists = true
+            expect(row).to.be.a('string')
           })
           expect(prismExists).to.equal(true)
         }
@@ -684,7 +664,7 @@ exports.contentDetail = function(prism){
       })
       .spread(function(res,body){
         expect(body.hash).to.equal(content.hash)
-        expect(body.count).to.be.greaterThan(0)
+        expect(body.copies).to.be.greaterThan(0)
         expect(body.exists).to.equal(true)
         expect(body.map).to.be.an('array')
       })
@@ -714,7 +694,7 @@ exports.contentDetailBulk = function(prism){
         //shift the thing over and run the normal tests
         body = body[content.hash]
         expect(body.hash).to.equal(content.hash)
-        expect(body.count).to.be.greaterThan(0)
+        expect(body.copies).to.be.greaterThan(0)
         expect(body.exists).to.equal(true)
         expect(body.map).to.be.an('array')
       })

@@ -28,10 +28,10 @@ exports.createMasterInventory = function(hash,extension){
     hash: hash,
     mimeExtension: extension,
     map: [],
-    count: 0,
     size: 0,
-    minCount: config.inventory.defaultMinCount || 2,
-    desiredCount: config.inventory.defaultDesiredCount || 2,
+    copies: 0,
+    rules: config.inventory.defaultRules,
+    relativePath: hashFile.toRelativePath(hash,extension),
     createdAt: new Date().toJSON(),
     updatedAt: new Date().toJSON()
   }
@@ -50,7 +50,6 @@ exports.createStoreInventory = function(fileDetail,verified){
   var inventoryKey = couch.schema.inventory(fileDetail.hash)
   var subInventoryKey = couch.schema.inventory(
     fileDetail.hash,
-    config.store.prism,
     config.store.name
   )
   var inventory = {value: {}, cas: null}
@@ -59,42 +58,31 @@ exports.createStoreInventory = function(fileDetail,verified){
     .then(
       function(result){
         inventory = result
-        //update the map on the existing record
-        var mapExists = false
-        if(!inventory.value.map) inventory.value.map = []
-        inventory.value.map.forEach(function(row){
-          if(
-            row.prism === config.store.prism &&
-            row.store === config.store.name
-          ){
-            mapExists = true
-          }
-        })
-        if(!mapExists){
-          inventory.value.map.push({
-            prism: config.store.prism,
-            store: config.store.name
-          })
-        }
         //update record
         if(!inventory.value.mimeExtension)
           inventory.value.mimeExtension = fileDetail.ext
         if(!inventory.value.mimeType)
           inventory.value.mimeType = mime.getType(fileDetail.ext)
+        //update the map on the existing record
+        var mapExists = false
+        if(!inventory.value.map) inventory.value.map = []
+        inventory.value.map.forEach(function(row){
+          if(row === config.store.name) mapExists = true
+        })
+        if(!mapExists){
+          inventory.value.map.push(config.store.name)
+        }
+        //metrics
+        if(!inventory.value.size)
+          inventory.value.size = fileDetail.stat.size
+        inventory.value.copies = inventory.value.map.length
+        if(!inventory.value.rules)
+          inventory.value.rules = config.inventory.defaultRules
         if(!inventory.value.relativePath){
           inventory.value.relativePath = hashFile.toRelativePath(
             fileDetail.hash,fileDetail.ext
           )
         }
-        if(!inventory.value.minCount)
-          inventory.value.minCount = config.inventory.defaultMinCount || 2
-        if(!inventory.value.desiredCount){
-          inventory.valuu.desiredCount =
-            config.inventory.defaultDesiredCount || 2
-        }
-        inventory.value.count = inventory.value.map.length
-        if(!inventory.value.size)
-          inventory.value.size = fileDetail.stat.size
         inventory.value.updatedAt = new Date().toJSON()
       },
       function(err){
@@ -103,16 +91,13 @@ exports.createStoreInventory = function(fileDetail,verified){
           hash: fileDetail.hash,
           mimeExtension: fileDetail.ext,
           mimeType: mime.getType(fileDetail.ext),
+          map: [config.store.name],
+          size: fileDetail.stat.size,
+          copies: 1,
+          rules: config.inventory.defaultRules,
           relativePath: hashFile.toRelativePath(
             fileDetail.hash,fileDetail.ext
           ),
-          size: fileDetail.stat.size,
-          count: 1,
-          minCount: config.inventory.defaultMinCount || 2,
-          desiredCount: config.inventory.defaultDesiredCount || 2,
-          map: [
-            {prism: config.store.prism, store: config.store.name}
-          ],
           createdAt: new Date().toJSON(),
           updatedAt: new Date().toJSON()
         }
@@ -128,12 +113,13 @@ exports.createStoreInventory = function(fileDetail,verified){
       subInventory.value = {
         prism: config.store.prism,
         store: config.store.name,
-        relativePath: hashFile.toRelativePath(
-          fileDetail.hash,fileDetail.ext
-        ),
+        size: fileDetail.stat.size,
         hitCount: 0,
         byteCount: 0,
         lastCounterClear: new Date().toJSON(),
+        relativePath: hashFile.toRelativePath(
+          fileDetail.hash,fileDetail.ext
+        ),
         createdAt: new Date().toJSON(),
         updatedAt: new Date().toJSON()
       }
@@ -176,32 +162,24 @@ exports.updateStoreInventory = function(
   var mapExists = false
   if(!inventory.value.map) inventory.value.map = []
   inventory.value.map.forEach(function(row){
-    if(
-      row.prism === config.store.prism &&
-      row.store === config.store.name
-    ){
-      mapExists = true
-    }
+    if(row === config.store.name) mapExists = true
   })
   if(!mapExists){
-    inventory.value.map.push({
-      prism: config.store.prism,
-      store: config.store.name
-    })
+    inventory.value.map.push(config.store.name)
   }
   //update record
   if(!inventory.value.mimeExtension)
     inventory.value.mimeExtension = fileDetail.ext
   if(!inventory.value.mimeType)
     inventory.value.mimeType = mime.getType(fileDetail.ext)
+  if(!inventory.value.size)
+    inventory.value.size = fileDetail.stat.size
+  inventory.value.copies = inventory.value.map.length
   if(!inventory.value.relativePath){
     inventory.value.relativePath = hashFile.toRelativePath(
       fileDetail.hash,fileDetail.ext
     )
   }
-  inventory.value.count = inventory.value.map.length
-  if(!inventory.value.size)
-    inventory.value.size = fileDetail.stat.size
   inventory.value.updatedAt = new Date().toJSON()
   return couchInventory.upsertAsync(
     inventoryKey,inventory.value,{cas: inventory.cas})
@@ -226,7 +204,6 @@ exports.verifyFile = function(fileDetail,force){
   var verifiedAt = +new Date()
   inventoryKey = couch.schema.inventory(
     fileDetail.hash,
-    config.store.prism,
     config.store.name
   )
   return couchInventory.getAsync(inventoryKey)
@@ -356,8 +333,7 @@ exports.detailStore = function(hash){
       }
     }
   }
-  var inventoryKey = couch.schema.inventory(
-    hash,config.store.prism,config.store.name)
+  var inventoryKey = couch.schema.inventory(hash,config.store.name)
   return couchInventory.getAsync(inventoryKey)
     .then(function(result){
       var record = result.value
@@ -385,8 +361,7 @@ exports.detailStore = function(hash){
  */
 exports.removeStoreInventory = function(hash){
   var inventoryKey = couch.schema.inventory(hash)
-  var subInventoryKey = couch.schema.inventory(
-    hash,config.store.prism,config.store.name)
+  var subInventoryKey = couch.schema.inventory(hash,config.store.name)
   var inventory = {}
   return couchInventory.getAndLockAsync(inventoryKey)
     .then(function(result){
@@ -401,24 +376,19 @@ exports.removeStoreInventory = function(hash){
     })
     .then(function(){
       //remove ourselves from the map
-      var map = []
-      inventory.value.map.forEach(function(row){
-        if(row.prism === config.store.prism && row.store === config.store.name){
-          return
-        }
-        map.push(row)
+      inventory.value.map = inventory.value.map.filter(function(row){
+        return row !== config.store.name
       })
-      inventory.value.map = map
-      //reset the count
-      inventory.value.count = inventory.value.map.length
-      if(0 === inventory.value.count){
+      //reset the copy count
+      inventory.value.copies = inventory.value.map.length
+      if(0 === inventory.value.copies){
         if(!config.inventory.keepDeadRecords){
           //if there are no more copies remove the master
           return couchInventory.removeAsync(inventoryKey)
         } else {
           //keep a ghost record of the old inventory
           inventory.value.map = []
-          inventory.value.count = 0
+          inventory.value.copies = 0
           inventory.value.verified = false
           inventory.value.verifiedAt = null
           inventory.value.removedAt = new Date().toJSON()

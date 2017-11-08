@@ -97,8 +97,8 @@ config.$load({
   },
   //inventory
   inventory: {
-    defaultMinCount: 2, //minimum copy count
-    defaultDesiredCount: 2, //desired copy count
+    copiesOnWrite: 2, //how many copies to make during the write
+    defaultRules: [{type: 'copyMinimum', value: 2}], //minimum copy count
     keepDeadRecords: false, // keep missing inventory records
     balance: {
       concurrency: 4 //files to process concurrently
@@ -199,8 +199,9 @@ config.$load({
   //storage system
   store: {
     enabled: false,
-    prism: 'prism1',
     name: 'store1',
+    group: 'group1',
+    defaultRoles: ['active','online','read','write'],
     accessLog: false,
     port: 5972,
     host: null,
@@ -222,7 +223,9 @@ config.$load({
     stat: {
       enabled: true,
       syncFrequency: 30000 //30 seconds
-    }
+    },
+    //go ahead and put this at 0 if you like corrupt files
+    minFreeBytes: 67108864 //64MB (every hard drive needs this much free)
   }
 })
 

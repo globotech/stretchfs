@@ -12,17 +12,18 @@ var couchStretch = couch.stretchfs()
 
 
 /**
- * Get list of stores by prism
- * @param {string} prism
+ * Get list of stores
+ * @param {string} search
  * @return {P}
  */
-exports.storeList = function(prism){
+exports.storeList = function(search){
   redis.incr(redis.schema.counter('prism','storeBalance:storeList'))
-  var storeKey = couch.schema.store(prism)
+  var storeKey = couch.schema.store(search)
   debug(storeKey,'getting store list')
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
-    'WHERE META(b).id LIKE $1'
+  var qstring = 'SELECT ' +
+    couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
+    couch.getName(couch.type.STRETCHFS,true) +
+    ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   storeKey = storeKey + '%'
   return couchStretch.queryAsync(query,[storeKey])
@@ -30,9 +31,12 @@ exports.storeList = function(prism){
       debug(storeKey,'got store list result',result)
       return result
     })
-    .filter(function(doc){
-      debug(storeKey,'got store',doc)
-      return doc.name && doc.available && doc.active
+    .filter(function(row){
+      debug(storeKey,'got store',row)
+      var valid = true
+      if(-1 === row.roles.indexOf('active')) valid = false
+      if(-1 === row.roles.indexOf('online')) valid = false
+      return valid
     })
 }
 
@@ -47,7 +51,7 @@ exports.existsToArray = function(inventory,skip){
   if(!(skip instanceof Array)) skip = []
   var result = []
   inventory.map.forEach(function(row){
-    if(skip.indexOf(row.store) < 0) result.push(row)
+    if(-1 === skip.indexOf(row)) result.push(row)
   })
   return result
 }
@@ -64,7 +68,7 @@ exports.populateStores = function(storeList){
     return storeList
   })
     .map(function(row){
-      var storeKey = couch.schema.store(row.prism,row.store)
+      var storeKey = couch.schema.store(row)
       return couchStretch.getAsync(storeKey)
         .then(function(result){
           return result.value
@@ -154,8 +158,10 @@ exports.pickWinner = function(token,storeList,skip,allowFull){
   if(!(storeList instanceof Array)) storeList = []
   for(var i = 0; i < storeList.length; i++){
     store = storeList[i]
-    if((-1 === skip.indexOf(store.name) && (allowFull || store.writable)) &&
-      ((!winner) || (winner.hits > store.hits))) winner = store
+    if(
+      (-1 === skip.indexOf(store.name) &&
+      (allowFull || store.roles.indexOf('write') > 0)) &&
+      ((!winner) || (winner.usage.free < store.usage.free))) winner = store
   }
   return redis.incrAsync(redis.schema.storeHits(token,winner.name))
     .then(function(){

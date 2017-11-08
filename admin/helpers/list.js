@@ -34,8 +34,9 @@ exports.listQuery = function(
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!type)
     throw new Error('Must know bucket type to list')
+  var tableName = cb.getName(type,true)
   var clause = {where:'',orderby:''}
-  clause.from = ' FROM ' + cb.getName(type,true)
+  clause.from = ' FROM ' + tableName
   var s = []
   if('' !== search){
     //was (!search.match(/%.*%/)) for some reason?
@@ -56,7 +57,7 @@ exports.listQuery = function(
     clause.from + clause.where
   )
   queries.data = cb.N1Query.fromString(
-    'SELECT META().id AS _id,*' +
+    'SELECT META().id AS _id, ' + tableName + '.*' +
     clause.from + clause.where +
     clause.orderby + clause.pagination
   )

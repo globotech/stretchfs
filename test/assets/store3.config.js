@@ -16,7 +16,7 @@ module.exports = {
     enabled: true,
     host: '127.0.2.6',
     name: 'store3',
-    prism: 'prism2',
+    group: 'group2',
     username: 'stretchfs-store',
     password: 'that',
     timeout: 2000,

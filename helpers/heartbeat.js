@@ -55,9 +55,9 @@ var setupProgram = function(){
     program.key = config.heartbeat.systemKey
     program.type = config.heartbeat.systemType
     if(!program.key || !program.type){
-      program.key = process.env.StretchFS_HB_KEY || config.prism.name
-      program.type = process.env.StretchFS_HB_TYPE || 'prism'
-      program.prism = process.env.StretchFS_HB_PRISM || ''
+      program.key = process.env.STRETCHFS_HB_KEY || config.prism.name
+      program.type = process.env.STRETCHFS_HB_TYPE || 'prism'
+      program.prism = process.env.STRETCHFS_HB_PRISM || ''
     }
   }
 }
@@ -71,7 +71,7 @@ setupProgram()
  */
 var getPeerKey = function(peer){
   var prismKey = couch.schema.prism(peer.name)
-  var storeKey = couch.schema.store(peer.prism,peer.name)
+  var storeKey = couch.schema.store(peer.name)
   return (peer.type === 'prism') ? prismKey : storeKey
 }
 
@@ -119,7 +119,10 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       var votes = result.length
       if(count === 0 || votes < (count / 2))
         return true
-      peer.available = false
+      var onlineIndex = peer.roles.indexOf('online')
+      if(onlineIndex >= 0){
+        peer.roles.splice(onlineIndex,1)
+      }
       return couchStretch.upsertAsync(key,peer)
         .catch(function(err){
           debug('failed to cast down vote',err)
@@ -181,7 +184,7 @@ var runHeartbeat = function(systemKey,systemType){
     return couchStretch.getAsync(peer._id)
       .then(function(result){
         var peer = result.value
-        peer.available = true
+        if(-1 === peer.roles.indexOf('online')) peer.roles.push('online')
         return couchStretch.upsertAsync(peer._id,peer,{cas: result.cas})
       })
       .then(function(){
@@ -227,7 +230,7 @@ var runHeartbeat = function(systemKey,systemType){
       //setup the ping handler
       debug('Setting up to ping peer',peer.name,peer.host + ':' + peer.port)
       //check if the peer is eligible for ping
-      if(!peer.active) return true
+      if(-1 === peer.roles.indexOf('active')) return true
       //if we already have a downvote the peer should not be contacted
       if(peer.existingDownVote) return true
       var peerRequest = 'prism' === peer.type ?
@@ -248,8 +251,12 @@ var runHeartbeat = function(systemKey,systemType){
               voteLog[peer.name] = 0
               //if this peer is not available this should be where it gets its
               //votes cleared and returned to an available status
-              if(peer.active && !peer.available)
+              if(
+                peer.roles.indexOf('active') >= 0 &&
+                peer.roles.indexOf('online') === -1
+              ){
                 return restorePeer(peer)
+              }
             } else {
               return handlePingFailure('Got a bad response',peer)
             }
@@ -356,8 +363,8 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
       function(result){
         var peer = result.value
         debug('Got peer information back',peer)
-        peer.available = true
-        peer.active = true
+        if(-1 === peer.roles.indexOf('online')) peer.roles.push('online')
+        if(-1 === peer.roles.indexOf('active')) peer.roles.push('active')
         return couchStretch.upsertAsync(key,peer,{cas: result.cas})
           .catch(function(err){
             debug('failed to mark peer up',err)

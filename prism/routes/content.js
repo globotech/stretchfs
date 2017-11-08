@@ -33,54 +33,57 @@ P.promisifyAll(purchasedb)
 
 
 /**
- * Send a file to prism
+ * Send to storage backend
  * @param {string} tmpfile
  * @param {string} hash
  * @param {string} extension
  * @return {P}
  */
-var sendToPrism = function(tmpfile,hash,extension){
-  var prismList
+var sendToStorage = function(tmpfile,hash,extension){
+  var storeList
   var winners = []
+  var skip = []
   //create the new inventory record it will be completed by the peers
   return inventory.createMasterInventory(hash)
     .then(function(){
-      //actually stream the file to new peers
-      return prismBalance.prismList()//pick first winner
+      return storeBalance.storeList()
     })
     .then(function(result){
-      debug(hash,'sendToPrism prismList',result)
-      prismList = result
-      return prismBalance.winner('newFile',prismList)
+      debug(hash,'got store list',result)
+      storeList = result
+      if(!storeList || !storeList.length) throw new Error('No store candidates')
+      return promiseWhile(
+        //condition
+        function(){
+          return winners.length < +(config.inventory.copiesOnWrite || 2)
+        },
+        //action
+        function(){
+          return storeBalance.winner(storeList,skip)
+            .then(function(result){
+              winners.push(result)
+              skip.push(result.name)
+            })
+        }
+      )
     })
-    //pick second winner
-    .then(function(result){
-      if(!result){
-        throw new UserError('Failed to find a prism ' +
-        'instance to upload to')
-      }
-      winners.push(result)
-      return prismBalance.winner('newFile',prismList)
-    })
+    .then(function(){
+      debug(hash,'winners',winners)
     //stream the file to winners
-    .then(function(result){
-      debug(hash,'2nd winner result',result)
-      if(result) winners.push(result)
-      debug('new file winners',hash,winners)
       var thenReturn = function(val){return val}
       var handleError = function(err){throw new UserError(err.message)}
       var readStream = fs.createReadStream(tmpfile)
       var promises = []
       var client
       var url
-      for(var i = 0; i < winners.length; i++){
-        client = api.setupAccess('prism',winners[i])
+      winners.forEach(function(winner){
+        client = api.setupAccess('store',winner)
         url = client.url('/content/put/' + hash + '.' + extension)
         promises.push(
           promisePipe(readStream,client.put(url))
             .then(thenReturn,handleError)
         )
-      }
+      })
       return P.all(promises)
     })
 }
@@ -149,8 +152,8 @@ exports.upload = function(req,res){
         })
         .then(function(result){
           debug(files[key],'exists result',result)
-          if(!result.exists && 0 === result.count){
-            return sendToPrism(tmpfile,sniff.hash,files[key].ext)
+          if(!result.exists && 0 === result.copies){
+            return sendToStorage(tmpfile,sniff.hash,files[key].ext)
           }
           //got here? file already exists on cluster so we are done
         })
@@ -227,8 +230,8 @@ exports.retrieve = function(req,res){
       return prismBalance.contentExists(hash)
     })
     .then(function(result){
-      if(!result.exists && 0 === result.count){
-        return sendToPrism(tmpfile,hash,extension)
+      if(!result.exists || 0 === result.copies){
+        return sendToStorage(tmpfile,hash,extension)
       }
       //got here? file already exists on cluster so we are done
     })
@@ -272,69 +275,6 @@ exports.retrieve = function(req,res){
     })
     .finally(function(){
       fs.unlinkSync(tmpfile)
-    })
-}
-
-
-/**
- * Put a file directly to a prism for distribution to a store
- * @param {object} req
- * @param {object} res
- */
-exports.put = function(req,res){
-  var file = req.params.file
-  var storeList
-  var details = hashFile.hashFromFilename(file)
-  debug(details.hash,'put request received, checking existence and store list')
-  P.all([
-    prismBalance.contentExists(details.hash),
-    storeBalance.storeList(config.prism.name)
-  ])
-    .then(function(result){
-      var exists = result[0]
-      storeList = result[1]
-      debug(details.hash,'got exists',exists)
-      debug(details.hash,'got store list',storeList)
-      debug(details.hash,'picking store winner')
-      return storeBalance.winner(storeList,storeBalance.existsToArray(exists))
-    })
-    .then(function(result){
-      debug(details.hash,'winner',result)
-      if(!result) throw new UserError('No suitable store instance found')
-      var client = api.setupAccess('store',result)
-      var destination = client.put(client.url('/content/put/' + file))
-      debug(details.hash,'streaming file to',result.name)
-      return promisePipe(req,destination)
-        .then(
-          function(val){
-            debug(details.hash,'finished streaming file')
-            return val
-          },
-          function(err){throw new UserError(err.message)}
-        )
-    })
-    .then(function(){
-      res.status(201)
-      res.json({success: 'File uploaded', file: file})
-    })
-    .catch(UserError,function(err){
-      res.status(500)
-      res.set({
-        'StretchFS-Code': 500,
-        'StretchFS-Reason': 'UserError',
-        'StretchFS-Message': err.message
-      })
-      res.json({error: err.message})
-    })
-    .catch(function(err){
-      res.status(501)
-      res.set({
-        'StretchFS-Code': 501,
-        'StretchFS-Reason': 'UnknownError',
-        'StretchFS-Message': err.message
-      })
-      res.json({error: err.message})
-      logger.log('error', 'Unhandled error on content put ' + err.message)
     })
 }
 
@@ -421,42 +361,23 @@ exports.download = function(req,res){
     })
     .then(function(result){
       winner = result
+      debug(hash,'download winner',winner)
       var store = api.setupAccess('store',winner)
-      return store.postAsync(store.url('/ping'))
-        .then(function(){
-          var req = store.post({
-            url: store.url('/content/download'),
-            json: {hash: hash}
-          })
-          req.on('data',function(chunk){
-            redis.incrby(
-              redis.schema.counter('prism','content:bytesDownloaded'),
-              chunk.length
-            )
-          })
-          req.on('error',function(err){
-            if(!(err instanceof Error)) err = new Error(err)
-            store.handleNetworkError(err)
-          })
-          req.pipe(res)
-        })
-    })
-    .catch(NetworkError,function(){
-      return storeBalance.winnerFromExists(hash,inventory,[winner.name],true)
-        .then(function(result){
-          winner = result
-          var store = api.setupAccess('store',winner)
-          return store.postAsync(store.url('/ping'))
-            .then(function(){
-              store.post({
-                url: store.url('/content/download'),
-                json: {hash: hash}
-              }).pipe(res)
-            })
-        })
-        .catch(NetworkError,function(){
-          throw new NotFoundError('File not available')
-        })
+      var req = store.post({
+        url: store.url('/content/download'),
+        json: {hash: inventory.hash, ext: inventory.mimeExtension}
+      })
+      req.on('data',function(chunk){
+        redis.incrby(
+          redis.schema.counter('prism','content:bytesDownloaded'),
+          chunk.length
+        )
+      })
+      req.on('error',function(err){
+        if(!(err instanceof Error)) err = new Error(err)
+        store.handleNetworkError(err)
+      })
+      req.pipe(res)
     })
     .catch(NotFoundError,function(err){
       redis.incr(redis.schema.counterError('prism','content:download:notFound'))
@@ -464,16 +385,6 @@ exports.download = function(req,res){
       res.set({
         'StretchFS-Code': 404,
         'StretchFS-Reason': 'NotFoundError',
-        'StretchFS-Message': err.message
-      })
-      res.json({error: err.message})
-    })
-    .catch(UserError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:download'))
-      res.set(500)
-      res.set({
-        'StretchFS-Code': 500,
-        'StretchFS-Reason': 'UserError',
         'StretchFS-Message': err.message
       })
       res.json({error: err.message})

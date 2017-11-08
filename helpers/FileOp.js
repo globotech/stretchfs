@@ -289,7 +289,7 @@ FileOp.prototype.verifyFile = function(){
   var that = this
   var file = that.file
   //first grab a store to ask for info
-  if(!file.count || !file.exists || !(file.map instanceof Array)){
+  if(!file.copies || !file.exists || !(file.map instanceof Array)){
     console.error(file.hash,'Doesn\'t exist, can\'t verify')
     return P.try(function(){})
   }
@@ -342,7 +342,7 @@ FileOp.prototype.cloneFile = function(){
   var that = this
   var file = that.file
   //first grab a store to ask for info
-  if(!file.count || !file.exists || !(file.map instanceof Array)){
+  if(!file.copies || !file.exists || !(file.map instanceof Array)){
     console.error(file.hash,'Doesn\'t exist, cannot clone')
     return P.try(function(){})
   }
@@ -399,7 +399,7 @@ FileOp.prototype.removeFile = function(){
   var that = this
   var file = that.file
   //first grab a store to ask for info
-  if(!file.count || !file.exists || !(file.map instanceof Array)){
+  if(!file.copies || !file.exists || !(file.map instanceof Array)){
     console.error(file.hash,'Doesn\'t exist, cannot remove')
     return P.try(function(){})
   }

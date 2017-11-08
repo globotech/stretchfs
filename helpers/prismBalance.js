@@ -21,9 +21,10 @@ exports.peerList = function(){
   debug('Querying for peer list')
   return P.all([
     (function(){
-      var qstring = 'SELECT b.* FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
+      var qstring = 'SELECT ' +
+        couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
+        couch.getName(couch.type.STRETCHFS,true) +
+        ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       prismKey = prismKey + '%'
       return couchStretch.queryAsync(query,[prismKey])
@@ -36,9 +37,10 @@ exports.peerList = function(){
         })
     }()),
     (function(){
-      var qstring = 'SELECT b.* FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
+      var qstring = 'SELECT ' +
+        couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
+        couch.getName(couch.type.STRETCHFS,true) +
+        ' WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       storeKey = storeKey + '%'
       return couchStretch.queryAsync(query,[storeKey])
@@ -69,8 +71,9 @@ exports.peerList = function(){
 exports.prismList = function(){
   redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couch.schema.prism()
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
+  var qstring = 'SELECT ' +
+    couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
+    couch.getName(couch.type.STRETCHFS,true) +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   prismKey = prismKey + '%'
@@ -80,25 +83,6 @@ exports.prismList = function(){
     })
     .filter(function(doc){
       return doc.name && doc.available && doc.active
-    })
-}
-
-
-/**
- * Store list by prism
- * @param {string} prism
- * @return {P}
- */
-exports.storeListByPrism = function(prism){
-  redis.incr(redis.schema.counter('prism','prismBalance:storeListByPrism'))
-  var storeKey = couch.schema.store(prism)
-  return couchStretch.all({startkey: storeKey, endkey: storeKey + '\uffff'})
-    .map(function(row){
-      return couchStretch.getAsync(row.key)
-    })
-    .filter(function(row){
-      row = row.value
-      return row.available && row.active
     })
 }
 
@@ -174,9 +158,13 @@ exports.contentExists = function(hash){
   return couchInventory.getAsync(existsKey)
     .then(function(result){
       result.value.exists = true
-      result.value.count = parseInt(result.value.count)
+      result.value.copies = parseInt(result.value.copies)
       result.value.size = parseInt(result.value.size)
       return result.value
+    })
+    .then(function(result){
+      debug(existsKey,'exists found',result)
+      return result
     })
     .catch(function(err){
       if(13 !== err.code && 53 !== err.code) throw err
@@ -184,11 +172,11 @@ exports.contentExists = function(hash){
         hash: hash,
         mimeType: null,
         mimeExtension: null,
-        relativePath: null,
-        exists: false,
-        count: 0,
+        map: [],
         size: 0,
-        map: []
+        copies: 0,
+        relativePath: null,
+        exists: false
       }
     })
 }

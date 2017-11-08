@@ -15,7 +15,7 @@ var jobsProcessing = {}
 var maxExecutionTime
 
 //identify ourselves
-var workerKey = couch.schema.store(config.store.prism,config.store.name)
+var workerKey = couch.schema.store(config.store.name)
 debug('coming up with a new identity for job processing',workerKey)
 
 //open some buckets

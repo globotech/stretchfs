@@ -10,7 +10,7 @@ var couch = require('../helpers/couchbase')
 var config = require('../config')
 
 
-var storeKey = couch.schema.store(config.store.prism,config.store.name)
+var storeKey = couch.schema.store(config.store.name)
 var syncInterval
 
 //open some buckets
@@ -27,8 +27,7 @@ var couchPurchase = couch.purchase()
  * @return {P}
  */
 var updateInventoryStat = function(hash,hitCount,byteCount){
-  var inventoryKey = couch.schema.inventory(
-    hash,config.store.prism,config.store.name)
+  var inventoryKey = couch.schema.inventory(hash,config.store.name)
   return couchInventory.getAndLock(inventoryKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
@@ -143,18 +142,29 @@ var statSyncPurchases = function(){
  */
 var statSyncPeer = function(){
   debug('peer stat sync starting')
-  var usage = {}
+  var slotKey = redis.schema.peerSlot()
+  var slotUsage = {}
+  var diskUsage = {}
   return diskusage.checkAsync(config.root)
     .then(function(result){
       debug('got disk usage',result)
-      usage = result
+      diskUsage = result
+      debug('getting slots')
+      return redis.smembersAsync(slotKey)
+    })
+    .then(function(result){
+      debug('got slots',result)
+      slotUsage = result
       return couchStretch.getAsync(storeKey)
     })
     .then(function(result){
       result.value.usage = {
-        available: usage.available,
-        free: usage.free,
-        total: usage.total
+        free: diskUsage.free,
+        total: diskUsage.total
+      }
+      result.value.slot = {
+        count: slotUsage.length,
+        list: slotUsage
       }
       return couchStretch.upsertAsync(storeKey,result.value,{cas: result.cas})
     })

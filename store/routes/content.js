@@ -54,8 +54,7 @@ exports.put = function(req,res){
     .then(function(result){
       fileDetail = result
       fileDetail.ext = ext
-      inventoryKey = couch.schema.inventory(
-        fileDetail.hash,config.store.prism,config.store.name)
+      inventoryKey = couch.schema.inventory(fileDetail.hash,config.store.name)
       dest = hashFile.toPath(fileDetail.hash,fileDetail.ext)
       debug(fileDetail.hash,dest)
       return mkdirp(path.dirname(dest))
@@ -214,8 +213,7 @@ exports.send = function(req,res){
   var file = req.body.file
   var hash = hashFile.fromPath(file)
   var ext = file.split('.')[1]
-  var nameParts = req.body.store.split(':')
-  var storeKey = couch.schema.store(nameParts[0],nameParts[1])
+  var storeKey = couch.schema.store(req.body.store)
   var storeClient = null
   var store = {}
   var fileDetail = {}
@@ -304,26 +302,29 @@ exports.remove = function(req,res){
  */
 exports.download = function(req,res){
   redis.incr(redis.schema.counter('store','content:download'))
-  var inventory
-  couchInventory.getAsync(req.body.hash)
+  var hash = req.body.hash
+  var ext = req.body.ext
+  var detail
+  hashFile.details(hash,ext)
     .then(function(result){
-      inventory = result.value
-      var filePath = path.join(contentFolder,inventory.relativePath)
+      detail = result
+      var filePath = detail.path
       //occupy slot on peer
-      redis.sadd(redis.schema.peerSlot(),req.ip + ':' + inventory.hash)
+      redis.sadd(redis.schema.peerSlot(),req.ip + ':' + detail.hash)
       //update hits
-      redis.incr(redis.schema.inventoryStat(inventory.hash,'hit'))
+      redis.incr(redis.schema.inventoryStat(detail.hash,'hit'))
       //add to stat collection
-      redis.sadd(redis.schema.inventoryStatCollect(),inventory.hash)
+      redis.sadd(redis.schema.inventoryStatCollect(),detail.hash)
       //register to track bytes sent
-      var inventoryByteKey = redis.schema.inventoryStat(inventory.hash,'byte')
+      var inventoryByteKey = redis.schema.inventoryStat(detail.hash,'byte')
       requestStats(req,res,function(stat){
         redis.incrby(inventoryByteKey,stat.res.bytes)
-        redis.srem(redis.schema.peerSlot(),req.ip + ':' + inventory.hash)
+        redis.srem(redis.schema.peerSlot(),req.ip + ':' + detail.hash)
       })
       res.sendFile(filePath)
     })
     .catch(function(err){
+      console.log(err)
       if(13 === err.code){
         redis.incr(
           redis.schema.counterError('store','content:download:notFound'))
@@ -348,11 +349,7 @@ exports.static = function(req,res){
   //then we must send it, that simple dont overthink it
   var hash = req.params.hash
   debug('STATIC','got file static request',hash)
-  var inventoryKey = couch.schema.inventory(
-    hash,
-    config.store.prism,
-    config.store.name
-  )
+  var inventoryKey = couch.schema.inventory(hash,config.store.name)
   debug('STATIC','checking for inventory',inventoryKey)
   couchInventory.getAsync(inventoryKey)
     .then(function(result){
@@ -407,9 +404,7 @@ exports.play = function(req,res){
         purchase = result
         //get inventory
         return couchInventory.getAsync(couch.schema.inventory(
-          purchase.hash,
-          config.store.prism,
-          config.store.name
+          purchase.hash,config.store.name
         ))
       },
       //purchase not found

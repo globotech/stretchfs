@@ -25,7 +25,6 @@ exports.uri = function(req,res){
         //get inventory
         return couchInventory.getAsync(couch.schema.inventory(
           purchase.hash,
-          config.store.prism,
           config.store.name
         ))
       })

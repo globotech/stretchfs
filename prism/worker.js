@@ -119,7 +119,6 @@ app.post('/cache/detail',auth,routes.cache.detail)
 
 //content
 app.post('/content/exists',auth,routes.content.exists)
-app.put('/content/put/:file',auth,routes.content.put)
 
 //protected job functions
 app.post('/job/create',userSessionValidate,routes.job.create)

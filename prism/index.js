@@ -30,9 +30,9 @@ if(require.main === module){
         }
       )
       var env = process.env
-      env.StretchFS_HB_TYPE = 'prism'
-      env.StretchFS_HB_KEY = config.prism.name
-      env.StretchFS_HB_PRISM = ''
+      env.STRETCHFS_HB_TYPE = 'prism'
+      env.STRETCHFS_HB_KEY = config.prism.name
+      env.STRETCHFS_HB_PRISM = ''
       heartbeat = infant.parent('../helpers/heartbeat',{
         respawn: false,
         fork: {
@@ -48,8 +48,9 @@ if(require.main === module){
               doc.name = config.prism.name
               doc.host = config.prism.host || '127.0.0.1'
               doc.port = config.prism.port
-              doc.available = true
-              doc.active = true
+              if(!doc.roles) doc.roles = []
+              if(doc.roles.indexOf('active') < 0) doc.roles.push('active')
+              if(doc.roles.indexOf('online') < 0) doc.roles.push('online')
               doc.updatedAt = new Date().toJSON()
               return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
             },
@@ -61,9 +62,7 @@ if(require.main === module){
                 name: config.prism.name,
                 host: config.prism.host || '127.0.0.1',
                 port: config.prism.port,
-                writable: true,
-                available: true,
-                active: true,
+                roles: ['active','online'],
                 createdAt: new Date().toJSON(),
                 updatedAt: new Date().toJSON()
               })
@@ -99,7 +98,14 @@ if(require.main === module){
         couchStretch.getAsync(prismKey)
           .then(function(result){
             var doc = result.value
-            doc.available = false
+            var activeIndex = doc.roles.indexOf('active')
+            if(activeIndex >= 0){
+              doc.roles.splice(activeIndex,1)
+            }
+            var onlineIndex = doc.roles.indexOf('online')
+            if(onlineIndex >= 0){
+              doc.roles.splice(onlineIndex,1)
+            }
             return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
           })
           .then(function(){

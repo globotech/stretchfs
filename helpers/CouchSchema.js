@@ -43,41 +43,6 @@ CouchSchema.prototype.STORE_TYPES = {
 
 
 /**
- * Peer record structure
- * @typedef {Object} PEER_RECORD {{
- * _id:string,
- * _rev:string,
- * name:string,
- * createdAt:string,
- * host:string,
- * port:number,
- * prism:string,
- * type:PEER_TYPES,
- * existingDownVote:boolean,
- * active:boolean,
- * available:boolean,
- * writable:boolean,
- * protected:boolean
- * }}
- */
-
-
-/**
- * Inventory/file record structure
- * @typedef {Object} FILE_RECORD {{
- * hash:string,
- * mimeType:string,
- * mimeExtension:string,
- * relativePath:string,
- * size:number,
- * count:number,
- * exists:boolean,
- * map: array
- * }}
- */
-
-
-/**
  * Apply Key Prefix
  * @param {string} key
  * @return {string}
@@ -103,16 +68,11 @@ CouchSchema.prototype.prism = function(name){
 
 /**
  * Store Key
- * @param {string} prism (optional)
  * @param {string} name
  * @return {string}
  */
-CouchSchema.prototype.store = function(prism,name){
-  return this.applyPrefix(
-    this.PEER_TYPES.store + ':' +
-    (prism || '') +
-    (name ? ':' + name : '')
-  )
+CouchSchema.prototype.store = function(name){
+  return this.applyPrefix(this.PEER_TYPES.store + ':' + (name ? name : ''))
 }
 
 

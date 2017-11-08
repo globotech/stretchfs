@@ -44,7 +44,7 @@ block content
                 div
                   small.text-muted= S('' + metrics.frameDescription).truncate(75)
               .progress.progress-striped(style='margin-bottom: 0;')
-                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='99', style='width: #{percentComplete}%;')
+                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='99', style='width: ' + percentComplete + '%;')
                   | #{percentComplete}%
               if 'processing' === row.status
                 div

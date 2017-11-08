@@ -52,6 +52,17 @@ More to come for StretchFS.
 
 ## Installation
 
+On Windows do this first
+`$ npm install --global --production windows-build-tools`
+
+On Debian Linux (Ubuntu Included) do this
+`$ apt-get -y install build-essential`
+
+On RedHat Linux (CentOS and Fedora Included) do this
+`$ yum groupinstall 'Development Tools'`
+
+On all installations run these commands
+
 ```
 $ git clone git@github.com:nullivex/stretchfs.git
 $ cd stretchfs
