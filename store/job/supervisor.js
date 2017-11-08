@@ -485,8 +485,8 @@ var superviseJobStart = function(){
             if(process.env.NODE_DEBUG){
               env.NODE_DEBUG = process.env.NODE_DEBUG
             }
-            if(process.env.STRETCH_CONFIG){
-              env.STRETCH_CONFIG = process.env.STRETCH_CONFIG
+            if(process.env.STRETCHFS_CONFIG){
+              env.STRETCHFS_CONFIG = process.env.STRETCHFS_CONFIG
             }
             jobsProcessing[handle] = infant.parent(
               './worker',

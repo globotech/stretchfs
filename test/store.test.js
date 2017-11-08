@@ -21,7 +21,7 @@ config.$load(require(__dirname + '/assets/store1.config.js'))
 var makeEnv = function(configFile){
   var env = new ObjectManage()
   env.$load(process.env)
-  env.STRETCH_CONFIG = path.resolve(configFile)
+  env.STRETCHFS_CONFIG = path.resolve(configFile)
   return env.$strip()
 }
 

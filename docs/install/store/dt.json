@@ -1,11 +1,12 @@
 {
-  "name": "StretchFSNAME",
-  "cwd": "StretchFSDIR",
+  "name": "stretchfs",
+  "cwd": "/opt/stretchfs",
   "user": "node",
   "command": "node app",
   "env": {
+    "DEBUG": "infant*",
     "NODE_ENV": "production",
-    "STRETCH_CONFIG": "StretchFSCONFIGFILE",
+    "STRETCHFS_CONFIG": "/path/to/config.stretchfs.js",
     "SHELL": "/bin/bash",
     "USER": "node",
     "PATH": "/usr/local/bin:/usr/bin:/bin:/opt/bin",
@@ -21,6 +22,6 @@
   },
   "log": {
     "user": "node",
-    "command": "multilog s16777215 t LOGFILE"
+    "command": "multilog s16777215 t /opt/stretchfs/log"
   }
 }
