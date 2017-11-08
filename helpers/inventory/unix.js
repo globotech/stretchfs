@@ -172,7 +172,7 @@ module.exports = function(done){
             progress.tick(1)
           })
       }
-    },{concurrency: config.store.inventoryConcurrency})
+    },{concurrency: +config.inventory.scan.concurrency})
     .then(function(){
       done(null,counter)
     })

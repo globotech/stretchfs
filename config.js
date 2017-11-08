@@ -104,6 +104,7 @@ config.$load({
       concurrency: 4 //files to process concurrently
     },
     scan: {
+      concurrency: 4, //files to process concurrently
       throttle: 100 //ms between requests
     }
   },
