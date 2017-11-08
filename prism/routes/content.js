@@ -2,6 +2,7 @@
 var P = require('bluebird')
 var Busboy = require('busboy')
 var debug = require('debug')('stretchfs:prism:content')
+var fileType = require('file-type')
 var fs = require('graceful-fs')
 var mime = require('mime')
 var stretchfs = require('stretchfs-sdk')
@@ -114,13 +115,19 @@ exports.upload = function(req,res){
   busboy.on('file',function(key,file,name,encoding,mimetype){
     redis.incr(redis.schema.counter('prism','content:filesUploaded'))
     debug('upload, got file')
-    var tmpfile = temp.path({prefix: 'stretchfs-' + config.prism.name + '-'})
-    if('application/octet-stream' === mimetype){
-      mimetype = mime.getType(name)
+    var type = {
+      user: mimetype,
+      extension: mime.getType(name),
+      stream: null
     }
+    var tmpfile = temp.path({prefix: 'stretchfs-' + config.prism.name + '-'})
     if(!data.hashType) data.hashType = config.defaultHashType || 'sha1'
     var sniff = hashStream.createStream(data.hashType)
+    var typeBuf
     sniff.on('data',function(chunk){
+      if(!typeBuf || typeBuf.length <= 8192){
+        typeBuf = typeBuf ? new Buffer.concat([typeBuf,chunk]) : chunk
+      }
       redis.incrby(
         redis.schema.counter('prism','content:bytesUploaded'),chunk.length)
     })
@@ -130,8 +137,7 @@ exports.upload = function(req,res){
       tmpfile: tmpfile,
       name: name,
       encoding: encoding,
-      mimetype: mimetype,
-      ext: mime.getExtension(mimetype),
+      type: type,
       hash: null,
       hashType: data.hashType
     }
@@ -145,6 +151,23 @@ exports.upload = function(req,res){
       })
         .then(function(){
           var hashType = hasher.identify(sniff.hash)
+          //type small files below 4100 bytes
+          var type = files[key].type
+          if(!type.stream && typeBuf){
+            type.stream = fileType(typeBuf)
+            if(type.stream && type.stream.mime) type.stream = type.stream.mime
+            typeBuf = null
+          }
+          //consider mimetype on levels
+          var mimetype = type.stream
+          if('application/octet-stream' === mimetype || null === mimetype){
+            mimetype = type.extension
+          }
+          if('application/octet-stream' === mimetype || null === mimetype){
+            mimetype = type.user
+          }
+          files[key].mimetype = mimetype
+          files[key].ext = mime.getExtension(mimetype)
           files[key].hash = sniff.hash
           files[key][hashType] = sniff.hash
           files[key].hashType = hasher.identify(sniff.hash)
@@ -217,9 +240,17 @@ exports.retrieve = function(req,res){
   var extension = req.body.extension || 'bin'
   var tmpfile = temp.path({prefix: 'stretchfs-' + config.prism.name + '-'})
   var sniff = hashStream.createStream(hashType)
+  var typeBuf
+  var type = {
+    extension: mime.getType(extension),
+    user: req.body.mimeType || 'application/octet-stream',
+    stream: null
+  }
   sniff.on('data',function(chunk){
-    redis.incrby(
-      redis.schema.counter('prism','content:bytesUploaded'),chunk.length)
+    if(!typeBuf || typeBuf.length <= 8192){
+      typeBuf = typeBuf ? new Buffer.concat([typeBuf,chunk]) : chunk
+    }
+    redis.schema.counter('prism','content:bytesUploaded',chunk.length)
   })
   var hash
   var writeStream = fs.createWriteStream(tmpfile)
@@ -229,6 +260,21 @@ exports.retrieve = function(req,res){
   })
     .then(function(){
       hash = sniff.hash
+      //type small files below 4100 bytes
+      if(!type.stream && typeBuf){
+        type.stream = fileType(typeBuf)
+        if(type.stream && type.stream.mime) type.stream = type.stream.mime
+        typeBuf = null
+      }
+      //consider mimetype on levels
+      var mimetype = type.stream
+      if('application/octet-stream' === mimetype || null === mimetype){
+        mimetype = type.extension
+      }
+      if('application/octet-stream' === mimetype || null === mimetype){
+        mimetype = type.user
+      }
+      extension = mime.getExtension(mimetype)
       //do a content lookup and see if this exists yet
       return prismBalance.contentExists(hash)
     })
