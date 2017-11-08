@@ -12,7 +12,7 @@ var couch = require('../../helpers/couchbase')
 P.promisifyAll(bcrypt)
 
 //open some buckets
-var couchStretchFS = couch.stretchfs()
+var couchStretch = couch.stretchfs()
 
 var config = require('../../config')
 
@@ -37,7 +37,7 @@ program
         active: true,
         createdAt: new Date().toJSON()
       }
-      return couchStretchFS.upsertAsync(staffKey,doc)
+      return couchStretch.upsertAsync(staffKey,doc)
     })
       .then(function(){
         logger.log('info','Staff member created!')
@@ -59,7 +59,7 @@ program
   .action(function(opts){
     if(!opts.email) throw new Error('Email is required')
     var staffKey = couch.schema.stretchfsStaff(opts.email)
-    couchStretchFS.getAsync(staffKey)
+    couchStretch.getAsync(staffKey)
       .then(function(result){
         var doc = result.value
         if(opts.newEmail) doc.email = opts.newEmail
@@ -70,7 +70,7 @@ program
         }
         if(opts.name) doc.name = opts.name
         doc.updatedAt = new Date().toJSON()
-        return couchStretchFS.upsertAsync(staffKey,doc,{cas: result.cas})
+        return couchStretch.upsertAsync(staffKey,doc,{cas: result.cas})
       })
       .then(function(){
         logger.log('info','Staff member updated successfully!')
@@ -88,7 +88,7 @@ program
   .action(function(opts){
     if(!opts.email) throw new Error('Email is required... exiting')
     var staffKey = couch.schema.stretchfsStaff(opts.email)
-    couchStretchFS.removeAsync(staffKey)
+    couchStretch.removeAsync(staffKey)
       .then(function(){
         logger.log('info','Staff member removed successfully!')
         process.exit()
@@ -103,7 +103,7 @@ program
   .description('List staff members')
   .action(function(){
     var clause = {}
-    clause.from = ' FROM ' + couch.getName(couch.type.StretchFS,true)
+    clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
     clause.where = ' WHERE META().id LIKE $1'
     var query = couch.N1Query.fromString(
       'SELECT *' + clause.from + clause.where
@@ -113,7 +113,7 @@ program
     })
     var staffCount = 0
     var staffKey = couch.schema.stretchfsStaff() + '%'
-    return couchStretchFS.queryAsync(query,[staffKey])
+    return couchStretch.queryAsync(query,[staffKey])
       .each(function(row){
         staffCount++
         table.push([row.email,row.name,row.active ? 'Yes' : 'No'])
