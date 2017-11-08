@@ -11,10 +11,9 @@ block content
           th
             input#toggle(type='checkbox')
           th Hash
-          th Clones
-          th MimeType
+          th Copies
+          th Mime Type (ext)
           th Size
-          th Hits
           th Created
           th Updated
         each row in list
@@ -24,10 +23,9 @@ block content
             td
               samp(class='text-center')
                 a(href='/inventory/edit?id=' + row.hash)= row.hash
-            td= row.id.length
-            td= row.mimeType
+            td= row.copies
+            td= row.mimeType+' ('+row.mimeExtension+')'
             td= row.size ? prettyBytes(row.size) : ''
-            td= row.hits || 0
             td= row.createdAt || 'Unknown'
             td= row.updatedAt || 'Unknown'
       +tableFooter(page,count)

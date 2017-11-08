@@ -40,25 +40,19 @@ exports.hashQuery = function(cb,db,type,search){
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!type)
     throw new Error('Must know bucket type to list')
-  var clause = {where:''}
-  clause.from = ' FROM ' + cb.getName(type,true)
-  var s = []
+  var bucketName = cb.getName(type,true)
+  var clause = {
+    where: [ ' WHERE NOT CONTAINS(META().id,":")' ],
+  }
+  clause.from = ' FROM ' + bucketName
+  var s = ['%:%']
   if(!!search){
     s.push((-1 === search.indexOf('%'))?search + '%':search)
-    clause.where = ' WHERE `hash` LIKE $1'
+    clause.where.push(' META().id LIKE $2')
   }
-  clause.groupby = ' GROUP BY `hash`'
   var query = cb.N1Query.fromString(
-    'SELECT `hash`' +
-    ',ARRAY_AGG(meta().id) AS id' +
-    ',ARRAY_AGG(DISTINCT CONCAT(`prism`,":",`store`)) AS loc' +
-    ',ARRAY_AGG(DISTINCT `size`) AS size' +
-    ',ARRAY_AGG(DISTINCT `mimeType`) AS mimeType' +
-    ',ARRAY_AGG(DISTINCT `mimeExtension`) AS mimeExtension' +
-    ',ARRAY_AGG(DISTINCT `relativePath`) AS relativePath' +
-    ',ARRAY_MAX(ARRAY_AGG(DISTINCT `createdAt`)) AS createdAt' +
-    ',ARRAY_MAX(ARRAY_AGG(DISTINCT `updatedAt`)) AS updatedAt' +
-    clause.from + clause.where + clause.groupby
+    'SELECT ' + bucketName + '.*' +
+    clause.from + clause.where.join(' AND')
   )
   return db.queryAsync(query,s)
     .then(function(result){
@@ -82,51 +76,46 @@ exports.hashQuery = function(cb,db,type,search){
  * @param {string} search
  * @param {string} orderField
  * @param {string} orderAsc
- * @param {integer} start
+ * @param {integer} offset
  * @param {integer} limit
  * @return {P}
  */
-exports.listMain = function(cb,db,type,search,orderField,orderAsc,start,limit){
+exports.listMain = function(
+  cb,db,type,search,orderField,orderAsc,offset,limit
+){
   //validate and pre-process arguments
   if(!cb || !db)
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!type)
     throw new Error('Must know bucket type to list')
-  var clause = {where:'',orderby:''}
-  clause.from = ' FROM ' + cb.getName(type,true)
-  var s = []
+  var bucketName = cb.getName(type,true)
+  var clause = {
+    where: [ ' WHERE NOT CONTAINS(META().id,":")' ],
+    orderby: ''
+  }
+  clause.from = ' FROM ' + bucketName
+  var s = ['%:%']
   if(!!search){
     s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
-    clause.where = ' WHERE META().id LIKE $1'
+    clause.where.push(' META().id LIKE $2')
   }
   if(orderField){
     clause.orderby = ' ORDER BY `' + orderField + '`' +
       (orderAsc ? ' ASC' : ' DESC')
   }
-  clause.groupby = ' GROUP BY `hash`'
-  start = _intarg(start,0)
+  offset = _intarg(offset,0)
   limit = _intarg(limit,10)
-  clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + start
+  clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + offset
   //build queries
   var queries = {}
   queries.total = cb.N1Query.fromString(
-    'SELECT ARRAY_COUNT(ARRAY_AGG(DISTINCT `hash`)) AS _count' +
-    clause.from + clause.where
+    'SELECT COUNT(DISTINCT `hash`) AS _count' +
+    clause.from + clause.where.join(' AND')
   )
   queries.data = cb.N1Query.fromString(
-    'SELECT `hash`' +
-    ',ARRAY_AGG(meta().id) AS id' +
-    ',ARRAY_AGG(DISTINCT CONCAT(`prism`,":",`store`)) AS loc' +
-    ',ARRAY_AGG(DISTINCT `size`) AS size' +
-    ',ARRAY_AGG(DISTINCT `mimeType`) AS mimeType' +
-    ',ARRAY_AGG(DISTINCT `mimeExtension`) AS mimeExtension' +
-    ',ARRAY_AGG(DISTINCT `relativePath`) AS relativePath' +
-    ',ARRAY_MAX(ARRAY_AGG(DISTINCT `createdAt`)) AS createdAt' +
-    ',ARRAY_MAX(ARRAY_AGG(DISTINCT `updatedAt`)) AS updatedAt' +
-    clause.from + clause.where + clause.groupby +
+    'SELECT ' + bucketName + '.*' +
+    clause.from + clause.where.join(' AND') +
     clause.orderby + clause.pagination
-//  'SELECT META().id AS _id,*' + clause.from + clause.where +
-//    clause.orderby + clause.pagination
   )
   return P.all([
     db.queryAsync(queries.data,s),
@@ -166,12 +155,11 @@ exports.listBuild = function(cb,db,type){
     throw new Error('Must know bucket type to list')
   var clause = {}
   clause.from = ' FROM ' + cb.getName(type,true)
-  var s = []
+  clause.where = ' WHERE META().id LIKE "%:%"'
+  clause.orderby = ' ORDER BY META().id ASC'
   //build queries
-  var dataQuery = 'SELECT META(b).id AS id FROM ' +
-    cb.getName(type,true) + ' AS b WHERE META(b).id LIKE "%:%" ' +
-    ' ORDER BY META(b).id ASC'
-  var query = cb.N1Query.fromString(dataQuery)
+  var query = cb.N1Query.fromString('SELECT META().id AS id' +
+    clause.from + clause.where + clause.orderby)
   return db.queryAsync(query)
 }
 

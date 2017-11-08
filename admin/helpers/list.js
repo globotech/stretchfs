@@ -34,14 +34,14 @@ exports.listQuery = function(
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!type)
     throw new Error('Must know bucket type to list')
-  var tableName = cb.getName(type,true)
+  var bucketName = cb.getName(type,true)
   var clause = {where:'',orderby:''}
-  clause.from = ' FROM ' + tableName
+  clause.from = ' FROM ' + bucketName
   var s = []
   if('' !== search){
     //was (!search.match(/%.*%/)) for some reason?
     s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
-    clause.where = ' WHERE META().id LIKE $1 '
+    clause.where = ' WHERE META().id LIKE $1'
   }
   if(orderField){
     clause.orderby = ' ORDER BY `' + orderField + '`' +
@@ -57,7 +57,7 @@ exports.listQuery = function(
     clause.from + clause.where
   )
   queries.data = cb.N1Query.fromString(
-    'SELECT META().id AS _id, ' + tableName + '.*' +
+    'SELECT META().id AS _id,' + bucketName + '.*' +
     clause.from + clause.where +
     clause.orderby + clause.pagination
   )
