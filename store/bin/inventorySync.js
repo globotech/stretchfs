@@ -87,6 +87,7 @@ var verifyInventoryAsync = function(){
               contentFolder,record.relativePath))
           ){
             counter.invalid++
+            if(!record) return
             return couchInventory.removeAsync(record._id)
               .catch(function(){
                 counter.warning++
