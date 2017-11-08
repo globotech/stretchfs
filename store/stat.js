@@ -1,6 +1,7 @@
 'use strict';
 var P = require('bluebird')
 var debug = require('debug')('stretchfs:store:stat')
+var diskusage = P.promisifyAll(require('diskusage'))
 var child = require('infant').child
 
 var redis = require('../helpers/redis')()
@@ -8,10 +9,13 @@ var couch = require('../helpers/couchbase')
 
 var config = require('../config')
 
+
+var storeKey = couch.schema.store(config.store.prism,config.store.name)
 var syncInterval
 
 //open some buckets
 var couchInventory = couch.inventory()
+var couchStretch = couch.stretchfs()
 var couchPurchase = couch.purchase()
 
 
@@ -134,6 +138,33 @@ var statSyncPurchases = function(){
 
 
 /**
+ * Sync stats for peer
+ * @return {P}
+ */
+var statSyncPeer = function(){
+  debug('peer stat sync starting')
+  var usage = {}
+  return diskusage.checkAsync(config.root)
+    .then(function(result){
+      debug('got disk usage',result)
+      usage = result
+      return couchStretch.getAsync(storeKey)
+    })
+    .then(function(result){
+      result.value.usage = {
+        available: usage.available,
+        free: usage.free,
+        total: usage.total
+      }
+      return couchStretch.upsertAsync(storeKey,result.value,{cas: result.cas})
+    })
+    .then(function(){
+      debug('peer stat sync complete')
+    })
+}
+
+
+/**
  * Sync stats from redis
  * @return {P}
  */
@@ -141,6 +172,7 @@ var statSync= function(){
   debug('starting to sync stats')
   return P.all([
     statSyncInventory(),
+    statSyncPeer(),
     statSyncPurchases()
   ])
     .then(function(){
