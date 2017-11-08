@@ -1,4 +1,4 @@
-StretchFS [![Build Status](https://travis-ci.org/nullivex/StretchFS.svg?branch=master)](https://travis-ci.org/nullivex/StretchFS)
+StretchFS [![Build Status](https://travis-ci.org/nullivex/stretchfs.svg?branch=master)](https://travis-ci.org/nullivex/stretchfs)
 ========
 
 Global File System
