@@ -73,7 +73,7 @@
     "sha1-stream": "^0.2.1",
     "stretchfs-sdk": "^3.1.2",
     "string": "^3.3.3",
-    "systeminformation": "^3.33.1",
+    "systeminformation": "^3.33.4",
     "temp": "^0.8.3",
     "uuid": "^3.1.0",
     "validator": "^9.1.1",

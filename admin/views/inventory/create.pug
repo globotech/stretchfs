@@ -11,13 +11,11 @@ block content
         .col-sm-10
           input.form-control(type='text', name='hash')
       .form-group
-        label.control-label.col-sm-2 Prism
-        .col-sm-10
-          input.form-control(type='text', name='prism')
-      .form-group
         label.control-label.col-sm-2 Store
         .col-sm-10
-          input.form-control(type='text', name='store')
+          select.form-control(type='select', name='store')
+            each store in stores
+              option(value=store.name) #{store.name}
       .form-group
         label.control-label.col-sm-2 Mime Type
         .col-sm-10
