@@ -64,8 +64,9 @@ module.exports = function(done){
     var relativePath = entry.path
     var stat = entry.stat
     counter.bytes += stat.size
-    var ext = relativePath.match(/\.(.+)$/)[1]
+    var ext = relativePath.match(/\.(.+)$/)
     var hash = relativePath.replace(/[\\\/]/g,'').replace(/\..+$/,'')
+    if(ext && ext[1]) ext = ext[1]
     //skip invalid inventory entries
     if(!hash.match(/^[a-f0-9]{40}$/i)){
       counter.invalid++
