@@ -112,7 +112,7 @@ module.exports = function(done){
       var stat = fs.statSync(filePath)
       counter.bytes += stat.size
       var hash = relativePath.replace(/[\\\/]/g,'').replace(/\..+$/,'')
-      var ext = relativePath.match(/\.(.+)$/)
+      var ext = path.extname(relativePath).replace('.','')
       if(ext && ext[0]) ext = ext[0]
       //skip invalid inventory entries
       if(!hash.match(/^[a-f0-9]{40}$/i) || !ext || !ext[0]){
