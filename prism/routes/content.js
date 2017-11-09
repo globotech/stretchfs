@@ -393,6 +393,31 @@ exports.exists = function(req,res){
 
 
 /**
+ * Speed test
+ * @param {object} req
+ * @param {object} res
+ */
+exports.speedTest = function(req,res){
+  var size = req.query.size || '1m'
+  storeBalance.storeList()
+    .then(function(result){
+      if(!result) throw new Error('No stores available')
+      return storeBalance.winner(result)
+    })
+    .then(function(result){
+      if(!result) throw new Error('No store winner available')
+      var url = req.protocol + '://' + result.host + ':' + result.port +
+        '/content/speedtest?size=' + size
+      res.redirect(301,url)
+    })
+    .catch(function(err){
+      res.status(500)
+      res.json({status: 'error', message: err.message, error: err})
+    })
+}
+
+
+/**
  * Download purchased content
  * @param {object} req
  * @param {object} res

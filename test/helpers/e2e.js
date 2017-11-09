@@ -254,6 +254,24 @@ exports.after = function(that){
 
 
 /**
+ * Do a speed test
+ * @param {object} type
+ * @param {object} server
+ * @return {Function}
+ */
+exports.speedTest = function(type,server){
+  return function(){
+    var client = api.setupAccess(type,server[type])
+    return client
+      .getAsync(client.url('/content/speedtest?size=10k'))
+      .spread(function(res,body){
+        expect(body.length).to.equal(10000)
+      })
+  }
+}
+
+
+/**
  * Check if a host is up
  * @param {string} type
  * @param {object} server

@@ -148,6 +148,7 @@ no longer depend on an outside source for compute jobs.
 * Started with Couchbase support for 4.5+ now supports Couchbase 5.0+
 * Reduce bucket usage from 6 to 3, implements: stretchfs, stretchfs-inventory, stretchfs-purchase
   heartbeat, job, and peer have been merged into the primary stretchfs bucket.
+* Stores now implement a speedtest route and prisms will redirect to it
 
 ### 2.4.0
 

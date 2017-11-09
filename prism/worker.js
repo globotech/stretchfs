@@ -86,6 +86,9 @@ app.get('/crossdomain.xml',function(req,res){
   res.sendFile(__dirname + '/public/crossdomain.xml')
 })
 
+//speed test
+app.get('/content/speedtest',routes.content.speedTest)
+
 //public job functions
 app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
 

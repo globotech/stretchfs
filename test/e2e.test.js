@@ -24,6 +24,14 @@ describe('e2e',function(){
       it('store3 should be up',e2e.checkUp('store',e2e.clconf.store3))
       it('store4 should be up',e2e.checkUp('store',e2e.clconf.store4))
     })
+    describe('speed testing',function(){
+      it('prism1 should speed test',e2e.speedTest('prism',e2e.clconf.prism1))
+      it('prism2 should speed test',e2e.speedTest('prism',e2e.clconf.prism2))
+      it('store1 should speed test',e2e.speedTest('store',e2e.clconf.store1))
+      it('store2 should speed test',e2e.speedTest('store',e2e.clconf.store2))
+      it('store3 should speed test',e2e.speedTest('store',e2e.clconf.store3))
+      it('store4 should speed test',e2e.speedTest('store',e2e.clconf.store4))
+    })
     describe('authentication',function(){
       it('should not require authentication for public functions',
         e2e.checkPublic(e2e.clconf.prism1))
