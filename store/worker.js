@@ -80,6 +80,10 @@ app.get('/purchase/uri/play/:token/:filename',routes.purchase.uri)
 app.get('/static/:hash/:file',routes.content.static)
 app.get('/play/:token/:file',routes.content.play)
 
+//content easter eggs
+app.get('/content/pizza',routes.content.pizza)
+app.get('/content/speedtest',routes.content.speedTest)
+
 //job functions
 app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
 
@@ -87,8 +91,6 @@ app.get('/job/content/download/:handle/:file',routes.job.contentDownload)
 app.use(basicAuth(config.store.username,config.store.password))
 
 //content functions
-app.get('/content/pizza',routes.content.pizza)
-app.get('/content/speedtest',routes.content.speedTest)
 app.put('/content/put/:file',routes.content.put)
 app.post('/content/download',routes.content.download)
 app.post('/content/exists',routes.content.exists)

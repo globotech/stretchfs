@@ -346,7 +346,8 @@ exports.download = function(req,res){
  * @param {object} res
  */
 exports.speedTest = function(req,res){
-  var size = req.query.size
+  var size = req.query.size || '1m'
+  var originalSize = size
   //convert size from friendly denominations
   if(size.match(/g/i)) size = parseInt(size) * 1000000000
   if(size.match(/m/i)) size = parseInt(size) * 1000000
@@ -355,6 +356,9 @@ exports.speedTest = function(req,res){
   if(size > 1000000000) size = 1000000000
   //stream back some zeros for them fast
   var stream = devZeroStream(size)
+  res.setHeader('Content-disposition',
+    'attachment; filename=test' + originalSize + '.bin')
+  res.setHeader('Content-type','application/octet-stream')
   stream.pipe(res)
 }
 
