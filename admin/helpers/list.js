@@ -14,6 +14,23 @@ var _intarg = function(arg,minimumDefault){
   return rv
 }
 
+exports.dateFormat = function(date){
+  if('string' === typeof date){
+    date = new Date(date)
+  }
+  var _pad2 = function(n){return('00'+n).slice(-2)}
+  return [date.getFullYear(),
+          _pad2(1+date.getMonth()),
+          _pad2(date.getDate())
+    ].join('/') + '@' +
+    (date.toTimeString().split(' ')[0])
+}
+exports.dateTZ = function(){
+  var opts = {timeZoneName:'short'}
+  return ['(',')'].join(
+    (new Date()).toLocaleTimeString('en-US',opts).split(' ').pop()
+  )
+}
 
 /**
  * Helper for list queries

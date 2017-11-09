@@ -1,6 +1,7 @@
 'use strict';
 var P = require('bluebird')
 
+var prism = require('../helpers/prism')
 var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
@@ -20,11 +21,19 @@ exports.list = function(req,res){
   list.listQuery(couch,couchStretch,couch.type.STRETCHFS,
     couch.schema.prism(search),'name',true,start,limit)
     .then(function(result){
+      var rr = result.rows
+      rr.forEach(function(v,i){
+        rr[i]._formatted = {
+          createdAt:list.dateFormat(v.createdAt),
+          updatedAt:list.dateFormat(v.updatedAt)
+        }
+      })
       res.render('prism/list',{
         page: list.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
+        timezone: list.dateTZ(),
         list: result.rows
       })
     })
@@ -66,7 +75,7 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var prismKey = req.query.id
+  var prismKey = couch.schema.prism(req.query.name)
   couchStretch.getAsync(prismKey)
     .then(function(result){
       result.value._id = prismKey
@@ -85,27 +94,26 @@ exports.edit = function(req,res){
  */
 exports.save = function(req,res){
   var data = req.body
-  var prismKey = req.body.id
+  var prismKey = couch.schema.prism(data.name)
   var doc
   couchStretch.getAsync(prismKey)
     .then(function(result){
       doc = result.value
       if(!doc) doc = {createdAt: new Date().toJSON()}
-      if(data.name) doc.name = data.name
+      if(data.newName) doc.name = data.newName
       if(data.group) doc.group = data.group
       if(data.host) doc.host = data.host
       if(data.port) doc.port = data.port
-      doc.writable = !!data.writable
-      doc.available = !!data.available
-      doc.active = !!data.active
+      doc.roles = prism.roleUpdate(doc.roles,data)
       doc.updatedAt = new Date().toJSON()
       return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flash('success','Prism saved')
-      res.redirect('/prism/edit?id=' + prismKey)
+      res.redirect('/prism/edit?name=' + data.name)
     })
     .catch(function(err){
+      console.error(err)
       res.render('error',{error: err})
     })
 }

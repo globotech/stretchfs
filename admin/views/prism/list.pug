@@ -11,27 +11,26 @@ block content
           th
             input#toggle(type='checkbox')
           th Name
-          th Host
-          th Port
-          th Created
-          th Updated
-          th Writable
-          th Available
+          th Host:Port
+          th Created #{timezone}
+          th Updated #{timezone}
           th Active
+          th Writable
+          th Online
         each row in list
           tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
             td
-              a(href='/prism/edit?id=' + row._id)= row.name
-            td= row.host
-            td= row.port
-            td= new Date(row.createdAt).toDateString()
-            td= new Date(row.updatedAt).toDateString()
+              a(href='/prism/edit?name=' + row.name)= row.name
             td
-              +active(row.writable)
+              a(href='/prism/edit?name=' + row.name)= [row.host,row.port].join(':')
+            td= row._formatted.createdAt
+            td= row._formatted.updatedAt
             td
-              +active(row.available)
+              +active(0<=row.roles.indexOf('active'))
             td
-              +active(row.active)
+              +active(0<=row.roles.indexOf('writable'))
+            td
+              +active(0<=row.roles.indexOf('online'))
       +tableFooter(page,count)
