@@ -4,19 +4,27 @@ block append js
 block content
   .container
     h1 Inventory: Record
-      pre(class='small text-center') #{inventory._id}
+      pre(class='small text-center') #{inventory.id}
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
-      input(type='hidden', name='id', value=inventory._id)
-      input(type='hidden', name='hash', value=inventory.hash)
+      input(type='hidden', name='id', value=inventory.id)
       .form-group
         label.control-label.col-sm-2 Hash
         .col-sm-10
           .form-control-static= inventory.hash
+          input(type='hidden', name='hash', value=inventory.hash)
       .form-group
-        label.control-label.col-sm-2 Prism
+        label.control-label.col-sm-2 Stats
         .col-sm-10
-          input.form-control(type='text', name='prism', value=inventory.prism)
+          .form-control-static #{inventory.hitCount} hits / #{inventory.byteCount} bytes @ #{inventory.lastCounterClear}
+      .form-group
+        label.control-label.col-sm-2 Created
+        .col-sm-10
+          .form-control-static= inventory.createdAt
+      .form-group
+        label.control-label.col-sm-2 Updated
+        .col-sm-10
+          .form-control-static= inventory.updatedAt
       .form-group
         label.control-label.col-sm-2 Store
         .col-sm-10
@@ -30,13 +38,5 @@ block content
         .col-sm-10
           input.form-control(type='text', name='size', value=inventory.size)
       .form-group
-        label.control-label.col-sm-2 Mime Type
-        .col-sm-10
-          input.form-control(type='text', name='mimeType', value=inventory.mimeType)
-      .form-group
-        label.control-label.col-sm-2 Mime Extension
-        .col-sm-10
-          input.form-control(type='text', name='mimeExtension', value=inventory.mimeExtension)
-      .form-group
         .col-sm-offset-2.col-sm-10
-          button.btn.btn-success(type='submit') Save
+          button.btn.btn-success(type='submit' disabled) Save

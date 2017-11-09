@@ -41,7 +41,6 @@ exports.setup = function(dfl){
   if(_conf.couchbase && _conf.bucket && _conf.bucketType){
     _conf.bucketName = _conf.couchbase.getName(_conf.bucketType,true)
   }
-  console.log(_conf)
 }
 
 
@@ -50,66 +49,55 @@ exports.setup = function(dfl){
  * @param hash
  * @private
  */
-var _getByHash = function(hash){
-  var qstr =
+var _queryPrep = function(hash){
+  var rv = {string:'',args:[]}
+  //validate and pre-process arguments
+  if(!_conf.couchbase || !_conf.bucket)
+    throw new Error('Must setup couchbase (helper) and bucket (handle) to list')
+  if(!_conf.bucketName)
+    throw new Error('Must setup bucketType/bucketName to query')
+  var clause = {
+    from: ' FROM ' + _conf.bucketName,
+    where: {
+      summary: [' WHERE NOT CONTAINS(META().id,":")'],
+      detail: [' WHERE CONTAINS(META().id,":")']
+    }
+  }
+  if(!!hash){
+    hash = (-1 === hash.indexOf('%')) ? hash + '%' : hash
+    clause.where.summary.push(' META().id LIKE $1')
+    rv.args.push(hash)
+    clause.where.detail.push(' META().id LIKE $2')
+    rv.args.push(hash)
+  }
+  rv.string =
     'SELECT (' +
-    'SELECT `stretchfs-inventory`.*' +
-    ' FROM `stretchfs-inventory`' +
-    ' WHERE NOT CONTAINS(META().id,":")' +
-    ' AND META().id LIKE "a03f181dc7dedcfb577511149b8844711efdb04f%"' +
-    ') AS summary' +
+    'SELECT ' + _conf.bucketName + '.*' +
+    clause.from + clause.where.summary.join(' AND') +
+    ')[0] AS summary' +
     ',' +
     '(' +
-    'SELECT META().id AS id,SPLIT(META().id,":")[0] AS idHash,`stretchfs-inventory`.*' +
-    ' FROM `stretchfs-inventory`' +
-    ' WHERE CONTAINS(META().id,":")' +
-    ' AND META().id LIKE "a03f181dc7dedcfb577511149b8844711efdb04f%"' +
+    'SELECT ' + _conf.bucketName + '.*' +
+    ',META().id,SPLIT(META().id,":")[0] AS idHash' +
+    clause.from + clause.where.detail.join(' AND') +
     ') AS detail'
-  console.log(qstr)
+  return rv
 }
 
 
 /**
  * Helper for queries by hash
- * @param {object} cb
- * @param {object} bucket
- * @param {string} type
  * @param {string} search
  * @return {P}
  */
-exports.hashQuery = function(search,cb,bucket,type){
-  cb = cb || _conf.couchbase || false
-  bucket = bucket || _conf.bucket || false
-  type = type || _conf.bucketType || false
-  //validate and pre-process arguments
-  if(!cb || !bucket)
-    throw new Error('Must have couchbase helper and bucket-handle to list')
-  if(!type)
-    throw new Error('Must know bucket type to list')
-  var bucketName = _conf.bucketName || cb.getName(type,true)
-  var clause = {
-    where: [ ' WHERE NOT CONTAINS(META().id,":")' ],
-  }
-  clause.from = ' FROM ' + bucketName
-  var s = []
-  if(!!search){
-    s.push((-1 === search.indexOf('%'))?search + '%':search)
-    clause.where.push(' META().id LIKE $1')
-  }
-  var query = cb.N1Query.fromString(
-    'SELECT ' + bucketName + '.*' +
-    clause.from + clause.where.join(' AND')
+exports.hashQuery = function(search){
+  var query = _queryPrep(search)
+  return _conf.bucket.queryAsync(
+    _conf.couchbase.N1Query.fromString(query.string),
+    query.args
   )
-  return bucket.queryAsync(query,s)
     .then(function(result){
-      var r = result.shift()
-      //sanitize (collapse single member arrays)
-      keyList.forEach(function(key){
-        if(r[key] && 1 >= r[key].length){
-          r[key] = r[key][0]
-        }
-      })
-      return r
+      return result[0]
     })
 }
 
@@ -121,28 +109,19 @@ exports.hashQuery = function(search,cb,bucket,type){
  * @param {string} orderAsc
  * @param {integer} offset
  * @param {integer} limit
- * @param {object} cb
- * @param {object} bucket
- * @param {string} type
  * @return {P}
  */
-exports.listMain = function(
-  search,orderField,orderAsc,offset,limit,cb,bucket,type
-){
-  cb = cb || _conf.couchbase || false
-  bucket = bucket || _conf.bucket || false
-  type = type || _conf.bucketType || false
+exports.listMain = function(search,orderField,orderAsc,offset,limit){
   //validate and pre-process arguments
-  if(!cb || !bucket)
+  if(!_conf.couchbase || !_conf.bucket)
     throw new Error('Must have couchbase helper and bucket-handle to list')
-  if(!type)
-    throw new Error('Must know bucket type to list')
-  var bucketName = _conf.bucketName || cb.getName(type,true)
+  if(!_conf.bucketName)
+    throw new Error('Must know bucket type/name to list')
   var clause = {
     where: [ ' WHERE NOT CONTAINS(META().id,":")' ],
     orderby: ''
   }
-  clause.from = ' FROM ' + bucketName
+  clause.from = ' FROM ' + _conf.bucketName
   var s = []
   if(!!search){
     s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
@@ -157,18 +136,18 @@ exports.listMain = function(
   clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + offset
   //build queries
   var queries = {}
-  queries.total = cb.N1Query.fromString(
+  queries.total = _conf.couchbase.N1Query.fromString(
     'SELECT COUNT(DISTINCT `hash`) AS _count' +
     clause.from + clause.where.join(' AND')
   )
-  queries.data = cb.N1Query.fromString(
-    'SELECT ' + bucketName + '.*' +
+  queries.data = _conf.couchbase.N1Query.fromString(
+    'SELECT ' + _conf.bucketName + '.*' +
     clause.from + clause.where.join(' AND') +
     clause.orderby + clause.pagination
   )
   return P.all([
-    bucket.queryAsync(queries.data,s),
-    bucket.queryAsync(queries.total,s)
+    _conf.bucket.queryAsync(queries.data,s),
+    _conf.bucket.queryAsync(queries.total,s)
   ])
     .spread(function(data,total){
       var rv = {

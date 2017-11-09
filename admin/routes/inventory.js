@@ -74,9 +74,10 @@ exports.edit = function(req,res){
   var hash = inventoryKey.split(':')[0] || inventoryKey
   inv.hashQuery(hash)
     .then(function(result){
-      res.render('inventory/edit',{inventory: result})
+      res.render('inventory/edit',result)
     })
     .catch(function(err){
+      console.error(err)
       res.render('error',{error: err.message})
     })
 }
@@ -91,7 +92,8 @@ exports.editIndividual = function(req,res){
   var inventoryKey = req.query.id
   couchInventory.getAsync(inventoryKey)
     .then(function(result){
-      result.value._id = inventoryKey
+      result.value.id = inventoryKey
+      result.value.hash = inventoryKey.split(':')[0]
       res.render('inventory/editIndividual',{inventory: result.value})
     })
     .catch(function(err){

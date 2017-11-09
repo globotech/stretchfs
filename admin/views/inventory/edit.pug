@@ -4,37 +4,54 @@ block append js
 block content
   .container
     h1 Inventory: Hash
-      pre(class='small text-center') #{inventory.hash}
+      pre(class='small text-center') #{summary.hash}
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
-      input(type='hidden', name='id', value=inventory._id)
-      input(type='hidden', name='hash', value=inventory.hash)
+      input(type='hidden', name='hash', value=summary.hash)
       .form-group
         label.control-label.col-sm-2 Relative Path
         .col-sm-10
-          input.form-control(type='text', name='relativePath', value=inventory.relativePath)
+          input.form-control(type='text', name='relativePath', value=summary.relativePath)
       .form-group
         label.control-label.col-sm-2 Size
         .col-sm-10
-          input.form-control(type='text', name='size', value=inventory.size)
+          input.form-control(type='text', name='size', value=summary.size)
       .form-group
         label.control-label.col-sm-2 Mime Type
         .col-sm-10
-          input.form-control(type='text', name='mimeType', value=inventory.mimeType)
+          input.form-control(type='text', name='mimeType', value=summary.mimeType)
       .form-group
         label.control-label.col-sm-2 Mime Extension
         .col-sm-10
-          input.form-control(type='text', name='mimeExtension', value=inventory.mimeExtension)
+          input.form-control(type='text', name='mimeExtension', value=summary.mimeExtension)
       .form-group
         label.control-label.col-sm-2 Locations
         .col-sm-10
-          each l,i in inventory['map']
-            input.checkbox-input(type='checkbox', name=`loc[${i}]`, id=`loc[${i}]` value=l, checked)
-            label(for=`loc[${i}]`) #{l}&nbsp;&nbsp;
-            a(href=`/inventory/editIndividual?id=${inventory.id}` class='btn btn-xs btn-info')
+          each l in detail
+            input.checkbox-input(type='checkbox', name=`loc[]`, id=`loc[]` value=l.id, checked)
+            label(for=`loc[]`) #{l.id.split(':')[1]}&nbsp;&nbsp;
+            a(href=`/inventory/editIndividual?id=${l.id}` class='btn btn-xs btn-info')
               span(class='glyphicon glyphicon-edit')
               |&nbsp;Edit
             br
-    .form-group
-        .col-sm-offset-2.col-sm-10
-          button.btn.btn-success(type='submit') Save
+      .form-group
+        label.control-label.col-sm-2 Garbage
+        .col-sm-10
+          |copies #{summary.copies}
+          br
+          |createdAt #{summary.createdAt}
+          br
+          |updatedAt #{summary.updatedAt}
+      .form-group
+        label.control-label.col-sm-2 Map
+        .col-sm-10
+          each l in summary.map
+            |#{l}
+      .form-group
+        label.control-label.col-sm-2 Rules
+        .col-sm-10
+          each l in summary.rules
+            |#{l.type}(#{l.value})
+      .form-group
+          .col-sm-offset-2.col-sm-10
+            button.btn.btn-success(type='submit' disabled) Save
