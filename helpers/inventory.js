@@ -187,6 +187,11 @@ exports.updateStoreInventory = function(
       inventory._id = inventoryKey
       return inventory
     })
+    .catch(function(err){
+      if(12 !== err.code) throw err
+      return exports.updateStoreInventory(
+        fileDetail,inventoryKey,inventory,verified)
+    })
 }
 
 

@@ -16,13 +16,13 @@ var promisePipe = require('promisepipe')
 
 var UserError = stretchfs.UserError
 
-var couchdb = require('../../helpers/couchbase')
-var hasher = require('../../helpers/hasher')
-var prismBalance = require('../../helpers/prismBalance')
-var redis = require('../../helpers/redis')()
-var FileOp = require('../../helpers/FileOp')
+var couchdb = require('../helpers/couchbase')
+var hasher = require('../helpers/hasher')
+var prismBalance = require('../helpers/prismBalance')
+var redis = require('../helpers/redis')()
+var FileOp = require('../helpers/FileOp')
 
-var config = require('../../config')
+var config = require('../config')
 
 var cacheKeyTempFile = '/tmp/stretchfsctkeycache'
 
