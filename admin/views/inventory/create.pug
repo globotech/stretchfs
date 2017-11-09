@@ -15,7 +15,7 @@ block content
         .col-sm-10
           select.form-control(type='select', name='store')
             each store in stores
-              option(value=store.name) #{store.name}
+              option(value=store.name) #{store.name} (#{store.prism})
       .form-group
         label.control-label.col-sm-2 Mime Type
         .col-sm-10
