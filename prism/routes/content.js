@@ -399,6 +399,7 @@ exports.exists = function(req,res){
  */
 exports.speedTest = function(req,res){
   var size = req.query.size || '1m'
+  var addressType = req.query.addressType || 'fqdn'
   storeBalance.storeList()
     .then(function(result){
       if(!result) throw new Error('No stores available')
@@ -406,8 +407,13 @@ exports.speedTest = function(req,res){
     })
     .then(function(result){
       if(!result) throw new Error('No store winner available')
-      var url = req.protocol + '://' + result.host + ':' + result.port +
-        '/content/speedtest?size=' + size
+      var host = result.name + '.' + config.domain
+      if('ip' === addressType || 'ipv4' === addressType){
+        host = result.host + ':' + result.port
+      } else if('ipv6' === addressType){
+        host = (result.host6 || result.host) + ':[' + result.port + ']'
+      }
+      var url = req.protocol + '://' + host + '/content/speedtest?size=' + size
       res.redirect(301,url)
     })
     .catch(function(err){

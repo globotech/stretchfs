@@ -263,7 +263,7 @@ exports.speedTest = function(type,server){
   return function(){
     var client = api.setupAccess(type,server[type])
     return client
-      .getAsync(client.url('/content/speedtest?size=10k'))
+      .getAsync(client.url('/content/speedtest?size=10k&addressType=ip'))
       .spread(function(res,body){
         expect(body.length).to.equal(10000)
       })
