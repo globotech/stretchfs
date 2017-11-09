@@ -7,6 +7,11 @@ var couch = require('../../helpers/couchbase')
 //open couch buckets
 var couchInventory = couch.inventory()
 
+inv.setup({
+  couchbase: couch,
+  bucket: couchInventory,
+  bucketType: couch.type.INVENTORY
+})
 
 /**
  * List Inventory
@@ -17,8 +22,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  inv.listMain(
-    couch,couchInventory,couch.type.INVENTORY,search,'hash',true,start,limit)
+  inv.listMain(search,'hash',true,start,limit)
     .then(function(result){
       res.render('inventory/list',{
         page: inv.pagination(start,result.count,limit),
@@ -68,7 +72,7 @@ exports.create = function(req,res){
 exports.edit = function(req,res){
   var inventoryKey = req.query.id
   var hash = inventoryKey.split(':')[0] || inventoryKey
-  inv.hashQuery(couch,couchInventory,couch.type.INVENTORY,hash)
+  inv.hashQuery(hash)
     .then(function(result){
       res.render('inventory/edit',{inventory: result})
     })
