@@ -350,8 +350,9 @@ exports.speedTest = function(req,res){
   var originalSize = size
   //convert size from friendly denominations
   if(size.match(/g/i)) size = parseInt(size) * 1000000000
-  if(size.match(/m/i)) size = parseInt(size) * 1000000
-  if(size.match(/k/i)) size = parseInt(size) * 1000
+  else if(size.match(/m/i)) size = parseInt(size) * 1000000
+  else if(size.match(/k/i)) size = parseInt(size) * 1000
+  else size = parseInt(size)
   //limit size to 1g
   if(size > 1000000000) size = 1000000000
   //stream back some zeros for them fast
