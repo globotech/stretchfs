@@ -101,7 +101,9 @@ config.$load({
     defaultRules: [{type: 'copyMinimum', value: 2}], //minimum copy count
     keepDeadRecords: false, // keep missing inventory records
     balance: {
-      concurrency: 4 //files to process concurrently
+      concurrency: 4, //files to process concurrently
+      frequency: 180000, // 3 minutes
+      maxLockout: 5 //maxLockout * frequency = max runtime default 15 minutes
     },
     scan: {
       concurrency: 4, //files to process concurrently
