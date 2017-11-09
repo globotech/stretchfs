@@ -9,6 +9,7 @@ var prettyBytes = require('pretty-bytes')
 var ProgressBar = require('progress')
 
 var couch = require('../../helpers/couchbase')
+var inventoryHelper = require('../../helpers/inventory')
 var logger = require('../../helpers/logger')
 
 var config = require('../../config')
@@ -59,8 +60,9 @@ var verifyInventoryAsync = function(){
     valid: 0
   }
   debug('starting to verify',contentFolder)
-  var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
-    couch.getName(couch.type.INVENTORY,true) + ' AS b WHERE META(b).id LIKE $1'
+  var qstring = 'SELECT META().id AS _id, ' +
+    couch.getName(couch.type.INVENTORY,true) + '.* FROM ' +
+    couch.getName(couch.type.INVENTORY,true) + ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   var inventoryKey = '%' + config.store.name
@@ -86,7 +88,7 @@ var verifyInventoryAsync = function(){
           ){
             counter.invalid++
             if(!record) return
-            return couchInventory.removeAsync(record._id)
+            return inventoryHelper.removeStoreInventory(record.hash)
               .catch(function(){
                 counter.warning++
               })
