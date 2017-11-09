@@ -59,8 +59,6 @@ var verifyInventoryAsync = function(){
     valid: 0
   }
   debug('starting to verify',contentFolder)
-  var hbKey = couch.schema.downVote()
-  debug('requesting votes',hbKey)
   var qstring = 'SELECT META(b).id AS _id, b.* FROM ' +
     couch.getName(couch.type.INVENTORY,true) + ' AS b WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
@@ -83,7 +81,7 @@ var verifyInventoryAsync = function(){
           progress.tick()
           //check if file path exists
           if(!record || !record.relativePath ||
-            !fs.existsSync(path.posix.resolve(
+            !fs.existsSync(path.resolve(
               contentFolder,record.relativePath))
           ){
             counter.invalid++
