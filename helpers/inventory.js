@@ -122,12 +122,10 @@ exports.createStoreInventory = function(fileDetail,verified){
         createdAt: new Date().toJSON(),
         updatedAt: new Date().toJSON()
       }
-      console.log(subInventoryKey,subInventory)
       return couchInventory.upsertAsync(
         subInventoryKey,subInventory.value,{cas: subInventory.cas})
     })
     .then(function(){
-      console.log(inventoryKey,inventory)
       return couchInventory.upsertAsync(
         inventoryKey,inventory.value,{cas: inventory.cas})
     })
