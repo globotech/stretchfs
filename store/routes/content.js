@@ -372,7 +372,7 @@ exports.pizza = function(req,res){
   res.send('<html><head><title>Pizza</title></head>' +
     '<body style="margin: 0; padding: 0">' +
     '<img src="' +
-    fs.readFileSync(__dirname + '../../../test/assets/pizza.txt') +
+    fs.readFileSync(__dirname + '/../../test/assets/pizza.txt') +
     '"/></body></html>'
   )
 }
