@@ -10,8 +10,8 @@ block content
         tr
           th
             input#toggle(type='checkbox')
-          th Full Name
           th Email
+          th Full Name
           th Last Login #{timezone}
           th Login Count
           th Last Failed Login #{timezone}
@@ -21,22 +21,22 @@ block content
           tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td
-              a(href='/staff/edit?id=' + row._id)= row.name
-            td
+            td.mono
               a(href='/staff/edit?id=' + row._id)= row.email
-            td
+            td.mono
+              a(href='/staff/edit?id=' + row._id)= row.name
+            td.mono
               if row.lastLogin
                 div.text-success= momentStandardFormat(row.lastLogin)
               else
                 div.text-muted= momentStandardFormat(row.lastLogin)
-            td= row.loginCount || 0
-            td
+            td.mono= row.loginCount || 0
+            td.mono
               if row.lastFailedLogin
                 div.text-danger= momentStandardFormat(row.lastFailedLogin)
               else
                 div.text-muted= momentStandardFormat(row.lastFailedLogin)
-            td= row.failedLoginCount || 0
+            td.mono= row.failedLoginCount || 0
             td
               +active(row.active)
       +tableFooter(page,count)

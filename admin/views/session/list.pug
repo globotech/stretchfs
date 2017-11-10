@@ -21,14 +21,14 @@ block content
           tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td= row.token
+            td.mono= row.token
             td= row.tokenType
-            td= row.expiry
-            td= row.ip
+            td.mono= row.expiry
+            td.mono= row.ip
             td= row.name
             if row.roles instanceof Array
-              td= row.roles.join(',')
+              td.mono= row.roles.join(',')
             else
-              td= row.roles
-            td= JSON.stringify(row.data)
+              td.mono= row.roles
+            td.mono= JSON.stringify(row.data)
       +tableFooter(page,count)

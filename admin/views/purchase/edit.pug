@@ -5,7 +5,7 @@ block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 Purchase:Token
-        span.mono.leftpad16= purchase._id
+      pre.mono.h4= purchase._id
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -19,20 +19,20 @@ block content
       input(type='hidden', name='id', value=purchase._id)
       .form-group
         label.control-label.col-sm-2 Hash
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='hash', value=purchase.hash, placeholder='Hash')
       .form-group
         label.control-label.col-sm-2 File Extension
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='ext', value=purchase.ext, placeholder='Eg: jpg txt mp4')
       .form-group
         label.control-label.col-sm-2 Referrer
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='referrer', value=purchase.referrer, placeholder='Domains that may refer to this purchase eg: localhost, foo.org')
       .form-group
         label.control-label.col-sm-2 Life
-        .col-sm-10
-          .form-control-static= purchase.life + ' Seconds'
+        .col-sm-10.mono
+          .form-control-static= purchase.life + ' Seconds (at ' + momentStandardFormat(purchase.expirationDate) + ')'
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success(type='submit') Save

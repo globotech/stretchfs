@@ -24,31 +24,32 @@ block content
           - row.stepComplete = parseInt(row.stepComplete || 0)
           - row.frameTotal = parseInt(row.frameTotal || 1)
           - row.frameComplete = parseInt(row.frameComplete || 0)
-          - row.frameDescription = row.frameDescription || 'uknown'
+          - row.frameDescription = row.frameDescription || 'unknown'
           - if('processing' === row.status)
           -   percentComplete = ((row.frameComplete / row.frameTotal) * 100).toFixed(2)
           - if('complete' === row.status) percentComplete = 100
-          - var statusClass = ''
-          - if('processing' === row.status) statusClass ='bg-info'
-          - if(['error','aborted'].indexOf(row.status) >= 0) statusClass = 'bg-danger'
-          tr(class=statusClass)
+          - var statusClass = 'success'
+          - if('processing' === row.status) statusClass ='info'
+          - if(['error','aborted'].indexOf(row.status) >= 0) statusClass = 'danger'
+          tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td
+            td.mono
               a(href='/job/edit?id=' + row._id)= row.handle
-            td= row.category
-            td= row.priority
-            td= row.status
+            td.mono= row.category
+            td.mono= row.priority
+            td.mono= row.status
             td
               if 'processing' === row.status && metrics && metrics.frameDescription
                 div
                   small.text-muted= S('' + metrics.frameDescription).truncate(75)
-              .progress.progress-striped(style='margin-bottom: 0;')
-                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='99', style='width: ' + percentComplete + '%;')
-                  | #{percentComplete}%
+              .progress.progress-striped(style='margin-bottom:0;')
+                .progress-bar(class='progress-bar-'+statusClass, role='progressbar', aria-valuenow=percentComplete, aria-valuemin='0', aria-valuemax='99', style='width:' + percentComplete + '%;')
+                  span.sr-only #{percentComplete}%
               if 'processing' === row.status
-                div
-                  small.text-muted #{prettyBytes(row.frameComplete)} / #{prettyBytes(row.frameTotal)}
+                .container-fluid.mono.heavy.text-muted(class='bg-' + statusClass)
+                  .col-xs-1.text-left #{percentComplete}%
+                  .col-xs-11.text-right.text-nowrap #{prettyBytes(row.frameComplete)} / #{prettyBytes(row.frameTotal)}
             td
               div
                 a.btn-sm.btn-warning(href='/job/retry?id=' + row._id)

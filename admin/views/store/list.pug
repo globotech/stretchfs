@@ -11,8 +11,7 @@ block content
           th
             input#toggle(type='checkbox')
           th Name
-          th Host
-          th Port
+          th Host:Port
           th Usage
           th Connections
           th Writable
@@ -22,26 +21,26 @@ block content
           - var percentUsed = 0
           - row.stepTotal = parseInt(row.stepTotal || 1)
           - row.stepComplete = parseInt(row.stepComplete || 0)
-          - percentUsed = (((row.usage.total - row.usage.free)  / row.usage.total) * 100).toFixed(2)
-          - var statusClass = ''
-          - if(percentUsed > 30) statusClass ='bg-info'
-          - if(percentUsed > 75) statusClass ='bg-warn'
-          - if(percentUsed > 90) statusClass ='bg-danger'
-          tr(class=statusClass)
+          - percentUsed = (((row.usage.total - row.usage.free)  / row.usage.total) * 100).toFixed(0)
+          - var statusClass = 'success'
+          - if(percentUsed > 30) statusClass ='info'
+          - if(percentUsed > 75) statusClass ='warning'
+          - if(percentUsed > 90) statusClass ='danger'
+          tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td
+            td.mono
               a(href='/store/edit?id=' + row._id)= row.name
-            td= row.host
-            td= row.port
-            td
+            td.mono= [row.host,row.port].join(':')
+            td.mono
               div
-              .progress.progress-striped(style='margin-bottom: 0;')
-                .progress-bar.progress-bar-info(role='progressbar', aria-valuenow=percentUsed, aria-valuemin='0', aria-valuemax='100', style='width: ' + percentUsed + '%;')
-                  | #{percentUsed}%
-              div
-                small.text-muted #{prettyBytes(row.usage.total - row.usage.free)} / #{prettyBytes(row.usage.total)} (#{prettyBytes(row.usage.free)} free)
-            td= row.slot.count
+              .progress.progress-striped(style='margin-bottom:0;')
+                .progress-bar(class='progress-bar-'+statusClass, role='progressbar', aria-valuenow=percentUsed, aria-valuemin='0', aria-valuemax='100', style='width:' + percentUsed + '%;')
+                  span.sr-only #{percentUsed}%
+              .container-fluid.mono.heavy.text-muted(class='bg-' + statusClass)
+                .col-xs-1.text-left #{percentUsed}%
+                .col-xs-11.text-right.text-nowrap #{prettyBytes(row.usage.total - row.usage.free)} / #{prettyBytes(row.usage.total)} (#{prettyBytes(row.usage.free)} free)
+            td.mono= row.slot.count
             td
               +active(row.writable)
             td

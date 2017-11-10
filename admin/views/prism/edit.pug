@@ -5,7 +5,7 @@ block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 Peer:Prism
-        span.mono.leftpad16= prism.name
+      pre.mono.h4= prism.name
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -19,27 +19,27 @@ block content
       input(type='hidden', name='name', value=prism.name)
       .form-group
         label.control-label.col-sm-2 Name
-        .col-sm-10
-          input.form-control(type='text', name='newName', placeholder='Prism Name', value=prism.name)
+        .col-sm-10.mono
+          .form-control-static= prism.name
       .form-group
         label.control-label.col-sm-2 Host
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='host', placeholder='Prism Host', value=prism.host)
       .form-group
         label.control-label.col-sm-2 Port
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='port', placeholder='Prism Port', value=prism.port)
       .form-group
         label.control-label.col-sm-2 Active
-        .col-sm-10
+        .col-sm-10.mono
           input(type='checkbox', name='role_active', checked=(0<=prism.roles.indexOf('active')))
       .form-group
         label.control-label.col-sm-2 Writable
-        .col-sm-10
+        .col-sm-10.mono
           input(type='checkbox', name='role_writable', checked=(0<=prism.roles.indexOf('writable')))
       .form-group
         label.control-label.col-sm-2 Online
-        .col-sm-10
+        .col-sm-10.mono
           input(type='checkbox', name='role_online', checked=(0<=prism.roles.indexOf('online')))
       .form-group
         .col-sm-offset-2.col-sm-10

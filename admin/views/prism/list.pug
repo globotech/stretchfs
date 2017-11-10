@@ -21,12 +21,11 @@ block content
           tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td
+            td.mono
               a(href='/prism/edit?name=' + row.name)= row.name
-            td
-              a(href='/prism/edit?name=' + row.name)= [row.host,row.port].join(':')
-            td= momentStandardFormat(row.createdAt)
-            td= momentStandardFormat(row.updatedAt)
+            td.mono= [row.host,row.port].join(':')
+            td.mono= momentStandardFormat(row.createdAt)
+            td.mono= momentStandardFormat(row.updatedAt)
             td
               +active(0<=row.roles.indexOf('active'))
             td

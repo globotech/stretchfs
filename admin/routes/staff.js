@@ -89,6 +89,7 @@ exports.edit = function(req,res){
  */
 exports.save = function(req,res){
   var staffKey = req.body.id || ''
+  var staffEmail = req.body.name || staffKey.split(':')[1]
   P.try(function(){
     if(staffKey){
       return couchStretchFS.getAsync(staffKey)
@@ -99,20 +100,44 @@ exports.save = function(req,res){
   })
     .then(function(result){
       var doc = result.value
-      doc.name = req.body.staffName
-      doc.email = req.body.staffEmail
-      if(req.body.staffPassword === req.body.staffPasswordConfirm){
-        doc.passwordLastChanged = new Date().toJSON()
-        doc.password = bcrypt.hashSync(
-          req.body.staffPassword,bcrypt.genSaltSync(12))
+      var form = req.body
+      var timestamp = new Date().toJSON()
+      var updated = false
+      form.staffActive = ('on' === form.staffActive)
+      if(doc.email !== form.staffEmail){
+        doc.email = form.staffEmail
+        updated = true
       }
-      doc.active = !!req.body.staffActive
-      doc.updatedAt = new Date().toJSON()
-      return couchStretchFS.upsertAsync(staffKey,doc,{cas: result.cas})
+      if(doc.name !== form.staffName){
+        doc.name = form.staffName
+        updated = true
+      }
+      if('' !== form.staffPassword+form.staffPasswordConfirm){
+        if(form.staffPassword === form.staffPasswordConfirm){
+          doc.passwordLastChanged = timestamp
+          doc.password = bcrypt.hashSync(
+            req.body.staffPassword,bcrypt.genSaltSync(12))
+          updated = true
+        }
+      }
+      if(doc.active !== form.staffActive){
+        doc.active = ('on' === form.staffActive)
+        updated = true
+      }
+      if(!updated){
+        return P.try(function(){return false})
+      } else {
+        doc.updatedAt = timestamp
+        return couchStretchFS.upsertAsync(staffKey,doc,{cas: result.cas})
+      }
     })
-    .then(function(){
-      req.flash('success','Staff member saved')
-      res.redirect('/staff/edit?id=' + staffKey)
+    .then(function(updated){
+      if(false !== updated){
+        req.flash('success','Staff member [' + staffEmail + '] saved')
+      } else {
+        req.flash('warning','No changes made')
+      }
+      res.redirect('/staff/list')
     })
     .catch(function(err){
       res.render('error',{error: err})

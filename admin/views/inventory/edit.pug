@@ -5,7 +5,7 @@ block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 Inventory:Hash
-        span.mono.leftpad16= summary.hash
+      pre.mono.h4= summary.hash
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -18,44 +18,45 @@ block content
     form.form-horizontal(action='/inventory/save', method='post', role='form')
       input(type='hidden', name='hash', value=summary.hash)
       .form-group
+        label.control-label.col-sm-2 Hash
+        .col-sm-10.mono
+          .form-control-static= summary.hash
+      .form-group
         label.control-label.col-sm-2 Relative Path
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='relativePath', value=summary.relativePath)
       .form-group
         label.control-label.col-sm-2 Size
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='size', value=summary.size)
       .form-group
         label.control-label.col-sm-2 Mime Type
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='mimeType', value=summary.mimeType)
       .form-group
         label.control-label.col-sm-2 Mime Extension
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='mimeExtension', value=summary.mimeExtension)
       .form-group
         label.control-label.col-sm-2 Locations
         .col-sm-10
           each l in detail
             input.checkbox-input(type='checkbox', name=`loc[]`, id=`loc[]` value=l.id, checked)
-            label(for=`loc[]`) #{l.id.split(':')[1]}&nbsp;&nbsp;
+            label.mono(for=`loc[]`) #{l.id.split(':')[1]}&nbsp;&nbsp;
             a(href=`/inventory/editIndividual?id=${l.id}` class='btn btn-xs btn-info')
               span(class='glyphicon glyphicon-edit')
               |&nbsp;Edit
             br
       .form-group
-        label.control-label.col-sm-2 Garbage
-        .col-sm-10
+        label.control-label.col-sm-2 Other Garbage
+        .col-sm-10.mono
           |copies #{summary.copies}
           br
-      .form-group
-        label.control-label.col-sm-2 Map
-        .col-sm-10
+          |map:
           each l in summary.map
-            |#{l}
-      .form-group
-        label.control-label.col-sm-2 Rules
-        .col-sm-10
+            = l
+          br
+          |rules:
           each l in summary.rules
             |#{l.type}(#{l.value})
       .form-group

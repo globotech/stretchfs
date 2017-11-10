@@ -97,7 +97,9 @@ exports.edit = function(req,res){
 exports.save = function(req,res){
   var data = req.body
   var purchaseKey = req.body.id || ''
-  var life = req.body.life || config.purchase.life
+  var life = (+req.body.life) || (+config.purchase.life)
+  var lifeMs = 1000 * life
+  var timestamp = new Date()
   var doc
   P.try(function(){
     if(purchaseKey){
@@ -108,8 +110,8 @@ exports.save = function(req,res){
         value: {
           life: life,
           afterLife: config.purchase.afterLife,
-          expirationDate: '' + (+new Date() + life),
-          createdAt: new Date().toJSON()
+          expirationDate: new Date(+timestamp + lifeMs).toJSON(),
+          createdAt: timestamp.toJSON()
         },
         cas: null
       }
@@ -120,12 +122,13 @@ exports.save = function(req,res){
       if(data.hash) doc.hash = data.hash
       if(data.ext) doc.ext = data.ext
       if(data.referrer) doc.referrer = data.referrer
-      doc.updatedAt = new Date().toJSON()
+      doc.expirationDate = new Date(+(new Date(doc.createdAt)) + lifeMs).toJSON()
+      doc.updatedAt = timestamp.toJSON()
       return couchPurchase.upsertAsync(purchaseKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Purchase saved')
-      res.redirect('/purchase/edit?id=' + purchaseKey)
+      req.flash('success','Purchase [' + purchaseKey + '] saved')
+      res.redirect('/purchase/list')
     })
     .catch(function(err){
       res.render('error',{error: err})

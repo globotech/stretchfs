@@ -3,7 +3,7 @@ block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 User:Account
-        span.mono.leftpad16= user.name
+      pre.mono.h4= user.name
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -17,23 +17,23 @@ block content
       input(type='hidden', name='id', value=user._id)
       .form-group
         label.control-label.col-sm-2 Name
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='userName', placeholder='User Name', value=user.name)
       .form-group
         label.control-label.col-sm-2 Last Secret Change #{timezone}
-        .col-sm-10
+        .col-sm-10.mono
           .form-control-static= momentStandardFormat(user.secretLastChanged)
       .form-group
         label.control-label.col-sm-2 Secret
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='password', name='userSecret', autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Confirm
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='password', name='userSecretConfirm', autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Active
-        .col-sm-10
+        .col-sm-10.mono
           input(type='checkbox', name='userActive', checked=user.active)
       .form-group
         .col-sm-offset-2.col-sm-10

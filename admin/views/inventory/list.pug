@@ -21,11 +21,11 @@ block content
             td
               input(type='checkbox', name='remove[]', value=row.hash)
             td
-              samp(class='text-center')
+              samp.text-center.mono
                 a(href='/inventory/edit?id=' + row.hash)= row.hash
-            td= row.copies
-            td= row.mimeType+' ('+row.mimeExtension+')'
-            td= row.size ? prettyBytes(row.size) : ''
-            td= momentStandardFormat(row.createdAt,'Unknown')
-            td= momentStandardFormat(row.updatedAt,'Unknown')
+            td.mono= row.copies
+            td.mono= row.mimeType+' ('+row.mimeExtension+')'
+            td.mono= row.size ? prettyBytes(row.size) : ''
+            td.mono= momentStandardFormat(row.createdAt,'Unknown')
+            td.mono= momentStandardFormat(row.updatedAt,'Unknown')
       +tableFooter(page,count)

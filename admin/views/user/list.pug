@@ -20,20 +20,20 @@ block content
           tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td
+            td.mono
               a(href='/user/edit?id=' + row._id)= row.name
-            td
+            td.mono
               if row.lastLogin
                 div.text-success= momentStandardFormat(row.lastLogin)
               else
                 dev.text-normal= momentStandardFormat(row.lastLogin)
-            td= row.loginCount || 0
-            td
+            td.mono= row.loginCount || 0
+            td.mono
               if row.lastFailedLogin
                 div.text-danger= momentStandardFormat(row.lastFailedLogin)
               else
                 div.text-normal= momentStandardFormat(row.lastFailedLogin)
-            td= row.failedLoginCount || 0
+            td.mono= row.failedLoginCount || 0
             td
               +active(row.active)
       +tableFooter(page,count)

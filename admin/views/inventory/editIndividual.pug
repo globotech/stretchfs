@@ -3,39 +3,48 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    h1 Inventory: Record
-      pre(class='small text-center') #{inventory.id}
+    div.btn.btn-group.btn-group-justified.bg-info
+      h1 Inventory:
+      pre.mono.h4= inventory.id
+    div.btn-group
+      div.btn-group.btn-group-justified
+        div.btn-group.btn-group-xs
+          button.btn Created
+            span.badge.mono.leftpad8= momentStandardFormat(inventory.createdAt)
+        div.btn-group.btn-group-xs
+          button.btn Updated
+            span.badge.mono.leftpad8= momentStandardFormat(inventory.updatedAt)
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
       input(type='hidden', name='id', value=inventory.id)
       .form-group
         label.control-label.col-sm-2 Hash
-        .col-sm-10
+        .col-sm-10.mono
           .form-control-static= inventory.hash
           input(type='hidden', name='hash', value=inventory.hash)
       .form-group
         label.control-label.col-sm-2 Stats
-        .col-sm-10
-          .form-control-static #{inventory.hitCount} hits / #{inventory.byteCount} bytes @ #{inventory.lastCounterClear}
+        .col-sm-10.mono
+          .form-control-static #{inventory.hitCount} hits / #{inventory.byteCount} bytes @ #{momentStandardFormat(inventory.lastCounterClear)}
       .form-group
         label.control-label.col-sm-2 Created
-        .col-sm-10
-          .form-control-static= inventory.createdAt
+        .col-sm-10.mono
+          .form-control-static= momentStandardFormat(inventory.createdAt)
       .form-group
         label.control-label.col-sm-2 Updated
-        .col-sm-10
-          .form-control-static= inventory.updatedAt
+        .col-sm-10.mono
+          .form-control-static= momentStandardFormat(inventory.updatedAt)
       .form-group
         label.control-label.col-sm-2 Store
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='store', value=inventory.store)
       .form-group
         label.control-label.col-sm-2 Relative Path
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='relativePath', value=inventory.relativePath)
       .form-group
         label.control-label.col-sm-2 Size
-        .col-sm-10
+        .col-sm-10.mono
           input.form-control(type='text', name='size', value=inventory.size)
       .form-group
         .col-sm-offset-2.col-sm-10

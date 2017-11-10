@@ -15,16 +15,16 @@ block content
           th Extension
           th Referrer
           th Life (After Life) Seconds
-          th Expiration Date
+          th Expiration Date #{timezone}
         each row in list
           tr
             td
               input(type='checkbox', name='remove[]', value=row._id)
-            td
+            td.mono
               a(href='/purchase/edit?id=' + row._id)= row._id
-            td= row.hash
-            td= row.ext
-            td= row.referrer
-            td= row.life + '(' + row.afterLife + ')'
-            td= row.expirationDate
+            td.mono= row.hash
+            td.mono= row.ext
+            td.mono= row.referrer
+            td.mono= row.life + '(' + row.afterLife + ')'
+            td.mono= momentStandardFormat(row.expirationDate)
       +tableFooter(page,count)

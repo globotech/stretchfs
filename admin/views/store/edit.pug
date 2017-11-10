@@ -5,7 +5,7 @@ block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 Peer:Store
-        span.mono.leftpad16= store.name
+      pre.mono.h4= store.name
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -21,11 +21,11 @@ block content
         label.control-label.col-sm-2 Prism
         .col-sm-10
           .form-control-static
-            a(href='/prism/edit?id=' + store.prismKey)= store.prism
+            a(href='/prism/edit?name='+store.prism)= store.prism
       .form-group
         label.control-label.col-sm-2 Name
         .col-sm-10
-          input.form-control(type='text', name='name', placeholder='Store Name', value=store.name)
+          .form-control-static= store.name
       .form-group
         label.control-label.col-sm-2 Host
         .col-sm-10
