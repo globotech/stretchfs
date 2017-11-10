@@ -14,8 +14,8 @@ block content
           th Copies
           th Mime Type (ext)
           th Size
-          th Created
-          th Updated
+          th Created #{timezone}
+          th Updated #{timezone}
         each row in list
           tr
             td
@@ -26,6 +26,6 @@ block content
             td= row.copies
             td= row.mimeType+' ('+row.mimeExtension+')'
             td= row.size ? prettyBytes(row.size) : ''
-            td= row.createdAt || 'Unknown'
-            td= row.updatedAt || 'Unknown'
+            td= momentStandardFormat(row.createdAt,'Unknown')
+            td= momentStandardFormat(row.updatedAt,'Unknown')
       +tableFooter(page,count)

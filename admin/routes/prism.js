@@ -21,19 +21,11 @@ exports.list = function(req,res){
   list.listQuery(couch,couchStretch,couch.type.STRETCHFS,
     couch.schema.prism(search),'name',true,start,limit)
     .then(function(result){
-      var rr = result.rows
-      rr.forEach(function(v,i){
-        rr[i]._formatted = {
-          createdAt:list.dateFormat(v.createdAt),
-          updatedAt:list.dateFormat(v.updatedAt)
-        }
-      })
       res.render('prism/list',{
         page: list.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
-        timezone: list.dateTZ(),
         list: result.rows
       })
     })
@@ -109,11 +101,10 @@ exports.save = function(req,res){
       return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Prism saved')
-      res.redirect('/prism/edit?name=' + data.name)
+      req.flash('success','Prism [' + data.name + '] saved')
+      res.redirect('/prism/list')
     })
     .catch(function(err){
-      console.error(err)
       res.render('error',{error: err})
     })
 }

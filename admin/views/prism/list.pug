@@ -25,8 +25,8 @@ block content
               a(href='/prism/edit?name=' + row.name)= row.name
             td
               a(href='/prism/edit?name=' + row.name)= [row.host,row.port].join(':')
-            td= row._formatted.createdAt
-            td= row._formatted.updatedAt
+            td= momentStandardFormat(row.createdAt)
+            td= momentStandardFormat(row.updatedAt)
             td
               +active(0<=row.roles.indexOf('active'))
             td

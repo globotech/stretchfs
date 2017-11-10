@@ -10,17 +10,17 @@ block content
         .col-sm-10
           input.form-control(type='text', name='userName', placeholder='User Name', value=user.name)
       .form-group
-        label.control-label.col-sm-2 Last Secret Change
+        label.control-label.col-sm-2 Last Secret Change #{timezone}
         .col-sm-10
-          .form-control-static= moment(user.secretLastChanged).format('MM-DD-YY hh:mmA') || 'Never'
+          .form-control-static= momentStandardFormat(user.secretLastChanged)
       .form-group
         label.control-label.col-sm-2 Secret
         .col-sm-10
-          input.form-control(type='password', name='userSecret', autocomplete="off")
+          input.form-control(type='password', name='userSecret', autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Confirm
         .col-sm-10
-          input.form-control(type='password', name='userSecretConfirm', autocomplete="off")
+          input.form-control(type='password', name='userSecretConfirm', autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Active
         .col-sm-10

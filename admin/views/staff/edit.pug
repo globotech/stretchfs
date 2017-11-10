@@ -8,23 +8,23 @@ block content
       .form-group
         label.control-label.col-sm-2 Name
         .col-sm-10
-          input.form-control(type='text', name='staffName', placeholder='Name', value=staff.name, autocomplete="off")
+          input.form-control(type='text', name='staffName', placeholder='Name', value=staff.name, autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Email
         .col-sm-10
-          input.form-control(type='email', name='staffEmail', placeholder='Email Address', value=staff.email, autocomplete="off")
+          input.form-control(type='email', name='staffEmail', placeholder='Email Address', value=staff.email, autocomplete='off')
       .form-group
-        label.control-label.col-sm-2 Last Password Change
+        label.control-label.col-sm-2 Last Password Change #{timezone}
         .col-sm-10
-          .form-control-static= moment(staff.passwordLastChanged).format('MM-DD-YY hh:mmA') || 'Never'
+          .form-control-static= momentStandardFormat(staff.passwordLastChanged)
       .form-group
         label.control-label.col-sm-2 Password
         .col-sm-10
-          input.form-control(type='password', name='staffPassword', autocomplete="off")
+          input.form-control(type='password', name='staffPassword', autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Confirm
         .col-sm-10
-          input.form-control(type='password', name='staffPasswordConfirm', autocomplete="off")
+          input.form-control(type='password', name='staffPasswordConfirm', autocomplete='off')
       .form-group
         label.control-label.col-sm-2 Active
         .col-sm-10

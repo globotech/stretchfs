@@ -31,8 +31,22 @@ app.locals = {
   pretty: true,
   S: require('string'),
   moment: require('moment'),
+  //moment no longer supports any method of getting the short timezone
+  timezone: ['(',')'].join(
+    (new Date()).toLocaleTimeString(
+      'en-US',{timeZoneName:'short'}
+    ).split(' ').pop()
+  ),
   prettyBytes: require('pretty-bytes'),
   version: config.version
+}
+//extend moment().format() so that this one place changes everywhere
+// truthiness is checked and a placeholder can be provided in emptyString
+app.locals.momentStandardFormat = function(d,emptyString){
+  return (
+    d ? app.locals.moment(d).format('YYYY-MM-DD@hh:mm:ssA')
+      : ('string' === typeof emptyString) ? emptyString : 'Never'
+  )
 }
 
 

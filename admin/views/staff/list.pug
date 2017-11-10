@@ -12,9 +12,9 @@ block content
             input#toggle(type='checkbox')
           th Full Name
           th Email
-          th Last Login
+          th Last Login #{timezone}
           th Login Count
-          th Last Failed Login
+          th Last Failed Login #{timezone}
           th Failed Login Count
           th Active
         each row in list
@@ -27,11 +27,15 @@ block content
               a(href='/staff/edit?id=' + row._id)= row.email
             td
               if row.lastLogin
-                div.text-success= moment(row.lastLogin).format('MM-DD-YY hh:mmA')
+                div.text-success= momentStandardFormat(row.lastLogin)
+              else
+                div.text-muted= momentStandardFormat(row.lastLogin)
             td= row.loginCount || 0
             td
               if row.lastFailedLogin
-                div.text-danger= moment(row.lastFailedLogin).format('MM-DD-YY hh:mmA')
+                div.text-danger= momentStandardFormat(row.lastFailedLogin)
+              else
+                div.text-muted= momentStandardFormat(row.lastFailedLogin)
             td= row.failedLoginCount || 0
             td
               +active(row.active)
