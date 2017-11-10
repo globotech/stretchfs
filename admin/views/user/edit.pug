@@ -1,7 +1,17 @@
 extends ../layout
 block content
   .container
-    h1 Update User
+    div.btn.btn-group.btn-group-justified.bg-info
+      h1 User:Account
+        span.mono.leftpad16= user.name
+    div.btn-group
+      div.btn-group.btn-group-justified
+        div.btn-group.btn-group-xs
+          button.btn Created
+            span.badge.mono.leftpad8= momentStandardFormat(user.createdAt)
+        div.btn-group.btn-group-xs
+          button.btn Updated
+            span.badge.mono.leftpad8= momentStandardFormat(user.updatedAt)
     +alerts()
     form.form-horizontal(action='/user/save', method='post', role='form')
       input(type='hidden', name='id', value=user._id)

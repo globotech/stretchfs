@@ -44,7 +44,7 @@ app.locals = {
 // truthiness is checked and a placeholder can be provided in emptyString
 app.locals.momentStandardFormat = function(d,emptyString){
   return (
-    d ? app.locals.moment(d).format('YYYY-MM-DD@hh:mm:ssA')
+    d ? app.locals.moment(d).format('YYYY-MM-DD hh:mm:ssA')
       : ('string' === typeof emptyString) ? emptyString : 'Never'
   )
 }

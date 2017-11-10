@@ -3,7 +3,17 @@ block append js
   script(src='/js/table.js')
 block content
   .container
-    h1 #{prism.name}
+    div.btn.btn-group.btn-group-justified.bg-info
+      h1 Peer:Prism
+        span.mono.leftpad16= prism.name
+    div.btn-group
+      div.btn-group.btn-group-justified
+        div.btn-group.btn-group-xs
+          button.btn Created
+            span.badge.mono.leftpad8= momentStandardFormat(prism.createdAt)
+        div.btn-group.btn-group-xs
+          button.btn Updated
+            span.badge.mono.leftpad8= momentStandardFormat(prism.updatedAt)
     +alerts()
     form.form-horizontal(action='/prism/save', method='post', role='form')
       input(type='hidden', name='name', value=prism.name)
