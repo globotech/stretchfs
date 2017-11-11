@@ -8,10 +8,10 @@ block content
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
           button.btn Created
-            span.badge.mono.leftpad8= momentStandardFormat(staff.createdAt)
+            span.badge.mono.margin-l-8= momentStandardFormat(staff.createdAt)
         div.btn-group.btn-group-xs
           button.btn Updated
-            span.badge.mono.leftpad8= momentStandardFormat(staff.updatedAt)
+            span.badge.mono.margin-l-8= momentStandardFormat(staff.updatedAt)
     +alerts()
     form.form-horizontal(action='/staff/save', method='post', role='form')
       input(type='hidden', name='id', value=staff._id)

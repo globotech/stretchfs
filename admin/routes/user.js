@@ -94,8 +94,15 @@ exports.save = function(req,res){
       return couchStretchFS.upsertAsync(userKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','User saved')
-      res.redirect('/user/edit?id=' + userKey)
+      req.flashPug('success','subject-id-action',
+        {
+          subject: 'User',
+          id: userKey,
+          action: 'saved',
+          href: '/user/edit?id=' + userKey
+        }
+      )
+      res.redirect('/user/list')
     })
     .catch(function(err){
       res.render('error',{error: err})

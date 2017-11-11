@@ -48,14 +48,20 @@ exports.list = function(req,res){
  * @param {object} res
  */
 exports.listAction = function(req,res){
+  var remove = req.body.remove || []
   P.try(function(){
-    return req.body.remove || []
+    return remove
   })
     .each(function(purchaseKey){
       return couchPurchase.removeAsync(purchaseKey)
     })
     .then(function(){
-      req.flash('success','Purchase(s) removed successfully')
+      req.flashPug('success','subject-id-action',{
+        subject: 'Purchase'+(1!==remove.length)?'s':'',
+        id: remove.join(','),
+        href: false,
+        action: 'removed successfully'
+      })
       res.redirect('/purchase/list')
     })
 }
@@ -127,7 +133,14 @@ exports.save = function(req,res){
       return couchPurchase.upsertAsync(purchaseKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Purchase [' + purchaseKey + '] saved')
+      req.flashPug('success','subject-id-action',
+        {
+          subject: 'Purchase',
+          id: purchaseKey,
+          action: 'saved',
+          href: '/purchase/edit?id=' + purchaseKey
+        }
+      )
       res.redirect('/purchase/list')
     })
     .catch(function(err){

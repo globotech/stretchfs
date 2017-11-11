@@ -3,17 +3,17 @@ var P = require('bluebird')
 
 
 /**
- * Private integer argument parser
+ * Integer argument parser
  * @param {string} arg
  * @param {integer} minimumDefault
  * @return {integer}
  */
-var _intarg = function(arg,minimumDefault){
+exports.integerArgDefaulted = function(arg,minimumDefault){
   var rv = (!arg) ? minimumDefault : parseInt(arg,10)
   if(rv < minimumDefault) rv = minimumDefault
   return rv
 }
-
+var integerArgDefaulted = exports.integerArgDefaulted
 
 /**
  * Helper for list queries
@@ -47,8 +47,8 @@ exports.listQuery = function(
     clause.orderby = ' ORDER BY `' + orderField + '`' +
       (orderAsc ? ' ASC' : ' DESC')
   }
-  offset = _intarg(offset,0)
-  limit = _intarg(limit,10)
+  offset = integerArgDefaulted(offset,0)
+  limit = integerArgDefaulted(limit,10)
   clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + offset
   //build queries
   var queries = {}

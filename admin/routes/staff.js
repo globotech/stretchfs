@@ -88,20 +88,20 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  var staffKey = req.body.id || ''
-  var staffEmail = req.body.name || staffKey.split(':')[1]
+  var form = req.body
+  var staffKey = form.id || ''
+  var staffEmail = form.name || staffKey.split(':')[1]
+  var timestamp = new Date().toJSON()
   P.try(function(){
     if(staffKey){
       return couchStretchFS.getAsync(staffKey)
     } else {
       staffKey = couch.schema.stretchfsStaff(req.body.staffEmail)
-      return {value: {createdAt: new Date().toJSON()}, cas: null}
+      return {value: {createdAt: timestamp}, cas: null}
     }
   })
     .then(function(result){
       var doc = result.value
-      var form = req.body
-      var timestamp = new Date().toJSON()
       var updated = false
       form.staffActive = ('on' === form.staffActive)
       if(doc.email !== form.staffEmail){
@@ -132,10 +132,17 @@ exports.save = function(req,res){
       }
     })
     .then(function(updated){
+      var alert = {
+        subject: 'Staff member',
+        href: '/staff/edit?id=' + staffKey,
+        id: staffEmail
+      }
       if(false !== updated){
-        req.flash('success','Staff member [' + staffEmail + '] saved')
+        alert.action = 'saved'
+        req.flashPug('success','subject-id-action',alert)
       } else {
-        req.flash('warning','No changes made')
+        alert.action = 'unchanged (try again?)'
+        req.flashPug('warning','subject-id-action',alert)
       }
       res.redirect('/staff/list')
     })

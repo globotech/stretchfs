@@ -10,10 +10,10 @@ block content
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
           button.btn Created
-            span.badge.mono.leftpad8= momentStandardFormat(prism.createdAt)
+            span.badge.mono.margin-l-8= momentStandardFormat(prism.createdAt)
         div.btn-group.btn-group-xs
           button.btn Updated
-            span.badge.mono.leftpad8= momentStandardFormat(prism.updatedAt)
+            span.badge.mono.margin-l-8= momentStandardFormat(prism.updatedAt)
     +alerts()
     form.form-horizontal(action='/prism/save', method='post', role='form')
       input(type='hidden', name='name', value=prism.name)

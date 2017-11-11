@@ -10,17 +10,17 @@ block content
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
           button.btn Created
-            span.badge.mono.leftpad8= momentStandardFormat(summary.createdAt)
+            span.badge.mono.margin-l-8= momentStandardFormat(summary.createdAt)
         div.btn-group.btn-group-xs
           button.btn Updated
-            span.badge.mono.leftpad8= momentStandardFormat(summary.updatedAt)
+            span.badge.mono.margin-l-8= momentStandardFormat(summary.updatedAt)
     +alerts()
     form.form-horizontal(action='/inventory/save', method='post', role='form')
-      input(type='hidden', name='hash', value=summary.hash)
       .form-group
         label.control-label.col-sm-2 Hash
         .col-sm-10.mono
           .form-control-static= summary.hash
+          input(type='hidden', name='hash', value=summary.hash)
       .form-group
         label.control-label.col-sm-2 Relative Path
         .col-sm-10.mono
@@ -50,15 +50,18 @@ block content
       .form-group
         label.control-label.col-sm-2 Other Garbage
         .col-sm-10.mono
-          |copies #{summary.copies}
+          input(type='hidden', name='copies', value=summary.copies||0)
+          |copies #{summary.copies||0}
           br
-          |map:
-          each l in summary.map
-            = l
-          br
-          |rules:
-          each l in summary.rules
-            |#{l.type}(#{l.value})
+          if(summary.map)
+            input(type='hidden', name='map', value=summary.map)
+            |map: #{(summary.map||[]).join(',')}
+            br
+          if(summary.rules)
+            input(type='hidden', name='rules', value=summary.rules)
+            |rules:
+            each l in summary.rules
+              |#{l.type}(#{l.value})
       .form-group
           .col-sm-offset-2.col-sm-10
-            button.btn.btn-success(type='submit' disabled) Save
+            button.btn.btn-success(type='submit') Save

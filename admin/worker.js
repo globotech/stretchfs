@@ -4,6 +4,7 @@ var bodyParser = require('body-parser')
 var compress = require('compression')
 var cookieParser = require('cookie-parser')
 var flash = require('connect-flash')
+var compileFile = require('pug').compileFile
 var electricity = require('electricity')
 var express = require('express')
 var expressSession = require('express-session')
@@ -70,8 +71,22 @@ app.use(expressSession({
   secret: config.admin.cookie.secret
 }))
 app.use(flash())
+var viewFn = {}
 app.use(function(req,res,next){
   res.locals.flash = req.flash.bind(req)
+  req.flashPug = function(type,view,vars){
+    if(type && view){
+      if(-1 === Object.keys(viewFn).indexOf(view)){
+        viewFn[view] =
+          compileFile(app.get('views') + '/_alerts/' + view + '.pug',{})
+      }
+      return req.flash(type,viewFn[view](('object'===typeof vars)?vars:{}))
+    } else if(type){
+      return req.flash(type)
+    } else {
+      return req.flash()
+    }
+  }
   next()
 })
 app.use(electricity.static(__dirname + '/public'))

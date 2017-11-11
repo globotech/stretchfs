@@ -120,8 +120,15 @@ exports.save = function(req,res){
       return couchStretch.upsertAsync(storeKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Store saved')
-      res.redirect('/store/edit?id=' + storeKey)
+      req.flashPug('success','subject-id-action',
+        {
+          subject: 'Store',
+          id: storeKey,
+          action: 'saved',
+          href: '/store/edit?id=' + storeKey
+        }
+      )
+      res.redirect('/store/list')
     })
     .catch(function(err){
       res.render('error',{error: err})

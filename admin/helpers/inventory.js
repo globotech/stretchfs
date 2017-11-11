@@ -1,5 +1,6 @@
 'use strict';
 var P = require('bluebird')
+var integerArgDefaulted = require('./list').integerArgDefaulted
 
 //list of fields for sanitizer
 var keyList = [
@@ -11,19 +12,6 @@ var keyList = [
   'relativePath',
   'size'
 ]
-
-
-/**
- * Private integer argument parser
- * @param {string} arg
- * @param {integer} minimumDefault
- * @return {integer}
- */
-var _intarg = function(arg,minimumDefault){
-  var rv = (!arg) ? minimumDefault : parseInt(arg,10)
-  if(rv < minimumDefault) rv = minimumDefault
-  return rv
-}
 
 var _conf = {
   couchbase: false,
@@ -131,8 +119,8 @@ exports.listMain = function(search,orderField,orderAsc,offset,limit){
     clause.orderby = ' ORDER BY `' + orderField + '`' +
       (orderAsc ? ' ASC' : ' DESC')
   }
-  offset = _intarg(offset,0)
-  limit = _intarg(limit,10)
+  offset = integerArgDefaulted(offset,0)
+  limit = integerArgDefaulted(limit,10)
   clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + offset
   //build queries
   var queries = {}

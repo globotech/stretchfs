@@ -101,7 +101,14 @@ exports.save = function(req,res){
       return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
     })
     .then(function(){
-      req.flash('success','Prism [' + data.name + '] saved')
+      req.flashPug('success','subject-id-action',
+        {
+          subject: 'Prism',
+          id: data.name,
+          action: 'saved',
+          href: '/prism/edit?name=' + data.name
+        }
+      )
       res.redirect('/prism/list')
     })
     .catch(function(err){

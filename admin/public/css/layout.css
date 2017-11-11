@@ -2,11 +2,12 @@ body {
   padding-top: 50px;
   padding-bottom: 50px;
 }
-.leftpad8 {
+.margin-lr-8 {
   margin-left: 8px;
+  margin-right: 8px;
 }
-.leftpad16 {
-  margin-left: 16px;
+.margin-l-8 {
+  margin-left: 8px;
 }
 .mono {
   font-family:monospace,fixed;
