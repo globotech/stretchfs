@@ -28,8 +28,11 @@ exports.createMasterInventory = function(hash,extension){
     hash: hash,
     mimeExtension: extension,
     map: [],
+    desiredMap: [],
     size: 0,
     copies: 0,
+    desiredCopies: config.inventory.copiesOnWrite || 2,
+    cacheCopies: [],
     rules: config.inventory.defaultRules,
     relativePath: hashFile.toRelativePath(hash,extension),
     createdAt: new Date().toJSON(),
@@ -92,8 +95,11 @@ exports.createStoreInventory = function(fileDetail,verified){
           mimeExtension: fileDetail.ext,
           mimeType: mime.getType(fileDetail.ext),
           map: [config.store.name],
+          desiredMap: [config.store.name],
           size: fileDetail.stat.size,
           copies: 1,
+          desiredCopies: config.inventory.copiesOnWrite || 2,
+          cacheCopies: [],
           rules: config.inventory.defaultRules,
           relativePath: hashFile.toRelativePath(
             fileDetail.hash,fileDetail.ext

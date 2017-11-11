@@ -59,6 +59,16 @@ var client = {
             'inventorySizeType',['mimeType','size'],{ignoreIfExists: true}
           )
         })
+        .then(function(){
+          return manager.createIndexAsync(
+            'inventoryCopies',['copies','desiredCopies'],{ignoreIfExists: true}
+          )
+        })
+        .then(function(){
+          return manager.createIndexAsync(
+            'inventoryMap',['map','desiredMap'],{ignoreIfExists: true}
+          )
+        })
     },
     stretchfs: function(manager){
       return manager.createPrimaryIndexAsync({
