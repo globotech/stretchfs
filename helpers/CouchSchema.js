@@ -101,14 +101,26 @@ CouchSchema.prototype.purchase = function(token){
 /**
  * Inventory
  * @param {string} hash
- * @param {string} prism
  * @param {string} store
  * @return {string}
  */
-CouchSchema.prototype.inventory = function(hash,prism,store){
+CouchSchema.prototype.inventory = function(hash,store){
   return this.applyPrefix(
     (hash || '') +
-    (prism ? ':' + prism : '') +
+    (store ? ':' + store : '')
+  )
+}
+
+
+/**
+ * Inventory Copy Task (in the StretchFS bucket)
+ * @param {string} hash
+ * @param {string} store
+ * @return {string}
+ */
+CouchSchema.prototype.inventoryCopy = function(hash,store){
+  return this.applyPrefix('copy:' +
+    (hash || '') +
     (store ? ':' + store : '')
   )
 }
