@@ -12,22 +12,40 @@ var keyList = [
   'relativePath',
   'size'
 ]
+//list of valid inventory rules
+var ruleSet = {
+  copyMinimum:'int',
+  copyMaximum:'int',
+  forcedStore:'arr',
+  forcedAll:'bool',
+  protectedStore:'arr',
+  protectedAll:'bool',
+  bannedStore:'arr'
+}
+/**
+ * Provide the ruleSet to client side
+ * @return {object} ruleSet with key as ruleName and value as ruleDataType
+ */
+exports.ruleSet = function(){
+  return P.try(function(){return ruleSet})
+}
 
-var _conf = {
+var _hndl = {
   couchbase: false,
   bucket: false,
   bucketType: false,
   bucketName: ''
 }
 /**
- *
+ * Setup routine, provides stateful handles, and maintains 'current' bucketName
+ * @param {object} handles to fill the internal _hndl with (same key names)
  */
-exports.setup = function(dfl){
-  Object.keys(_conf).forEach(function(k){
-    if(_conf[k] !== dfl[k]) _conf[k] = dfl[k]
+exports.setup = function(handles){
+  Object.keys(_hndl).forEach(function(k){
+    if(_hndl[k] !== handles[k]) _hndl[k] = handles[k]
   })
-  if(_conf.couchbase && _conf.bucket && _conf.bucketType){
-    _conf.bucketName = _conf.couchbase.getName(_conf.bucketType,true)
+  if(_hndl.couchbase && _hndl.bucket && _hndl.bucketType){
+    _hndl.bucketName = _hndl.couchbase.getName(_hndl.bucketType,true)
   }
 }
 
@@ -40,12 +58,12 @@ exports.setup = function(dfl){
 var _queryPrep = function(hash){
   var rv = {string:'',args:[]}
   //validate and pre-process arguments
-  if(!_conf.couchbase || !_conf.bucket)
+  if(!_hndl.couchbase || !_hndl.bucket)
     throw new Error('Must setup couchbase (helper) and bucket (handle) to list')
-  if(!_conf.bucketName)
+  if(!_hndl.bucketName)
     throw new Error('Must setup bucketType/bucketName to query')
   var clause = {
-    from: ' FROM ' + _conf.bucketName,
+    from: ' FROM ' + _hndl.bucketName,
     where: {
       summary: [' WHERE NOT CONTAINS(META().id,":")'],
       detail: [' WHERE CONTAINS(META().id,":")']
@@ -60,12 +78,12 @@ var _queryPrep = function(hash){
   }
   rv.string =
     'SELECT (' +
-    'SELECT ' + _conf.bucketName + '.*' +
+    'SELECT ' + _hndl.bucketName + '.*' +
     clause.from + clause.where.summary.join(' AND') +
     ')[0] AS summary' +
     ',' +
     '(' +
-    'SELECT ' + _conf.bucketName + '.*' +
+    'SELECT ' + _hndl.bucketName + '.*' +
     ',META().id,SPLIT(META().id,":")[0] AS idHash' +
     clause.from + clause.where.detail.join(' AND') +
     ') AS detail'
@@ -80,8 +98,8 @@ var _queryPrep = function(hash){
  */
 exports.hashQuery = function(search){
   var query = _queryPrep(search)
-  return _conf.bucket.queryAsync(
-    _conf.couchbase.N1Query.fromString(query.string),
+  return _hndl.bucket.queryAsync(
+    _hndl.couchbase.N1Query.fromString(query.string),
     query.args
   )
     .then(function(result){
@@ -101,15 +119,15 @@ exports.hashQuery = function(search){
  */
 exports.listMain = function(search,orderField,orderAsc,offset,limit){
   //validate and pre-process arguments
-  if(!_conf.couchbase || !_conf.bucket)
+  if(!_hndl.couchbase || !_hndl.bucket)
     throw new Error('Must have couchbase helper and bucket-handle to list')
-  if(!_conf.bucketName)
+  if(!_hndl.bucketName)
     throw new Error('Must know bucket type/name to list')
   var clause = {
     where: [ ' WHERE NOT CONTAINS(META().id,":")' ],
     orderby: ''
   }
-  clause.from = ' FROM ' + _conf.bucketName
+  clause.from = ' FROM ' + _hndl.bucketName
   var s = []
   if(!!search){
     s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
@@ -124,18 +142,18 @@ exports.listMain = function(search,orderField,orderAsc,offset,limit){
   clause.pagination = ' LIMIT ' + limit + ' OFFSET ' + offset
   //build queries
   var queries = {}
-  queries.total = _conf.couchbase.N1Query.fromString(
+  queries.total = _hndl.couchbase.N1Query.fromString(
     'SELECT COUNT(DISTINCT `hash`) AS _count' +
     clause.from + clause.where.join(' AND')
   )
-  queries.data = _conf.couchbase.N1Query.fromString(
-    'SELECT ' + _conf.bucketName + '.*' +
+  queries.data = _hndl.couchbase.N1Query.fromString(
+    'SELECT ' + _hndl.bucketName + '.*' +
     clause.from + clause.where.join(' AND') +
     clause.orderby + clause.pagination
   )
   return P.all([
-    _conf.bucket.queryAsync(queries.data,s),
-    _conf.bucket.queryAsync(queries.total,s)
+    _hndl.bucket.queryAsync(queries.data,s),
+    _hndl.bucket.queryAsync(queries.total,s)
   ])
     .spread(function(data,total){
       var rv = {

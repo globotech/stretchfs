@@ -38,14 +38,36 @@ block content
         .col-sm-10.mono
           input.form-control(type='text', name='mimeExtension', value=summary.mimeExtension)
       .form-group
+        label.control-label.col-sm-2 Rules
+        .col-sm-10
+          .panel.panel-default
+            .panel-heading
+              a.btn.btn-xs.btn-success(id='ruleAdd')
+                span.glyphicon.glyphicon-plus.margin-r-8
+                | Add New
+            each r,i in summary.rules
+              .panel-body
+                .well.well-sm.well-info
+                  .btn-group(role='group')
+                    a.btn.btn-xs.btn-info(href='#' id='r_' + i + '_up')
+                      span.glyphicon.glyphicon-chevron-up.margin-lr-8
+                    a.btn.btn-xs.btn-info(href='#' id='r_' + i + '_dn')
+                      span.glyphicon.glyphicon-chevron-down.margin-lr-8
+                  a.btn.btn-xs.btn-danger.margin-lr-8(href='#' id='r_' + i + '_rm')
+                    span.glyphicon.glyphicon-trash
+                  select.selectpicker.mono(name=id='r_' + i + '_rn')
+                    each ruleDataType,ruleType in ruleSet
+                      option(selected=(ruleType===r.type))= ruleType + '(' + ruleDataType + ')'
+                  input(type='text', name='rule[]', id='rule[]' value=r.value)
+      .form-group
         label.control-label.col-sm-2 Locations
         .col-sm-10
           each l in detail
-            input.checkbox-input(type='checkbox', name=`loc[]`, id=`loc[]` value=l.id, checked)
-            label.mono(for=`loc[]`) #{l.id.split(':')[1]}&nbsp;&nbsp;
-            a(href=`/inventory/editIndividual?id=${l.id}` class='btn btn-xs btn-info')
-              span(class='glyphicon glyphicon-edit')
-              |&nbsp;Edit
+            input.checkbox-input(type='checkbox', name='loc[]', id='loc[]' value=l.id, checked)
+            label.mono(for='loc[]') #{l.id.split(':')[1]}&nbsp;&nbsp;
+            a.btn.btn-xs.btn-info(href='/inventory/editIndividual?id='+l.id)
+              span.glyphicon.glyphicon-edit
+              | &nbsp;Edit
             br
       .form-group
         label.control-label.col-sm-2 Other Garbage
@@ -57,11 +79,6 @@ block content
             input(type='hidden', name='map', value=summary.map)
             |map: #{(summary.map||[]).join(',')}
             br
-          if(summary.rules)
-            input(type='hidden', name='rules', value=summary.rules)
-            |rules:
-            each l in summary.rules
-              |#{l.type}(#{l.value})
       .form-group
           .col-sm-offset-2.col-sm-10
             button.btn.btn-success(type='submit') Save

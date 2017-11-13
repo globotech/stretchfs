@@ -83,8 +83,12 @@ exports.create = function(req,res){
 exports.edit = function(req,res){
   var inventoryKey = req.query.id
   var hash = inventoryKey.split(':')[0] || inventoryKey
-  inv.hashQuery(hash)
-    .then(function(result){
+  return P.all([
+    inv.hashQuery(hash),
+    inv.ruleSet()
+  ])
+    .spread(function(result,ruleSet){
+      result.ruleSet = ruleSet
       res.render('inventory/edit',result)
     })
     .catch(function(err){

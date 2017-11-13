@@ -1,3 +1,11 @@
+@import url('//bowercdn.net/c/html5-boilerplate-6.0.1/dist/css/normalize.css');
+@import url('//bowercdn.net/c/html5-boilerplate-6.0.1/dist/css/main.css');
+@import url('//bowercdn.net/c/bootstrap-3.3.7/dist/css/bootstrap.min.css');
+@import url('//bowercdn.net/c/bootstrap-3.3.7/dist/css/bootstrap-theme.min.css');
+@import url('//bowercdn.net/c/bootstrap-select-1.12.4/dist/css/bootstrap-select.min.css');
+@import url('//bowercdn.net/c/pickadate-3.5.6/lib/compressed/themes/default.css');
+@import url('//bowercdn.net/c/pickadate-3.5.6/lib/compressed/themes/default.date.css');
+@import url('//bowercdn.net/c/pickadate-3.5.6/lib/compressed/themes/default.time.css');
 body {
   padding-top: 50px;
   padding-bottom: 50px;
@@ -8,6 +16,9 @@ body {
 }
 .margin-l-8 {
   margin-left: 8px;
+}
+.margin-r-8 {
+  margin-right: 8px;
 }
 .mono {
   font-family:monospace,fixed;
