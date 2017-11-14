@@ -14,22 +14,34 @@ html
         .container
           a.navbar-brand(href='/') StretchFS
           ul.nav.navbar-nav
-            li
-              a(href='/prism/list') Prisms
-            li
-              a(href='/store/list') Stores
-            li
-              a(href='/inventory/list') Inventory
-            li
-              a(href='/purchase/list') Purchases
+            li.dropdown
+              a.dropdown-toggle(href='#', id='navDropPeers', role='button', data-toggle='dropdown', aria-haspopup='true', aria-expanded='false')
+                | Peers <span class="caret"></span>
+              ul.dropdown-menu
+                li
+                  a(href='/prism/list') Prisms
+                li
+                  a(href='/store/list') Stores
+            li.dropdown
+              a.dropdown-toggle(href='#', id='navDropContent', role='button', data-toggle='dropdown', aria-haspopup='true', aria-expanded='false')
+                | Content <span class="caret"></span>
+              ul.dropdown-menu
+                li
+                  a(href='/inventory/list') Inventory
+                li
+                  a(href='/purchase/list') Purchases
             li
               a(href='/job/list') Jobs
-            li
-              a(href='/session/list') Sessions
-            li
-              a(href='/user/list') Users
-            li
-              a(href='/staff/list') Staff
+            li.dropdown
+              a.dropdown-toggle(href='#', id='navDropManage', role='button', data-toggle='dropdown', aria-haspopup='true', aria-expanded='false')
+                | Manage <span class="caret"></span>
+              ul.dropdown-menu
+                li
+                  a(href='/session/list') Sessions
+                li
+                  a(href='/user/list') Users
+                li
+                  a(href='/staff/list') Staff
           ul.nav.navbar-nav.navbar-right
             li.dropdown
               a.dropdown-toggle(data-toggle='dropdown') #{staff.name}
