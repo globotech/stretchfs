@@ -1,7 +1,15 @@
 extends ../layout
 block append js
   script(src='/js/table.js')
+  script
+    != 'var ruleSet = ' + JSON.stringify(ruleSet) + ';'
+  script(src='/js/inventory-edit.js')
 block content
+  .hidden
+    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_int(type='text', name='rule[]')
+    input.ruleData.checkbox-inline.checkbox-24.t_bool(type='checkbox', name='rule[]')
+    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_arr(type='text', name='rule[]')
+    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_unknown(type='text', name='rule[]')
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 Inventory:Hash
@@ -41,24 +49,38 @@ block content
         label.control-label.col-sm-2 Rules
         .col-sm-10
           .panel.panel-default
-            .panel-heading
+            .panel-heading.shrinkwrap.slam-l
               a.btn.btn-xs.btn-success(id='ruleAdd')
                 span.glyphicon.glyphicon-plus.margin-r-8
                 | Add New
+              span.addNew.ruleItem
+                select.selectpicker.ruleType(data-width='auto')
+                  each v,ruleType in ruleSet
+                    option= ruleType
+                input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]')
             each r,i in summary.rules
-              .panel-body
-                .well.well-sm.well-info
-                  .btn-group(role='group')
-                    a.btn.btn-xs.btn-info(href='#' id='r_' + i + '_up')
-                      span.glyphicon.glyphicon-chevron-up.margin-lr-8
-                    a.btn.btn-xs.btn-info(href='#' id='r_' + i + '_dn')
-                      span.glyphicon.glyphicon-chevron-down.margin-lr-8
-                  a.btn.btn-xs.btn-danger.margin-lr-8(href='#' id='r_' + i + '_rm')
-                    span.glyphicon.glyphicon-trash
-                  select.selectpicker.mono(name=id='r_' + i + '_rn')
-                    each ruleDataType,ruleType in ruleSet
-                      option(selected=(ruleType===r.type))= ruleType + '(' + ruleDataType + ')'
-                  input(type='text', name='rule[]', id='rule[]' value=r.value)
+              .panel-body.shrinkwrap
+                .list-group.shrinkwrap.ruleGroup
+                  .list-group-item.text-nowrap.shrinkwrap.slam-l.ruleItem
+                    .btn-group(role='group')
+                      a.btn.btn-xs.btn-info.ruleUp
+                        span.glyphicon.glyphicon-chevron-up.margin-lr-8
+                      a.btn.btn-xs.btn-info.ruleDown
+                        span.glyphicon.glyphicon-chevron-down.margin-lr-8
+                    a.btn.btn-xs.btn-danger.margin-lr-8.ruleDel
+                      span.glyphicon.glyphicon-trash
+                    select.selectpicker.ruleType(data-width='auto')
+                      each v,ruleType in ruleSet
+                        option(selected=(ruleType===r.type))= ruleType
+                    case ruleSet[r.type]
+                      when 'int'
+                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=r.value)
+                      when 'bool'
+                        input.ruleData.checkbox-inline.checkbox-24(type='checkbox', name='rule[]', value=ruleSet[r.type], checked=(!!r.value))
+                      when 'arr'
+                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=r.value.join(','))
+                      default
+                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=ruleSet[r.type])
       .form-group
         label.control-label.col-sm-2 Locations
         .col-sm-10

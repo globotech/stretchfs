@@ -10,6 +10,32 @@ body {
   padding-top: 50px;
   padding-bottom: 50px;
 }
+.shrinkwrap {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+.slam-t {
+  margin-top: 0;
+  padding-top: 0;
+  vertical-align: top;
+}
+.slam-b {
+  margin-top: 0;
+  padding-top: 0;
+  vertical-align: bottom;
+}
+.slam-r {
+  margin-right: 0;
+  padding-right: 0;
+  text-align: right;
+}
+.slam-l {
+  margin-left: 0;
+  padding-left: 0;
+  text-align: left;
+}
 .margin-lr-8 {
   margin-left: 8px;
   margin-right: 8px;
@@ -20,6 +46,25 @@ body {
 .margin-r-8 {
   margin-right: 8px;
 }
+.padding-lr-8 {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.padding-l-8 {
+  padding-left: 8px;
+}
+.padding-r-8 {
+  padding-right: 8px;
+}
 .mono {
   font-family:monospace,fixed;
+}
+.dropdown-toggle {
+  margin: 0;
+  padding: 0;
+  padding-left: 6px;
+}
+.checkbox-24 {
+  width: 24px;
+  height: 24px;
 }
