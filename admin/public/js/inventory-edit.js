@@ -1,7 +1,10 @@
 $('#ruleAdd').click(function(){
-  //var ruleItem = $('.ruleGroup > .ruleItem').last();
-  //ruleItem.after(ruleItem.clone());
-  // needs more element tweaking
+  var rule = $('.ruleGroup').last();
+  var _clone = rule.clone();
+  console.log(_clone.find('div.ruleType').replaceWith($('.addNew div.ruleType').clone()));
+  console.log(_clone.find('.ruleData').replaceWith($('.addNew .ruleData').clone()));
+  rule.after(_clone);
+  //reset the addNew template fields to untouched state?
 })
 $('.ruleDel').click(function(){
   var me = ($(this).parents('.ruleItem'));
@@ -23,16 +26,16 @@ $('.ruleType').change(function(){
   var ruleSetIndex = Object.keys(ruleSet)[this.selectedIndex];
   var ruleSetDatatype = ruleSet[ruleSetIndex];
   var tgtInput = $(this).parents('.ruleItem').children('.ruleData');
-  var typeClass = '.t_'+ruleSetDatatype;
+  var typeClass = 't_'+ruleSetDatatype;
   switch(ruleSetDatatype){
   case 'int':
   case 'bool':
   case 'arr':
-    tgtInput.replaceWith($(typeClass).clone().removeClass(typeClass))
+    tgtInput.replaceWith($('.'+typeClass).clone().removeClass(typeClass));
     break;
   default:
     console.error('ERROR: unknown ruleSetDatatype [' + ruleSetDatatype + ']');
-    tgtInput.replaceWith($('.t_unknown').clone().removeClass('t_unknown'))
+    tgtInput.replaceWith($('.t_unknown').clone().removeClass('t_unknown'));
     break;
   }
 })

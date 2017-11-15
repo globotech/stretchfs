@@ -58,8 +58,8 @@ block content
                   each v,ruleType in ruleSet
                     option= ruleType
                 input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]')
-            each r,i in summary.rules
-              .panel-body.shrinkwrap
+            .panel-body.shrinkwrap
+              each r,i in summary.rules
                 .list-group.shrinkwrap.ruleGroup
                   .list-group-item.text-nowrap.shrinkwrap.slam-l.ruleItem
                     .btn-group(role='group')
