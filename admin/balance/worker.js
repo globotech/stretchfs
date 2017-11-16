@@ -1,6 +1,6 @@
 'use strict';
 //var P = require('bluebird')
-var debug = require('debug')('stretchfs:store:stat')
+var debug = require('debug')('stretchfs:balance:worker')
 var child = require('infant').child
 
 var couch = require('../../helpers/couchbase')
@@ -42,6 +42,7 @@ var findJobsToStart = function(){
 
 }
 
+
 /**
  * Start a job and return the active job record
  * @param {object} row
@@ -67,6 +68,7 @@ var cleanupActiveJobs = function(){
  */
 var workerRun= function(){
   debug('starting balance worker run')
+  return
   var activeJobCount = countActiveJobs()
   return findJobsToStart(allowedJobCount - activeJobCount)
     .each(function(row){

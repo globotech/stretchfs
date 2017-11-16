@@ -353,6 +353,7 @@ var balanceRecord = function(inventory){
  * @return {P}
  */
 var inventoryBalance= function(){
+  return
   if(balanceLock && balanceTries < config.inventory.balance.maxLockout){
     debug('skipping run, balance locked')
     return
@@ -433,7 +434,7 @@ exports.stop = function(done){
 
 if(require.main === module){
   child(
-    'stretchfs:balancer',
+    'stretchfs:balance:supervisor',
     function(done){
       exports.start(done)
     },
