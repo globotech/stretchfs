@@ -135,6 +135,12 @@ exports.server = {
   prism2: infant.parent('../../prism',{
     fork: {env: exports.makeEnv(__dirname + '/../assets/prism2.config.js')}
   }),
+  balanceSupervisor: infant.parent('../../admin/balance/supervisor',{
+    fork: {env: exports.makeEnv(__dirname + '/../assets/prism1.config.js')}
+  }),
+  balanceWorker: infant.parent('../../admin/balance/worker',{
+    fork: {env: exports.makeEnv(__dirname + '/../assets/prism1.config.js')}
+  }),
   store1: infant.parent('../../store',{
     fork: {env: exports.makeEnv(__dirname + '/../assets/store1.config.js')}
   }),
@@ -249,6 +255,38 @@ exports.after = function(that){
     })
     .then(function(){
       logger.log('info','Mock cluster stopped!')
+    })
+}
+
+
+/**
+ * Start the balance system
+ * @return {P}
+ */
+exports.balanceStart = function(){
+  logger.log('info','Starting balance system')
+  return exports.server.balanceSupervisor.startAsync()
+    .then(function(){
+      return exports.server.balanceWorker.startAsync()
+    })
+    .then(function(){
+      logger.log('info','Balance system started')
+    })
+}
+
+
+/**
+ * Stop the balance system
+ * @return {P}
+ */
+exports.balanceStop = function(){
+  logger.log('info','Stopping balance system')
+  return exports.server.balanceWorker.stopAsync()
+    .then(function(){
+      return exports.server.balanceSupervisor.stopAsync()
+    })
+    .then(function(){
+      logger.log('info','Balance system stopped')
     })
 }
 
