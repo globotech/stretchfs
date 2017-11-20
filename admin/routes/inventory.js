@@ -76,6 +76,17 @@ exports.create = function(req,res){
 
 
 /**
+ * AJAX feeder for RuleName->DataTypes
+ * @param {object} req
+ * @param {object} res
+ */
+exports.listRuleTypes = function(req,res){
+  var rv = JSON.stringify(P.try(function(){return inv.ruleSet()}))
+  res.send(rv)
+}
+
+
+/**
  * Edit Inventory by hash
  * @param {object} req
  * @param {object} res
@@ -83,7 +94,7 @@ exports.create = function(req,res){
 exports.edit = function(req,res){
   var inventoryKey = req.query.id
   var hash = inventoryKey.split(':')[0] || inventoryKey
-  return P.all([
+  P.all([
     inv.hashQuery(hash),
     inv.ruleSet()
   ])

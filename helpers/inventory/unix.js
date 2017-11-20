@@ -88,7 +88,10 @@ module.exports = function(done){
     P.try(function(){
       var lines = buffer
         .split('\n')
-        .filter(function(item){return '' !== item})
+        .filter(function(item){
+          return ('' !== item) && // no blanklines
+            (null === item.match(/\/\./)) // no dotfiles ('hidden'/rsync tmps)
+        })
         .map(function(val){
           return path.resolve(val)
         })

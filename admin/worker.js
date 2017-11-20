@@ -141,7 +141,6 @@ app.get('/user/create',routes.user.create)
 app.get('/user/edit', routes.user.edit)
 app.get('/user',function(req,res){ res.redirect('/user/list') })
 
-
 //prisms
 app.post('/prism/list',routes.prism.listAction)
 app.post('/prism/save',routes.prism.save)
@@ -163,6 +162,7 @@ app.get('/store',function(req,res){ res.redirect('/store/list') })
 app.post('/inventory/list',routes.inventory.listAction)
 app.post('/inventory/save',routes.inventory.save)
 app.get('/inventory/list',routes.inventory.list)
+app.get('/inventory/listRuleTypes',routes.inventory.listRuleTypes)
 app.get('/inventory/create',routes.inventory.create)
 app.get('/inventory/edit',routes.inventory.edit)
 app.get('/inventory/editIndividual',routes.inventory.editIndividual)

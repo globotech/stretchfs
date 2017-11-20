@@ -1,8 +1,6 @@
 extends ../layout
 block append js
   script(src='/js/table.js')
-  script
-    != 'var ruleSet = ' + JSON.stringify(ruleSet) + ';'
   script(src='/js/inventory-edit.js')
 block content
   .hidden
