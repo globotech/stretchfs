@@ -43,7 +43,7 @@ module.exports = function(options){
   //handle auth
   if(cfg.auth) client.auth(cfg.auth)
   //select db
-  client.select(cfg.db || 0)
+  client.select(cfg.stretchfs || 0)
 
 
   /**

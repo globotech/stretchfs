@@ -1,9 +1,9 @@
 'use strict';
 var P = require('bluebird')
 
-var couch = require('../../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 
-var config = require('../../config')
+var config = require('../config')
 
 console.log('Beginning Couchbase setup')
 console.log('Creating Couchbase Buckets')

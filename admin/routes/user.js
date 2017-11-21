@@ -9,7 +9,7 @@ var couch = require('../../helpers/couchbase')
 P.promisifyAll(bcrypt)
 
 //open couch buckets
-var couchStretchFS = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -21,8 +21,8 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  list.listQuery(couch,couchStretchFS,couch.type.STRETCHFS,
-    couch.schema.stretchfsUser(search),'name',true,start,limit)
+  list.listQuery(couch,cb,couch.type.STRETCHFS,
+    couch.schema.user(search),'name',true,start,limit)
     .then(function(result){
       res.render('user/list',{
         page: list.pagination(start,result.count,limit),
@@ -45,7 +45,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(userKey){
-      return couchStretchFS.removeAsync(userKey)
+      return cb.removeAsync(userKey)
     })
     .then(function(){
       req.flash('success','User(s) removed successfully')
@@ -74,9 +74,9 @@ exports.save = function(req,res){
   var userKey = req.body.id || ''
   P.try(function(){
     if(userKey){
-      return couchStretchFS.getAsync(userKey)
+      return cb.getAsync(userKey)
     } else {
-      userKey = couch.schema.stretchfsUser(req.body.userName)
+      userKey = couch.schema.user(req.body.userName)
       return {value: {createdAt: new Date().toJSON()}, cas: null}
     }
   })
@@ -91,7 +91,7 @@ exports.save = function(req,res){
       if(data.roles) doc.roles = ['create','read','update','delete']
       doc.active = !!data.userActive
       doc.updatedAt = new Date().toJSON()
-      return couchStretchFS.upsertAsync(userKey,doc,{cas: result.cas})
+      return cb.upsertAsync(userKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flashPug('success','subject-id-action',
@@ -117,7 +117,7 @@ exports.save = function(req,res){
  */
 exports.edit = function(req,res){
   var userKey = req.query.id
-  couchStretchFS.getAsync(userKey)
+  cb.getAsync(userKey)
     .then(function(result){
       if(!result) throw new Error('User not found')
       var user = result.value
@@ -139,7 +139,7 @@ exports.edit = function(req,res){
  */
 exports.remove = function(req,res){
   var userKey = req.body.id
-  couchStretchFS.removeAsync(userKey)
+  cb.removeAsync(userKey)
     .then(function(){
       req.flash('success','User removed successfully')
       res.redirect('/user/list')

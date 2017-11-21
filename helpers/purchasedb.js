@@ -12,7 +12,7 @@ var couchbase = require('./couchbase')
 var config = require('../config')
 
 //open some buckets
-var couchPurchase = couchbase.purchase()
+var cb = couchbase.stretchfs()
 
 
 /**
@@ -32,7 +32,7 @@ var couchWrap = function(token){
   var year = +token.slice(1,5)
   if(year !== now.getFullYear() && year !== (now.getFullYear() -1))
     return null
-  return couchPurchase
+  return cb
 }
 
 

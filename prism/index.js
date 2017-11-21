@@ -11,7 +11,7 @@ var heartbeat
 var prismKey = couch.schema.prism(config.prism.name)
 
 //open couch buckets
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(infant)
@@ -40,7 +40,7 @@ if(require.main === module){
         }
       })
       if(!config.prism.ghost){
-        couchStretch.getAsync(prismKey)
+        cb.getAsync(prismKey)
           .then(
             //if we exist lets mark ourselves available
             function(result){
@@ -52,13 +52,13 @@ if(require.main === module){
               if(doc.roles.indexOf('active') < 0) doc.roles.push('active')
               if(doc.roles.indexOf('online') < 0) doc.roles.push('online')
               doc.updatedAt = new Date().toJSON()
-              return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
+              return cb.upsertAsync(prismKey,doc,{cas: result.cas})
             },
             //if we dont exist lets make sure thats why and create ourselves
             function(err){
               if(!err || !err.code || 13 !== err.code) throw err
               //now register ourselves or mark ourselves available
-              return couchStretch.upsertAsync(prismKey,{
+              return cb.upsertAsync(prismKey,{
                 name: config.prism.name,
                 host: config.prism.host || '127.0.0.1',
                 port: config.prism.port,
@@ -95,7 +95,7 @@ if(require.main === module){
       logger.log('info','Beginning prism shutdown')
       if(!config.prism.ghost){
         //mark ourselves as down
-        couchStretch.getAsync(prismKey)
+        cb.getAsync(prismKey)
           .then(function(result){
             var doc = result.value
             var activeIndex = doc.roles.indexOf('active')
@@ -106,7 +106,7 @@ if(require.main === module){
             if(onlineIndex >= 0){
               doc.roles.splice(onlineIndex,1)
             }
-            return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
+            return cb.upsertAsync(prismKey,doc,{cas: result.cas})
           })
           .then(function(){
             couch.disconnect()

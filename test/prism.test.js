@@ -5,12 +5,18 @@ var infant = require('infant')
 var request = require('request')
 
 var api = require('../helpers/api')
+var couch = require('../helpers/couchbase')
 
 var config = require('../config')
 
 //make some promises
 P.promisifyAll(infant)
 P.promisifyAll(request)
+
+//open some buckets
+var cb = couch.stretchfs()
+
+var prismKey = couch.schema.prism(config.prism.name)
 
 var user = {
   session: {},
@@ -31,6 +37,10 @@ describe('prism',function(){
   //remove user and stop services
   after(function(){
     return prismServer.stopAsync()
+      .then(function(){
+        //remove peer record
+        return cb.removeAsync(prismKey)
+      })
   })
   //home page
   describe('prism:basic',function(){

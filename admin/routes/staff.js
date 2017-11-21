@@ -9,7 +9,7 @@ var couch = require('../../helpers/couchbase')
 P.promisifyAll(bcrypt)
 
 //open buckets
-var couchStretchFS = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -21,8 +21,8 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  list.listQuery(couch,couchStretchFS,couch.type.STRETCHFS,
-    couch.schema.stretchfsStaff(search),'name',true,start,limit)
+  list.listQuery(couch,cb,couch.type.STRETCHFS,
+    couch.schema.staff(search),'name',true,start,limit)
     .then(function(result){
       res.render('staff/list',{
         page: list.pagination(start,result.count,limit),
@@ -45,7 +45,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(staffKey){
-      return couchStretchFS.removeAsync(staffKey)
+      return cb.removeAsync(staffKey)
     })
     .then(function(){
       req.flash('success','Staff removed successfully')
@@ -71,7 +71,7 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var staffKey = req.query.id
-  couchStretchFS.getAsync(staffKey)
+  cb.getAsync(staffKey)
     .then(function(result){
       result.value._id = staffKey
       res.render('staff/edit',{staff: result.value})
@@ -94,9 +94,9 @@ exports.save = function(req,res){
   var timestamp = new Date().toJSON()
   P.try(function(){
     if(staffKey){
-      return couchStretchFS.getAsync(staffKey)
+      return cb.getAsync(staffKey)
     } else {
-      staffKey = couch.schema.stretchfsStaff(req.body.staffEmail)
+      staffKey = couch.schema.staff(req.body.staffEmail)
       return {value: {createdAt: timestamp}, cas: null}
     }
   })
@@ -128,7 +128,7 @@ exports.save = function(req,res){
         return P.try(function(){return false})
       } else {
         doc.updatedAt = timestamp
-        return couchStretchFS.upsertAsync(staffKey,doc,{cas: result.cas})
+        return cb.upsertAsync(staffKey,doc,{cas: result.cas})
       }
     })
     .then(function(updated){
@@ -168,9 +168,9 @@ exports.login = function(req,res){
  * @param {object} res
  */
 exports.loginAction = function(req,res){
-  var staffKey = couch.schema.stretchfsStaff(req.body.email)
+  var staffKey = couch.schema.staff(req.body.email)
   var staff = {}
-  couchStretchFS.getAsync(staffKey)
+  cb.getAsync(staffKey)
     .then(function(result){
       staff = result
       if(!staff) throw new Error('Invalid login')
@@ -180,7 +180,7 @@ exports.loginAction = function(req,res){
       if(!match){
         staff.value.lastFailedLogin = new Date().toJSON()
         staff.value.failedLoginCount = (+staff.value.failedLoginCount || 0) + 1
-        return couchStretchFS.upsertAsync(staffKey,staff.value,{cas: staff.cas})
+        return cb.upsertAsync(staffKey,staff.value,{cas: staff.cas})
           .then(function(){
             throw new Error('Invalid login')
           })
@@ -190,7 +190,7 @@ exports.loginAction = function(req,res){
       //otherwise we are valid start the session
       req.session.staff = staff.value
       staff.value.lastLogin = new Date().toJSON()
-      return couchStretchFS.upsertAsync(staffKey,staff.value,{cas: staff.cas})
+      return cb.upsertAsync(staffKey,staff.value,{cas: staff.cas})
     })
     .then(function(){
       res.redirect('/')

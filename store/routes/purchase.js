@@ -6,7 +6,7 @@ var logger = require('../../helpers/logger')
 var config = require('../../config')
 
 //open couch buckets
-var couchInventory = couch.inventory()
+var cb = couch.stretchfs()
 
 
 /**
@@ -23,7 +23,7 @@ exports.uri = function(req,res){
       .then(function(result){
         purchase = result
         //get inventory
-        return couchInventory.getAsync(couch.schema.inventory(
+        return cb.getAsync(couch.schema.inventory(
           purchase.hash,
           config.store.name
         ))

@@ -8,7 +8,7 @@ var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 
 //open couch buckets
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -26,7 +26,7 @@ exports.storeList = function(search){
     ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   storeKey = storeKey + '%'
-  return couchStretch.queryAsync(query,[storeKey])
+  return cb.queryAsync(query,[storeKey])
     .then(function(result){
       debug(storeKey,'got store list result',result)
       return result
@@ -69,7 +69,7 @@ exports.populateStores = function(storeList){
   })
     .map(function(row){
       var storeKey = couch.schema.store(row)
-      return couchStretch.getAsync(storeKey)
+      return cb.getAsync(storeKey)
         .then(function(result){
           return result.value
         })

@@ -10,7 +10,7 @@ module.exports = {
   group: 'group2',
   root: __dirname + '/data/test/prism2',
   redis: {
-    db: 1
+    stretchfs: 1
   },
   store: {
     enabled: false,

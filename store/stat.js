@@ -14,9 +14,7 @@ var storeKey = couch.schema.store(config.store.name)
 var syncInterval
 
 //open some buckets
-var couchInventory = couch.inventory()
-var couchStretch = couch.stretchfs()
-var couchPurchase = couch.purchase()
+var cb = couch.stretchfs()
 
 
 /**
@@ -29,14 +27,14 @@ var couchPurchase = couch.purchase()
 var updateInventoryStat = function(hash,hitCount,byteCount){
   var storeName = config.store.name
   var inventoryKey = couch.schema.inventory(hash)
-  return couchInventory.getAsync(inventoryKey)
+  return cb.getAsync(inventoryKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
       result.value.hits[storeName] = result.value.hits[storeName] + hitCount
       result.value.bytes[storeName] = result.value.bytes[storeName] + byteCount
       result.value.lastUpdated = new Date().toJSON()
-      return couchInventory.upsertAsync(
+      return cb.upsertAsync(
         inventoryKey,result.value,{cas: result.cas})
     })
     .catch(function(err){
@@ -55,14 +53,14 @@ var updateInventoryStat = function(hash,hitCount,byteCount){
  */
 var updatePurchaseStat = function(token,hitCount,byteCount){
   var purchaseKey = couch.schema.purchase(token)
-  return couchPurchase.getAsync(purchaseKey)
+  return cb.getAsync(purchaseKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
       result.value.hits[storeName] = result.value.hits[storeName] + hitCount
       result.value.bytes[storeName] = result.value.bytes[storeName] + byteCount
       result.value.lastUpdated = new Date().toJSON()
-      return couchPurchase.upsertAsync(
+      return cb.upsertAsync(
         purchaseKey,result.value,{cas: result.cas})
     })
     .catch(function(err){
@@ -79,7 +77,7 @@ var updatePurchaseStat = function(token,hitCount,byteCount){
  * @return {P}
  */
 var updatePeerStat = function(diskUsage,slotUsage){
-  return couchStretch.getAsync(storeKey)
+  return cb.getAsync(storeKey)
     .then(function(result){
       result.value.usage = {
         free: diskUsage.free,
@@ -89,7 +87,7 @@ var updatePeerStat = function(diskUsage,slotUsage){
         count: slotUsage.length,
         list: slotUsage
       }
-      return couchStretch.upsertAsync(storeKey,result.value,{cas: result.cas})
+      return cb.upsertAsync(storeKey,result.value,{cas: result.cas})
     })
     .catch(function(err){
       if(12 !== err.code) throw err

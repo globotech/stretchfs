@@ -10,7 +10,7 @@ module.exports = {
   group: 'group1',
   root: __dirname + '/data/test/store2',
   redis: {
-    db: 3
+    stretchfs: 3
   },
   store: {
     enabled: true,

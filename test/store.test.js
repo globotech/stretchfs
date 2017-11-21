@@ -11,6 +11,7 @@ var rmfr = require('rmfr')
 var hashStream = require('sha1-stream')
 
 var api = require('../helpers/api')
+var couch = require('../helpers/couchbase')
 var purchasedb = require('../helpers/purchasedb')
 
 var content = stretchfs.mock.content
@@ -29,6 +30,11 @@ var makeEnv = function(configFile){
 P.promisifyAll(fs)
 P.promisifyAll(infant)
 
+//open some buckets
+var cb = couch.stretchfs()
+
+var storeKey = couch.schema.store(config.store.name)
+
 describe('store',function(){
   this.timeout(30000)
   var storeServer = infant.parent('../store',{
@@ -46,6 +52,10 @@ describe('store',function(){
   //remove user and stop services
   after(function(){
     return storeServer.stopAsync()
+      .then(function(){
+        //remove the store record
+        return cb.removeAsync(storeKey)
+      })
   })
   describe('basic',function(){
     //home page

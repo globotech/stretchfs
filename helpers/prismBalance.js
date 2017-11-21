@@ -6,8 +6,7 @@ var couch = require('./couchbase')
 var redis = require('../helpers/redis')()
 
 //open couch buckets
-var couchInventory = couch.inventory()
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -27,7 +26,7 @@ exports.peerList = function(){
         ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       prismKey = prismKey + '%'
-      return couchStretch.queryAsync(query,[prismKey])
+      return cb.queryAsync(query,[prismKey])
         .then(function(result){
           return result
         })
@@ -43,7 +42,7 @@ exports.peerList = function(){
         ' WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       storeKey = storeKey + '%'
-      return couchStretch.queryAsync(query,[storeKey])
+      return cb.queryAsync(query,[storeKey])
         .then(function(result){
           return result
         })
@@ -77,7 +76,7 @@ exports.prismList = function(){
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   prismKey = prismKey + '%'
-  return couchStretch.queryAsync(query,[prismKey])
+  return cb.queryAsync(query,[prismKey])
     .then(function(result){
       return result
     })
@@ -155,7 +154,7 @@ exports.contentExists = function(hash){
   redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
   var existsKey = couch.schema.inventory(hash)
   debug(existsKey,'contentExists received')
-  return couchInventory.getAsync(existsKey)
+  return cb.getAsync(existsKey)
     .then(function(result){
       result.value.exists = true
       result.value.copies = parseInt(result.value.copies)

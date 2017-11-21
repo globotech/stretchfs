@@ -23,8 +23,7 @@ var rootFolder = path.resolve(config.root)
 var contentFolder = path.resolve(rootFolder + '/content')
 
 //open couch buckets
-var couchInventory = couch.inventory()
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(fs)
@@ -91,7 +90,7 @@ exports.put = function(req,res){
       logger.log('error', 'Failed to upload content ' + err.message)
       logger.log('error', err.stack)
       fs.unlinkSync(dest)
-      return couchInventory.removeAsync(inventoryKey)
+      return cb.removeAsync(inventoryKey)
         .then(function(){
           redis.incr(redis.schema.counterError('store','content:put'))
           res.status(500)
@@ -218,7 +217,7 @@ exports.send = function(req,res){
   var storeClient = null
   var store = {}
   var fileDetail = {}
-  couchStretch.getAsync(storeKey)
+  cb.getAsync(storeKey)
     .then(
       function(result){
         store = result.value
@@ -395,7 +394,7 @@ exports.static = function(req,res){
   debug('STATIC','got file static request',hash)
   var inventoryKey = couch.schema.inventory(hash)
   debug('STATIC','checking for inventory',inventoryKey)
-  couchInventory.getAsync(inventoryKey)
+  cb.getAsync(inventoryKey)
     .then(function(result){
       var inventory = result.value
       debug('STATIC','got file inventory, sending content',inventory)
@@ -447,7 +446,7 @@ exports.play = function(req,res){
         debug('PLAY','got purchase result',token,result)
         purchase = result
         //get inventory
-        return couchInventory.getAsync(couch.schema.inventory(purchase.hash))
+        return cb.getAsync(couch.schema.inventory(purchase.hash))
       },
       //purchase not found
       function(err){

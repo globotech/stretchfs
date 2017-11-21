@@ -9,8 +9,7 @@ var promiseWhile = require('../../helpers/promiseWhile')
 var config = require('../../config')
 
 //open some buckets
-var couchInventory = couch.inventory()
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 //balance lock
 var balanceInterval
@@ -53,14 +52,14 @@ var copyCondition = {
  */
 var listSingles = function(limit){
   debug('listing imbalanced inventory')
-  var tname = couch.getName(couch.type.INVENTORY,true)
+  var tname = couch.getName(couch.type.STRETCHFS,true)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND copies < 2 ' +
     ' LIMIT ' + (limit || 5000)
   var query = couch.N1Query.fromString(qstring)
   query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   var inventoryKey = '%:%'
-  return couchInventory.queryAsync(query,[inventoryKey])
+  return cb.queryAsync(query,[inventoryKey])
     .then(function(result){
       debug('list singles complete',result.length)
       return result
@@ -75,14 +74,14 @@ var listSingles = function(limit){
  */
 var listImbalanced = function(limit){
   debug('listing imbalanced inventory')
-  var tname = couch.getName(couch.type.INVENTORY,true)
+  var tname = couch.getName(couch.type.STRETCHFS,true)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND desiredCopies <> copies' +
     ' LIMIT ' + (limit || 10000)
   var query = couch.N1Query.fromString(qstring)
   query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   var inventoryKey = '%:%'
-  return couchInventory.queryAsync(query,[inventoryKey])
+  return cb.queryAsync(query,[inventoryKey])
     .then(function(result){
       debug('list imbalanced complete',result)
       return result
@@ -97,14 +96,14 @@ var listImbalanced = function(limit){
  */
 var listHot = function(limit){
   debug('listing hot inventory needing cache copies')
-  var tname = couch.getName(couch.type.INVENTORY,true)
+  var tname = couch.getName(couch.type.STRETCHFS,true)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND copies - cacheCopies < 0' +
     ' LIMIT ' + (limit || 250)
   var query = couch.N1Query.fromString(qstring)
   query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   var inventoryKey = '%:%'
-  return couchInventory.queryAsync(query,[inventoryKey])
+  return cb.queryAsync(query,[inventoryKey])
     .then(function(result){
       debug('list hot complete',result)
       return result
@@ -119,7 +118,7 @@ var listHot = function(limit){
  */
 var listGeneral = function(limit){
   debug('listing general inventory')
-  var tname = couch.getName(couch.type.INVENTORY,true)
+  var tname = couch.getName(couch.type.STRETCHFS,true)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND ' +
     ' (lastBalancedAt IS NULL OR lastBalancedAt < $2) ' +
@@ -130,7 +129,7 @@ var listGeneral = function(limit){
   var lastBalancedKey = new Date(
     (+new Date() - config.inventory.balance.expiration)
   )
-  return couchInventory.queryAsync(query,[inventoryKey,lastBalancedKey])
+  return cb.queryAsync(query,[inventoryKey,lastBalancedKey])
     .then(function(result){
       debug('list imbalanced complete',result)
       return result
@@ -156,7 +155,7 @@ var addCopy = function(inventory,type,condition){
       return storeBalance.winner(storeList,skip)
         .then(function(result){
           storeTo = result
-          copyKey = couch.schema.inventoryCopy(inventory.hash,storeTo.name)
+          copyKey = couch.schema.inventoryTask(inventory.hash,storeTo.name)
           var copy = {
             hash: inventory.hash,
             storeFrom: null,
@@ -164,7 +163,7 @@ var addCopy = function(inventory,type,condition){
             action: 'copy',
             status: 'queued'
           }
-          return couchStretch.upsertAsync(copyKey,copy,{cas: null})
+          return cb.upsertAsync(copyKey,copy,{cas: null})
         })
         .then(function(){
           //update desired map
@@ -204,7 +203,7 @@ var removeCopy = function(inventory,type,condition){
       return storeBalance.winnerFromExists(inventory.hash,inventory,[],true)
         .then(function(result){
           storeFrom = result
-          copyKey = couch.schema.inventoryCopy(inventory.hash,storeFrom.name)
+          copyKey = couch.schema.inventoryTask(inventory.hash,storeFrom.name)
           var copy = {
             hash: inventory.hash,
             storeFrom: storeFrom,
@@ -212,7 +211,7 @@ var removeCopy = function(inventory,type,condition){
             action: 'remove',
             status: 'queued'
           }
-          return couchStretch.upsertAsync(copyKey,copy,{cas: null})
+          return cb.upsertAsync(copyKey,copy,{cas: null})
         })
         .then(function(){
           //update desired map
@@ -339,10 +338,10 @@ var balanceRecord = function(inventory){
       inventory = result
       var inventoryKey = couch.schema.inventory(inventory.hash)
       //get a fresh copy of inventory for saving
-      return couchInventory.getAsync(inventoryKey)
+      return cb.getAsync(inventoryKey)
     })
     .then(function(result){
-      return couchInventory.upsertAsync(
+      return cb.upsertAsync(
         inventoryKey,inventory,{cas: result.cas})
     })
 }

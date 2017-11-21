@@ -59,10 +59,7 @@ CouchSchema.prototype.applyPrefix = function(key){
  * @return {string}
  */
 CouchSchema.prototype.prism = function(name){
-  return this.applyPrefix(
-    this.PEER_TYPES.prism + ':' +
-    (name || '')
-  )
+  return this.applyPrefix(this.PEER_TYPES.prism + ':' + (name ? name : ''))
 }
 
 
@@ -94,7 +91,7 @@ CouchSchema.prototype.downVote = function(castee,caster){
  * @return {string}
  */
 CouchSchema.prototype.purchase = function(token){
-  return this.applyPrefix(token || '')
+  return this.applyPrefix('purchase:' + token || '')
 }
 
 
@@ -105,7 +102,7 @@ CouchSchema.prototype.purchase = function(token){
  * @return {string}
  */
 CouchSchema.prototype.inventory = function(hash,store){
-  return this.applyPrefix(
+  return this.applyPrefix('inventory:' +
     (hash || '') +
     (store ? ':' + store : '')
   )
@@ -118,8 +115,8 @@ CouchSchema.prototype.inventory = function(hash,store){
  * @param {string} store
  * @return {string}
  */
-CouchSchema.prototype.inventoryCopy = function(hash,store){
-  return this.applyPrefix('copy:' +
+CouchSchema.prototype.inventoryTask = function(hash,store){
+  return this.applyPrefix('inventoryTask:' +
     (hash || '') +
     (store ? ':' + store : '')
   )
@@ -141,7 +138,7 @@ CouchSchema.prototype.job = function(handle){
  * @param {string} name
  * @return {string}
  */
-CouchSchema.prototype.stretchfsUser = function(name){
+CouchSchema.prototype.user = function(name){
   return this.applyPrefix('user:' + (name || ''))
 }
 
@@ -151,8 +148,8 @@ CouchSchema.prototype.stretchfsUser = function(name){
  * @param {string} token
  * @return {string}
  */
-CouchSchema.prototype.stretchfsToken = function(token){
-  return this.applyPrefix('token:' + (token || ''))
+CouchSchema.prototype.userToken = function(token){
+  return this.applyPrefix('userToken:' + (token || ''))
 }
 
 
@@ -161,7 +158,7 @@ CouchSchema.prototype.stretchfsToken = function(token){
  * @param {string} name
  * @return {string}
  */
-CouchSchema.prototype.stretchfsStaff = function(name){
+CouchSchema.prototype.staff = function(name){
   return this.applyPrefix('staff:' + (name || ''))
 }
 

@@ -29,5 +29,5 @@ before_script:
   - curl -X POST http://127.0.0.1:8091/settings/web -d "username=Administrator&password=password&port=8091&"
   # Init couchbase
   - sleep 3
-  - DEBUG=stretchfs:couchbase node admin/bin/cbSetup.js
-  - DEBUG=stretchfs:couchbase node admin/bin/userCreate.js localhost bigpassword
+  - DEBUG=stretchfs:couchbase node bin/cbSetup.js
+  - DEBUG=stretchfs:couchbase node bin/userCreate.js localhost bigpassword

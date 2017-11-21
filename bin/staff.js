@@ -4,17 +4,17 @@ var P = require('bluebird')
 var Table = require('cli-table')
 var program = require('commander')
 
-var logger = require('../../helpers/logger')
+var logger = require('../helpers/logger')
 
-var couch = require('../../helpers/couchbase')
+var couch = require('../helpers/couchbase')
 
 //make some promises
 P.promisifyAll(bcrypt)
 
 //open some buckets
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
-var config = require('../../config')
+var config = require('../config')
 
 //create
 program
@@ -28,7 +28,7 @@ program
       logger.log('info','Creating staff member')
       if(!opts.email || !opts.password)
         throw new Error('Email and password are required')
-      var staffKey = couch.schema.stretchfsStaff(opts.email)
+      var staffKey = couch.schema.staff(opts.email)
       var doc = {
         email: opts.email,
         password: bcrypt.hashSync(
@@ -37,7 +37,7 @@ program
         active: true,
         createdAt: new Date().toJSON()
       }
-      return couchStretch.upsertAsync(staffKey,doc)
+      return cb.upsertAsync(staffKey,doc)
     })
       .then(function(){
         logger.log('info','Staff member created!')
@@ -58,8 +58,8 @@ program
   .description('Update existing staff member')
   .action(function(opts){
     if(!opts.email) throw new Error('Email is required')
-    var staffKey = couch.schema.stretchfsStaff(opts.email)
-    couchStretch.getAsync(staffKey)
+    var staffKey = couch.schema.staff(opts.email)
+    cb.getAsync(staffKey)
       .then(function(result){
         var doc = result.value
         if(opts.newEmail) doc.email = opts.newEmail
@@ -70,7 +70,7 @@ program
         }
         if(opts.name) doc.name = opts.name
         doc.updatedAt = new Date().toJSON()
-        return couchStretch.upsertAsync(staffKey,doc,{cas: result.cas})
+        return cb.upsertAsync(staffKey,doc,{cas: result.cas})
       })
       .then(function(){
         logger.log('info','Staff member updated successfully!')
@@ -87,8 +87,8 @@ program
   .description('Remove staff member')
   .action(function(opts){
     if(!opts.email) throw new Error('Email is required... exiting')
-    var staffKey = couch.schema.stretchfsStaff(opts.email)
-    couchStretch.removeAsync(staffKey)
+    var staffKey = couch.schema.staff(opts.email)
+    cb.removeAsync(staffKey)
       .then(function(){
         logger.log('info','Staff member removed successfully!')
         process.exit()
@@ -112,8 +112,8 @@ program
       head: ['Email','Name','Active']
     })
     var staffCount = 0
-    var staffKey = couch.schema.stretchfsStaff() + '%'
-    return couchStretch.queryAsync(query,[staffKey])
+    var staffKey = couch.schema.staff() + '%'
+    return cb.queryAsync(query,[staffKey])
       .each(function(row){
         staffCount++
         table.push([row.email,row.name,row.active ? 'Yes' : 'No'])

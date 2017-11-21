@@ -12,7 +12,7 @@ var config = require('../config')
 var auth = basicAuth(config.prism.username,config.prism.password)
 
 //open couch buckets
-var couchStretchFS = couch.stretchfs()
+var cb = couch.stretchfs()
 
 //make some promises
 P.promisifyAll(request)
@@ -29,7 +29,7 @@ module.exports = function(req,res,next){
   var token = req.get(config.api.sessionTokenName) || ''
   debug('got token',token)
   //setup the token key
-  var tokenKey = couch.schema.stretchfsToken(token)
+  var tokenKey = couch.schema.userToken(token)
   debug('got token key',tokenKey)
   var session = {}
   //without a token lets try basic auth since it can override
@@ -38,7 +38,7 @@ module.exports = function(req,res,next){
     auth(req,res,next)
   } else {
     redis.incr(redis.schema.counter('prism','userSessionValidate:full'))
-    couchStretchFS.getAsync(tokenKey)
+    cb.getAsync(tokenKey)
       .then(function(result){
         session = result.value
         redis.incr(redis.schema.counter('prism','userSession:' + session.token))

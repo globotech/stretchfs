@@ -45,15 +45,23 @@ var cluster = connectCouchbase(config.couch)
 var client = {
   cluster: cluster,
   type: {
-    INVENTORY: 'inventory',
-    STRETCHFS: 'stretchfs',
-    PURCHASE: 'purchase'
+    STRETCHFS: 'stretchfs'
   },
   initBucket: {
-    inventory: function(manager){
+    stretchfs: function(manager){
       return manager.createPrimaryIndexAsync({
-        name: 'inventoryPrimary', ignoreIfExists: true
+        name: 'stretchfsPrimary', ignoreIfExists: true
       })
+        .then(function(){
+          return manager.createIndexAsync(
+            'jobAssign',['category','priority','status'],{ignoreIfExists: true})
+        })
+        .then(function(){
+          return manager.createIndexAsync(
+            'jobWorker',
+            ['category','priority','status','workerKey','workerName'],
+            {ignoreIfExists: true})
+        })
         .then(function(){
           return manager.createIndexAsync(
             'inventorySizeType',['mimeType','size'],{ignoreIfExists: true}
@@ -69,26 +77,6 @@ var client = {
             'inventoryMap',['map','desiredMap'],{ignoreIfExists: true}
           )
         })
-    },
-    stretchfs: function(manager){
-      return manager.createPrimaryIndexAsync({
-        name: 'stretchfsPrimary', ignoreIfExists: true
-      })
-        .then(function(){
-          return manager.createIndexAsync(
-            'jobAssign',['category','priority','status'],{ignoreIfExists: true})
-        })
-        .then(function(){
-          return manager.createIndexAsync(
-            'jobWorker',
-            ['category','priority','status','workerKey','workerName'],
-            {ignoreIfExists: true})
-        })
-    },
-    purchase: function(manager){
-      return manager.createPrimaryIndexAsync({
-        name: 'purchasePrimary', ignoreIfExists: true
-      })
     }
   }
 }
@@ -288,18 +276,6 @@ client.createUser = function(username,password,roles){
 
 
 /**
- * Setup the Inventory DB
- * @return {Object}
- */
-client.inventory = function(){
-  return client.openBucket(
-    config.couch.bucket.inventory.name,
-    config.couch.bucket.inventory.secret
-  )
-}
-
-
-/**
  * Setup the StretchFS DB
  * @return {Object}
  */
@@ -307,18 +283,6 @@ client.stretchfs = function(){
   return client.openBucket(
     config.couch.bucket.stretchfs.name,
     config.couch.bucket.stretchfs.secret
-  )
-}
-
-
-/**
- * Setup the Purchase DB
- * @return {Object}
- */
-client.purchase = function(){
-  return client.openBucket(
-    config.couch.bucket.purchase.name,
-    config.couch.bucket.purchase.secret
   )
 }
 

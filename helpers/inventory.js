@@ -13,7 +13,7 @@ var logger = require('./logger')
 var config = require('../config')
 
 //open couch buckets
-var couchInventory = couch.inventory()
+var cb = couch.stretchfs()
 
 
 /**
@@ -45,7 +45,7 @@ exports.createMasterInventory = function(hash,extension){
     createdAt: new Date().toJSON(),
     updatedAt: new Date().toJSON()
   }
-  return couchInventory.upsertAsync(inventoryKey,inventory,{cas: null})
+  return cb.upsertAsync(inventoryKey,inventory,{cas: null})
 }
 
 
@@ -59,7 +59,7 @@ exports.createStoreInventory = function(fileDetail,verified){
   if('undefined' === typeof verified) verified = false
   var inventoryKey = couch.schema.inventory(fileDetail.hash)
   var inventory = {value: {}, cas: null}
-  return couchInventory.getAsync(inventoryKey)
+  return cb.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result
@@ -117,7 +117,7 @@ exports.createStoreInventory = function(fileDetail,verified){
         inventory.value.verified = true
         inventory.value.verifiedAt = new Date().toJSON()
       }
-      return couchInventory.upsertAsync(
+      return cb.upsertAsync(
         inventoryKey,inventory.value,{cas: inventory.cas})
     })
     .then(function(){
@@ -171,7 +171,7 @@ exports.updateStoreInventory = function(
     )
   }
   inventory.value.updatedAt = new Date().toJSON()
-  return couchInventory.upsertAsync(
+  return cb.upsertAsync(
     inventoryKey,inventory.value,{cas: inventory.cas})
     .then(function(){
       inventory._id = inventoryKey
@@ -198,7 +198,7 @@ exports.verifyFile = function(fileDetail,force){
   var verifySkipped = false
   var verifiedAt = +new Date()
   inventoryKey = couch.schema.inventory(fileDetail.hash)
-  return couchInventory.getAsync(inventoryKey)
+  return cb.getAsync(inventoryKey)
     .then(
       function(result){
         inventory = result.value
@@ -224,7 +224,7 @@ exports.verifyFile = function(fileDetail,force){
     .then(function(){
       //validate the file, if it doesnt match remove it
       if(!fileDetail.exists){
-        return couchInventory.removeAsync(inventoryKey)
+        return cb.removeAsync(inventoryKey)
           .catch(function(err){
             if(!err || !err.code || 13 !== err.code){
               logger.log('error',
@@ -238,12 +238,12 @@ exports.verifyFile = function(fileDetail,force){
       } else if(!verifySkipped && sniffStream.hash !== fileDetail.hash){
         return hashFile.remove(fileDetail.hash)
           .then(function(){
-            return couchInventory.removeAsync(inventoryKey)
+            return cb.removeAsync(inventoryKey)
           })
           .catch(function(){})
       } else if(!verifySkipped) {
         //here we should get the inventory record, update it or create it
-        return couchInventory.getAsync(inventoryKey)
+        return cb.getAsync(inventoryKey)
           .then(
             function(result){
               return exports.updateStoreInventory(
@@ -326,7 +326,7 @@ exports.detailStore = function(hash){
     }
   }
   var inventoryKey = couch.schema.inventory(hash,config.store.name)
-  return couchInventory.getAsync(inventoryKey)
+  return cb.getAsync(inventoryKey)
     .then(function(result){
       var record = result.value
       if(!record) throw new Error('File not found')
@@ -354,7 +354,7 @@ exports.detailStore = function(hash){
 exports.removeStoreInventory = function(hash){
   var inventoryKey = couch.schema.inventory(hash)
   var inventory = {}
-  return couchInventory.getAsync(inventoryKey)
+  return cb.getAsync(inventoryKey)
     .then(function(result){
       inventory = result
       //remove the file
@@ -371,7 +371,7 @@ exports.removeStoreInventory = function(hash){
       if(0 === inventory.value.copies){
         if(!config.inventory.keepDeadRecords){
           //if there are no more copies remove the master
-          return couchInventory.removeAsync(inventoryKey)
+          return cb.removeAsync(inventoryKey)
         } else {
           //keep a ghost record of the old inventory
           inventory.value.map = []
@@ -379,12 +379,12 @@ exports.removeStoreInventory = function(hash){
           inventory.value.verified = false
           inventory.value.verifiedAt = null
           inventory.value.removedAt = new Date().toJSON()
-          return couchInventory.upsertAsync(
+          return cb.upsertAsync(
             inventoryKey,inventory.value,{cas: inventory.cas})
         }
       } else {
         //update inventory record
-        return couchInventory.upsertAsync(
+        return cb.upsertAsync(
           inventoryKey,inventory.value,{cas: inventory.cas})
       }
     })

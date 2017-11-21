@@ -7,13 +7,12 @@ var couch = require('../../helpers/couchbase')
 var isArray = Array.isArray
 
 //open couch buckets
-var couchInventory = couch.inventory()
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 inv.setup({
   couchbase: couch,
-  bucket: couchInventory,
-  bucketType: couch.type.INVENTORY
+  bucket: cb,
+  bucketType: couch.type.STRETCHFS
 })
 
 /**
@@ -48,7 +47,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(inventoryKey){
-      return couchInventory.removeAsync(inventoryKey)
+      return cb.removeAsync(inventoryKey)
     })
     .then(function(){
       req.flash('success','Inventory item(s) removed successfully')
@@ -63,7 +62,7 @@ exports.listAction = function(req,res){
  * @param {object} res
  */
 exports.create = function(req,res){
-  list.listQuery(couch,couchStretch,couch.type.STRETCHFS,
+  list.listQuery(couch,cb,couch.type.STRETCHFS,
     couch.schema.store(),'name',true)
     .then(function(result){
       res.render('inventory/create',{stores:result.rows})
@@ -116,7 +115,7 @@ exports.edit = function(req,res){
  */
 exports.editIndividual = function(req,res){
   var inventoryKey = req.query.id
-  couchInventory.getAsync(inventoryKey)
+  cb.getAsync(inventoryKey)
     .then(function(result){
       result.value.id = inventoryKey
       result.value.hash = inventoryKey.split(':')[0]
@@ -140,7 +139,7 @@ exports.save = function(req,res){
   P.try(function(){
     console.log('inv/save '+inventoryKey+' form:',form)
     if(inventoryKey){
-      return couchInventory.getAsync(inventoryKey)
+      return cb.getAsync(inventoryKey)
     } else {
       inventoryKey = couch.schema.inventory(form.hash)
       return {value: {createdAt: timestamp}, cas: null}
@@ -202,7 +201,7 @@ exports.save = function(req,res){
         return P.try(function(){return false})
       } else {
         doc.updatedAt = timestamp
-        return couchInventory.upsertAsync(inventoryKey,doc,{cas: result.cas})
+        return cb.upsertAsync(inventoryKey,doc,{cas: result.cas})
       }
     })
     .then(function(updated){

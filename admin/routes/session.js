@@ -5,7 +5,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchStretchFS = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -17,8 +17,8 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  list.listQuery(couch,couchStretchFS,couch.type.STRETCHFS,
-    couch.schema.stretchfsToken(search),'token',true,start,limit)
+  list.listQuery(couch,cb,couch.type.STRETCHFS,
+    couch.schema.userToken(search),'token',true,start,limit)
     .then(function(result){
       res.render('session/list',{
         page: list.pagination(start,result.count,limit),
@@ -41,7 +41,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(sessionKey){
-      return couchStretchFS.removeAsync(sessionKey)
+      return cb.removeAsync(sessionKey)
     })
     .then(function(){
       req.flash('success','Session(s) removed successfully')

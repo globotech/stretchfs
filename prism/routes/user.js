@@ -8,7 +8,7 @@ var couch = require('../../helpers/couchbase')
 var redis = require('../../helpers/redis')()
 
 //open couch buckets
-var couchStretchFS = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 //make some promises
@@ -32,7 +32,7 @@ exports.login = function(req,res){
   var tokenKey = ''
   var name = req.body.name || req.body.username || ''
   var secret = req.body.secret || req.body.password || ''
-  var userKey = couch.schema.stretchfsUser(name)
+  var userKey = couch.schema.user(name)
   P.try(function(){
     //make a login request to couch db
     if(!name || !secret){
@@ -42,7 +42,7 @@ exports.login = function(req,res){
     if('temporary' !== tokenType && 'permanent' !== tokenType){
       throw new Error('Invalid token type request')
     }
-    return couchStretchFS.getAsync(userKey)
+    return cb.getAsync(userKey)
   })
     .then(function(result){
       user = result
@@ -52,19 +52,19 @@ exports.login = function(req,res){
       if(!match){
         user.value.failedLoginCount = (+user.value.failedLoginCount || 0) + 1
         user.value.lastFailedLogin = new Date().toJSON()
-        return couchStretchFS.upsertAsync(userKey,user.value,{cas: user.cas})
+        return cb.upsertAsync(userKey,user.value,{cas: user.cas})
           .then(function(){
             throw new Error('Invalid name or secret')
           })
       }
       user.value.lastLogin = new Date().toJSON()
       user.value.loginCount = (+user.value.loginCount || 0) + 1
-      return couchStretchFS.upsertAsync(userKey,user.value,{cas: user.cas})
+      return cb.upsertAsync(userKey,user.value,{cas: user.cas})
     })
     .then(function(){
       //generate session token
       token = new Password({length: 16,special: false}).toString()
-      tokenKey = couch.schema.stretchfsToken(token)
+      tokenKey = couch.schema.userToken(token)
       if('temporary' === tokenType){
         //set the token to live for 24 hours
         expiry = 86400
@@ -79,7 +79,7 @@ exports.login = function(req,res){
         data: {}
       }
       //send the session to couchbase
-      return couchStretchFS.upsertAsync(tokenKey,session,{expiry: expiry})
+      return cb.upsertAsync(tokenKey,session,{expiry: expiry})
     })
     .then(function(){
       //return the session to the user
@@ -109,8 +109,8 @@ exports.login = function(req,res){
  */
 exports.logout = function(req,res){
   redis.incr(redis.schema.counter('prism','user:logout'))
-  var tokenKey = couch.schema.stretchfsToken(req.session.token)
-  couchStretchFS.removeAsync(tokenKey)
+  var tokenKey = couch.schema.userToken(req.session.token)
+  cb.removeAsync(tokenKey)
     .then(function(){
       res.json({
         success: 'User logged out',

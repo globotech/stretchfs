@@ -10,8 +10,7 @@ var config = require('../../config')
 var runInterval
 
 //open some buckets
-//var couchInventory = couch.inventory()
-//var couchStretch = couch.stretchfs()
+//var cb = couch.stretchfs()
 
 //number of concurrent jobs
 var allowedJobCount = config.inventory.balance.concurrency || 1

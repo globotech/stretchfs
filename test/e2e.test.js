@@ -43,12 +43,19 @@ describe('e2e',function(){
             e2e.user.session = session
           })
       })
+      it('should logout from prism1',function(){
+        var prism = e2e.clconf.prism1
+        return e2e.prismLogout(prism,e2e.user.session)()
+      })
       it('should login to prism2',function(){
         var prism = e2e.clconf.prism2
         return e2e.prismLogin(prism)()
+          .then(function(session){
+            e2e.user.session = session
+          })
       })
-      it('should logout',function(){
-        var prism = e2e.clconf.prism1
+      it('should logout from prism2',function(){
+        var prism = e2e.clconf.prism2
         return e2e.prismLogout(prism,e2e.user.session)()
       })
     })

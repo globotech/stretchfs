@@ -6,7 +6,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -19,7 +19,7 @@ exports.list = function(req,res){
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
   list.listQuery(
-    couch,couchStretch,couch.type.STRETCHFS,
+    couch,cb,couch.type.STRETCHFS,
     couch.schema.job(search),'handle',true,start,limit
   )
     .then(function(result){
@@ -44,7 +44,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(jobKey){
-      return couchStretch.removeAsync(jobKey)
+      return cb.removeAsync(jobKey)
     })
     .then(function(){
       req.flash('success','Jobs(s) removed successfully')
@@ -70,7 +70,7 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var jobKey = req.query.id
-  couchStretch.getAsync(jobKey)
+  cb.getAsync(jobKey)
     .then(function(result){
       result.value._id = jobKey
       res.render('job/edit',{job: result.value})
@@ -92,7 +92,7 @@ exports.save = function(req,res){
   var doc
   P.try(function(){
     if(jobKey){
-      return couchStretch.getAsync(jobKey)
+      return cb.getAsync(jobKey)
     } else {
       jobKey = couch.schema.job(
         new Password({length: 12, special: false}).toString())
@@ -106,7 +106,7 @@ exports.save = function(req,res){
       if(data.priority) doc.priority = data.priority
       if(data.status) doc.status = data.status
       doc.updatedAt = new Date().toJSON()
-      return couchStretch.upsertAsync(jobKey,doc,{cas: result.cas})
+      return cb.upsertAsync(jobKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flashPug('success','subject-id-action',

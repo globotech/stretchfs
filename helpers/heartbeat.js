@@ -9,7 +9,7 @@ var prismBalance = require('../helpers/prismBalance')
 var logger = require('../helpers/logger')
 
 //open couch buckets (leave these ones open)
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 var config = require('../config')
 
@@ -100,7 +100,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       timestamp: +(new Date())
     }
     myDownVotes[myDownKey] = downVote
-    return couchStretch.upsertAsync(myDownKey,downVote)
+    return cb.upsertAsync(myDownKey,downVote)
   }
   //get down votes that have already been set for this host
   return createDownVote()
@@ -112,7 +112,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
         'SELECT *' + clause.from + clause.where
       )
       downKey = downKey + '%'
-      return couchStretch.queryAsync(query,[downKey])
+      return cb.queryAsync(query,[downKey])
     })
     .then(function(result){
       var count = peerCount
@@ -123,7 +123,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
       if(onlineIndex >= 0){
         peer.roles.splice(onlineIndex,1)
       }
-      return couchStretch.upsertAsync(key,peer)
+      return cb.upsertAsync(key,peer)
         .catch(function(err){
           debug('failed to cast down vote',err)
         })
@@ -181,11 +181,11 @@ var runHeartbeat = function(systemKey,systemType){
   var restorePeer = function(peer){
     logger.log('info', 'Restoring peer ' + peer.name)
 
-    return couchStretch.getAsync(peer._id)
+    return cb.getAsync(peer._id)
       .then(function(result){
         var peer = result.value
         if(-1 === peer.roles.indexOf('online')) peer.roles.push('online')
-        return couchStretch.upsertAsync(peer._id,peer,{cas: result.cas})
+        return cb.upsertAsync(peer._id,peer,{cas: result.cas})
       })
       .then(function(){
         //remove down votes
@@ -199,7 +199,7 @@ var runHeartbeat = function(systemKey,systemType){
         downKey = downKey + '%'
         //remove local downvote
         delete myDownVotes[downKey]
-        return couchStretch.queryAsync(query,[downKey])
+        return cb.queryAsync(query,[downKey])
       })
       .then(function(result){
         debug('deleted ' + result.length + ' records')
@@ -309,12 +309,12 @@ var runVotePrune = function(systemKey,systemType){
     'SELECT *' + clause.from + clause.where
   )
   downVoteKey = downVoteKey + '%'
-  return couchStretch.queryAsync(query,[downVoteKey])
+  return cb.queryAsync(query,[downVoteKey])
     .then(function(result){
       return result
     })
     .map(function(vote){
-      return couchStretch.getAsync(vote.id)
+      return cb.getAsync(vote.id)
         .catch(function(err){
           debug('failed to get vote to prune',err)
           return false
@@ -328,7 +328,7 @@ var runVotePrune = function(systemKey,systemType){
     })
     .map(function(vote){
       debug('Pruning vote',vote._id)
-      return couchStretch.removeAsync(vote._id)
+      return cb.removeAsync(vote._id)
         .catch(function(err){
           debug('failed to destroy vote pruning',err)
         })
@@ -358,14 +358,14 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
   })
   var downKey = couch.schema.downVote(systemKey)
   debug('Getting peer information',key)
-  return couchStretch.getAsync(key)
+  return cb.getAsync(key)
     .then(
       function(result){
         var peer = result.value
         debug('Got peer information back',peer)
         if(-1 === peer.roles.indexOf('online')) peer.roles.push('online')
         if(-1 === peer.roles.indexOf('active')) peer.roles.push('active')
-        return couchStretch.upsertAsync(key,peer,{cas: result.cas})
+        return cb.upsertAsync(key,peer,{cas: result.cas})
           .catch(function(err){
             debug('failed to mark peer up',err)
           })
@@ -384,7 +384,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
         'DELETE' + clause.from + clause.where
       )
       downKey = downKey + '%'
-      return couchStretch.queryAsync(query,[downKey])
+      return cb.queryAsync(query,[downKey])
     })
     .then(function(result){
       debug('deleted ' + result.length + ' records')
@@ -406,7 +406,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
  * @param {function} done
  */
 exports.start = function(systemKey,systemPrism,systemType,done){
-  logger.log('info', 'Setting up to start heartbeat' + ' ' + systemKey +
+  debug('Setting up to start heartbeat' + ' ' + systemKey +
     ' ' + systemType)
   if(!systemKey)
     throw new Error('System key has not been set, heartbeat not started')
@@ -433,10 +433,10 @@ exports.start = function(systemKey,systemPrism,systemType,done){
  * @param {function} done
  */
 exports.stop = function(done){
-  logger.log('info','Stopping heartbeat')
+  debug('Stopping heartbeat')
   if(heartbeatTimeout) clearInterval(heartbeatTimeout)
   if(pruneTimeout) clearInterval(pruneTimeout)
-  logger.log('info','Heartbeat stopped')
+  debug('Heartbeat stopped')
   done()
   process.exit()
 }

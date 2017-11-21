@@ -42,7 +42,7 @@ config.$load({
   redis: {
     host: '127.0.0.1',
     port: 6379,
-    db: 0,
+    stretchfs: 0,
     prefix: 'stretchfs',
     options: {}
   },
@@ -64,16 +64,6 @@ config.$load({
     bucket: {
       stretchfs: {
         name: 'stretchfs',
-        secret: '',
-        ramQuotaMB: 256
-      },
-      inventory: {
-        name: 'stretchfs-inventory',
-        secret: '',
-        ramQuotaMB: 512
-      },
-      purchase: {
-        name: 'stretchfs-purchase',
         secret: '',
         ramQuotaMB: 512
       }

@@ -22,8 +22,9 @@ var UserError = stretchfs.UserError
 var config = require('../../config')
 
 //open couch buckets
-var couchInventory = couch.inventory()
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
+
+var sessionTokens = []
 
 
 /**
@@ -165,42 +166,6 @@ exports.before = function(that){
       return redis.removeKeysPattern(redis.schema.flushKeys())
     })
     .then(function(){
-      var key = couch.schema.inventory()
-      var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.INVENTORY,true) + ' b ' +
-        'WHERE META(b).id LIKE $1'
-      var query = couch.N1Query.fromString(qstring)
-      key = key + '%'
-      return couchInventory.queryAsync(query,[key])
-    })
-    .then(function(){
-      var key = couch.schema.prism()
-      var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) +
-        ' WHERE META().id LIKE $1'
-      var query = couch.N1Query.fromString(qstring)
-      key = key + '%'
-      return couchStretch.queryAsync(query,[key])
-    })
-    .then(function(){
-      var key = couch.schema.store()
-      var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) +
-        ' WHERE META().id LIKE $1'
-      var query = couch.N1Query.fromString(qstring)
-      key = key + '%'
-      return couchStretch.queryAsync(query,[key])
-    })
-    .then(function(){
-      var key = couch.schema.downVote()
-      var qstring = 'DELETE FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) +
-        ' WHERE META().id LIKE $1'
-      var query = couch.N1Query.fromString(qstring)
-      key = key + '%'
-      return couchStretch.queryAsync(query,[key])
-    })
-    .then(function(){
       return P.all([
         exports.server.prism1.startAsync(),
         exports.server.prism2.startAsync(),
@@ -226,7 +191,7 @@ exports.after = function(that){
   logger.log('info','Stopping mock cluster...')
   var clconf = exports.clconf
   var removePeerEntry = function(peerKey){
-    return couchStretch.removeAsync(peerKey)
+    return cb.removeAsync(peerKey)
   }
   return P.all([
     exports.server.store4.stopAsync(),
@@ -246,6 +211,24 @@ exports.after = function(that){
         removePeerEntry(couch.schema.store(clconf.store3.store.name)),
         removePeerEntry(couch.schema.store(clconf.store4.store.name))
       ])
+    })
+    .then(function(){
+      //remove session
+      return sessionTokens
+    })
+    .each(function(token){
+      var sessionKey = couch.schema.userToken(token)
+      return cb.removeAsync(sessionKey)
+        .catch(function(err){
+          if(13 !== err.code) throw err
+        })
+    })
+    .then(function(){
+      var inventoryKey = couch.schema.inventory(content.hash)
+      return cb.removeAsync(inventoryKey)
+        .catch(function(err){
+          if(13 !== err.code) throw err
+        })
     })
     .then(function(){
       logger.log('info','Mock cluster stopped!')
@@ -392,6 +375,7 @@ exports.prismLogin = function(prism){
     })
       .spread(function(res,body){
         expect(body.session).to.be.an('object')
+        sessionTokens.push(body.session.token)
         return body.session
       })
   }

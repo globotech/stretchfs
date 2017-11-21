@@ -6,7 +6,7 @@ var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
-var couchStretch = couch.stretchfs()
+var cb = couch.stretchfs()
 
 
 /**
@@ -18,7 +18,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(couch,couchStretch,couch.type.STRETCHFS,
+  list.listQuery(couch,cb,couch.type.STRETCHFS,
     couch.schema.prism(search),'name',true,start,limit)
     .then(function(result){
       res.render('prism/list',{
@@ -42,7 +42,7 @@ exports.listAction = function(req,res){
     return req.body.remove || []
   })
     .each(function(prismKey){
-      return couchStretch.removeAsync(prismKey)
+      return cb.removeAsync(prismKey)
     })
     .then(function(){
       req.flash('success','Prism(s) removed successfully')
@@ -68,7 +68,7 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var prismKey = couch.schema.prism(req.query.name)
-  couchStretch.getAsync(prismKey)
+  cb.getAsync(prismKey)
     .then(function(result){
       result.value._id = prismKey
       res.render('prism/edit',{prism: result.value})
@@ -88,7 +88,7 @@ exports.save = function(req,res){
   var data = req.body
   var prismKey = couch.schema.prism(data.name)
   var doc
-  couchStretch.getAsync(prismKey)
+  cb.getAsync(prismKey)
     .then(function(result){
       doc = result.value
       if(!doc) doc = {createdAt: new Date().toJSON()}
@@ -98,7 +98,7 @@ exports.save = function(req,res){
       if(data.port) doc.port = data.port
       doc.roles = prism.roleUpdate(doc.roles,data)
       doc.updatedAt = new Date().toJSON()
-      return couchStretch.upsertAsync(prismKey,doc,{cas: result.cas})
+      return cb.upsertAsync(prismKey,doc,{cas: result.cas})
     })
     .then(function(){
       req.flashPug('success','subject-id-action',
