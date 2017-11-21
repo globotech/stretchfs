@@ -3,10 +3,10 @@ var P = require('bluebird')
 var debug = require('debug')('stretchfs:balance:supervisor')
 var child = require('infant').child
 
-var couch = require('../../helpers/couchbase')
-var promiseWhile = require('../../helpers/promiseWhile')
+var couch = require('../helpers/couchbase')
+var promiseWhile = require('../helpers/promiseWhile')
 
-var config = require('../../config')
+var config = require('../config')
 
 //open some buckets
 var cb = couch.stretchfs()

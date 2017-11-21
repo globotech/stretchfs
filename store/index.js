@@ -11,7 +11,7 @@ var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
-var balanceSupervisor
+var balance
 var jobSupervisor
 var stat
 
@@ -49,7 +49,7 @@ if(require.main === module){
       })
       stat = infant.parent('./stat')
       jobSupervisor = infant.parent('./job/supervisor')
-      balanceSupervisor = infant.parent('./balance/supervisor')
+      balance = infant.parent('./balance')
       //check if our needed folders exist
       cb.getAsync(storeKey)
         .then(
@@ -107,7 +107,7 @@ if(require.main === module){
         })
         .then(function(){
           if(config.inventory.balance.enabled){
-            return balanceSupervisor.startAsync()
+            return balance.startAsync()
           }
         })
         .then(function(){
@@ -148,7 +148,7 @@ if(require.main === module){
         })
         .then(function(){
           if(config.inventory.balance.enabled){
-            return balanceSupervisor.stopAsync()
+            return balance.stopAsync()
           }
         })
         .then(function(){
