@@ -27,11 +27,14 @@ var couchPurchase = couch.purchase()
  * @return {P}
  */
 var updateInventoryStat = function(hash,hitCount,byteCount){
-  var inventoryKey = couch.schema.inventory(hash,config.store.name)
+  var storeName = config.store.name
+  var inventoryKey = couch.schema.inventory(hash)
   return couchInventory.getAsync(inventoryKey)
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
+      result.value.hits[storeName] = result.value.hits[storeName] + hitCount
+      result.value.bytes[storeName] = result.value.bytes[storeName] + byteCount
       result.value.lastUpdated = new Date().toJSON()
       return couchInventory.upsertAsync(
         inventoryKey,result.value,{cas: result.cas})
@@ -56,6 +59,8 @@ var updatePurchaseStat = function(token,hitCount,byteCount){
     .then(function(result){
       result.value.hitCount = result.value.hitCount + hitCount
       result.value.byteCount = result.value.byteCount + byteCount
+      result.value.hits[storeName] = result.value.hits[storeName] + hitCount
+      result.value.bytes[storeName] = result.value.bytes[storeName] + byteCount
       result.value.lastUpdated = new Date().toJSON()
       return couchPurchase.upsertAsync(
         purchaseKey,result.value,{cas: result.cas})

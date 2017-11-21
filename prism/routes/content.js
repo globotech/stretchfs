@@ -45,7 +45,7 @@ var sendToStorage = function(tmpfile,hash,extension){
   var winners = []
   var skip = []
   //create the new inventory record it will be completed by the peers
-  return inventory.createMasterInventory(hash)
+  return inventory.createMasterInventory(hash,extension)
     .then(function(){
       return storeBalance.storeList()
     })

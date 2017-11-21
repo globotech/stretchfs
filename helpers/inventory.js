@@ -29,12 +29,19 @@ exports.createMasterInventory = function(hash,extension){
     mimeExtension: extension,
     map: [],
     desiredMap: [],
+    hitCount: 0,
+    hits: {},
+    byteCount: 0,
+    bytes: {},
+    activityScore: 0,
     size: 0,
     copies: 0,
     desiredCopies: config.inventory.copiesOnWrite || 2,
     cacheCopies: [],
     rules: config.inventory.defaultRules,
     relativePath: hashFile.toRelativePath(hash,extension),
+    lastBucketClear: new Date().toJSON(),
+    lastBalancedAt: null,
     createdAt: new Date().toJSON(),
     updatedAt: new Date().toJSON()
   }
@@ -51,12 +58,7 @@ exports.createMasterInventory = function(hash,extension){
 exports.createStoreInventory = function(fileDetail,verified){
   if('undefined' === typeof verified) verified = false
   var inventoryKey = couch.schema.inventory(fileDetail.hash)
-  var subInventoryKey = couch.schema.inventory(
-    fileDetail.hash,
-    config.store.name
-  )
   var inventory = {value: {}, cas: null}
-  var subInventory = {value: {}, cas: null}
   return couchInventory.getAsync(inventoryKey)
     .then(
       function(result){
@@ -115,23 +117,6 @@ exports.createStoreInventory = function(fileDetail,verified){
         inventory.value.verified = true
         inventory.value.verifiedAt = new Date().toJSON()
       }
-      //setup sub record
-      subInventory.value = {
-        store: config.store.name,
-        size: fileDetail.stat.size,
-        hitCount: 0,
-        byteCount: 0,
-        lastCounterClear: new Date().toJSON(),
-        relativePath: hashFile.toRelativePath(
-          fileDetail.hash,fileDetail.ext
-        ),
-        createdAt: new Date().toJSON(),
-        updatedAt: new Date().toJSON()
-      }
-      return couchInventory.upsertAsync(
-        subInventoryKey,subInventory.value,{cas: subInventory.cas})
-    })
-    .then(function(){
       return couchInventory.upsertAsync(
         inventoryKey,inventory.value,{cas: inventory.cas})
     })
@@ -212,10 +197,7 @@ exports.verifyFile = function(fileDetail,force){
   var inventory = {}
   var verifySkipped = false
   var verifiedAt = +new Date()
-  inventoryKey = couch.schema.inventory(
-    fileDetail.hash,
-    config.store.name
-  )
+  inventoryKey = couch.schema.inventory(fileDetail.hash)
   return couchInventory.getAsync(inventoryKey)
     .then(
       function(result){
@@ -371,18 +353,13 @@ exports.detailStore = function(hash){
  */
 exports.removeStoreInventory = function(hash){
   var inventoryKey = couch.schema.inventory(hash)
-  var subInventoryKey = couch.schema.inventory(hash,config.store.name)
   var inventory = {}
-  return couchInventory.getAndLockAsync(inventoryKey)
+  return couchInventory.getAsync(inventoryKey)
     .then(function(result){
       inventory = result
       //remove the file
       return hashFile.remove(
         inventory.value.hash,inventory.value.mimeExtension)
-    })
-    .catch(function(err){
-      if(13 !== err.code) throw err
-      debug('file removal failed',err)
     })
     .then(function(){
       //remove ourselves from the map
@@ -405,23 +382,22 @@ exports.removeStoreInventory = function(hash){
           return couchInventory.upsertAsync(
             inventoryKey,inventory.value,{cas: inventory.cas})
         }
-      }
-      else{
+      } else {
         //update inventory record
         return couchInventory.upsertAsync(
           inventoryKey,inventory.value,{cas: inventory.cas})
       }
     })
     .catch(function(err){
-      if(13 !== err.code) throw err
-      debug('update failed',err)
-    })
-    .then(function(){
-      //now remove the sub record
-      return couchInventory.removeAsync(subInventoryKey)
-    })
-    .catch(function(err){
-      if(13 !== err.code) throw err
-      debug('subrecord removal failed',err)
+      if(12 === err.code){
+        return exports.removeStoreInventory(hash)
+      } else if(13 === err.code){
+        debug('removal failed file not found server',err)
+      } else if('File not found' === err.message){
+        debug('removal failed file not found client',err)
+      } else {
+        debug('removal failed unknown',err)
+        throw err
+      }
     })
 }

@@ -6,11 +6,11 @@ var fs = require('graceful-fs')
 var path = require('path')
 var ProgressBar = require('progress')
 
-var hashFile = require('../hashFile')
-var inventoryHelper = require('../inventory')
-var logger = require('../logger')
+var hashFile = require('./hashFile')
+var inventoryHelper = require('./inventory')
+var logger = require('./logger')
 
-var config = require('../../config')
+var config = require('../config')
 
 
 /**

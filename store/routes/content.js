@@ -393,7 +393,7 @@ exports.static = function(req,res){
   //then we must send it, that simple dont overthink it
   var hash = req.params.hash
   debug('STATIC','got file static request',hash)
-  var inventoryKey = couch.schema.inventory(hash,config.store.name)
+  var inventoryKey = couch.schema.inventory(hash)
   debug('STATIC','checking for inventory',inventoryKey)
   couchInventory.getAsync(inventoryKey)
     .then(function(result){
@@ -447,9 +447,7 @@ exports.play = function(req,res){
         debug('PLAY','got purchase result',token,result)
         purchase = result
         //get inventory
-        return couchInventory.getAsync(couch.schema.inventory(
-          purchase.hash,config.store.name
-        ))
+        return couchInventory.getAsync(couch.schema.inventory(purchase.hash))
       },
       //purchase not found
       function(err){
