@@ -135,10 +135,7 @@ exports.server = {
   prism2: infant.parent('../../prism',{
     fork: {env: exports.makeEnv(__dirname + '/../assets/prism2.config.js')}
   }),
-  balanceSupervisor: infant.parent('../../admin/balance/supervisor',{
-    fork: {env: exports.makeEnv(__dirname + '/../assets/prism1.config.js')}
-  }),
-  balanceWorker: infant.parent('../../admin/balance/worker',{
+  balanceSupervisor: infant.parent('../../store/balance/supervisor',{
     fork: {env: exports.makeEnv(__dirname + '/../assets/prism1.config.js')}
   }),
   store1: infant.parent('../../store',{
@@ -267,9 +264,6 @@ exports.balanceStart = function(){
   logger.log('info','Starting balance system')
   return exports.server.balanceSupervisor.startAsync()
     .then(function(){
-      return exports.server.balanceWorker.startAsync()
-    })
-    .then(function(){
       logger.log('info','Balance system started')
     })
 }
@@ -281,10 +275,7 @@ exports.balanceStart = function(){
  */
 exports.balanceStop = function(){
   logger.log('info','Stopping balance system')
-  return exports.server.balanceWorker.stopAsync()
-    .then(function(){
-      return exports.server.balanceSupervisor.stopAsync()
-    })
+  return exports.server.balanceSupervisor.stopAsync()
     .then(function(){
       logger.log('info','Balance system stopped')
     })

@@ -11,7 +11,8 @@ var logger = require('../helpers/logger')
 
 var cluster
 var heartbeat
-var supervisor
+var balanceSupervisor
+var jobSupervisor
 var stat
 
 var storeKey = couch.schema.store(config.store.name)
@@ -47,7 +48,8 @@ if(require.main === module){
         }
       })
       stat = infant.parent('./stat')
-      supervisor = infant.parent('./job/supervisor')
+      jobSupervisor = infant.parent('./job/supervisor')
+      balanceSupervisor = infant.parent('./balance/supervisor')
       //check if our needed folders exist
       couchStretch.getAsync(storeKey)
         .then(
@@ -100,7 +102,12 @@ if(require.main === module){
         })
         .then(function(){
           if(config.job.enabled){
-            return supervisor.startAsync()
+            return jobSupervisor.startAsync()
+          }
+        })
+        .then(function(){
+          if(config.inventory.balance.enabled){
+            return balanceSupervisor.startAsync()
           }
         })
         .then(function(){
@@ -140,9 +147,14 @@ if(require.main === module){
           }
         })
         .then(function(){
+          if(config.inventory.balance.enabled){
+            return balanceSupervisor.stopAsync()
+          }
+        })
+        .then(function(){
           couch.disconnect()
           if(config.job.enabled){
-            return supervisor.stopAsync()
+            return jobSupervisor.stopAsync()
           }
         })
         .then(function(){

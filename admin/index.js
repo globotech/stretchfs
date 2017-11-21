@@ -14,8 +14,6 @@ if(require.main === module){
   infant.child(
     'stretchfs:admin:master',
     function(done){
-      var balanceSupervisor = infant.parent('./balance/supervisor')
-      var balanceWorker = infant.parent('./balance/worker')
       cluster = infant.cluster(
         './worker',
         {
@@ -24,16 +22,8 @@ if(require.main === module){
           maxConnections: config.admin.workers.maxConnections
         }
       )
-      logger.log('Starting balance worker')
-      balanceWorker.startAsync()
-        .then(function(){
-          logger.log('Starting balance supervisor')
-          return balanceSupervisor.startAsync()
-        })
-        .then(function(){
-          logger.log('Starting admin panel')
-          return cluster.startAsync()
-        })
+      logger.log('Starting admin panel')
+      return cluster.startAsync()
         .then(function(){
           done()
         })
@@ -44,14 +34,6 @@ if(require.main === module){
     function(done){
       logger.log('Stopping admin panel')
       cluster.stopAsync()
-        .then(function(){
-          logger.log('Stopping balance supervisor')
-          return balanceSupervisor.stopAsync()
-        })
-        .then(function(){
-          logger.log('Stopping balance worker')
-          return balanceWorker.stopAsync()
-        })
         .then(function(){
           done()
         })

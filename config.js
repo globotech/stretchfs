@@ -102,6 +102,7 @@ config.$load({
     defaultRules: [{type: 'copyMinimum', value: 2}], //minimum copy count
     keepDeadRecords: false, // keep missing inventory records
     balance: {
+      enabled: true, //enable the balance system (runs per store)
       concurrency: 4, //files to process concurrently
       frequency: 180000, // 3 minutes
       expiration: 2592000000, //30 days (all records are balanced this often)
