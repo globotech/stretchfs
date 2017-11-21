@@ -90,23 +90,6 @@ describe('e2e',function(){
             expect(err.message).to.equal('expected 500 to equal 302')
           })
       })
-      describe('inventory balance',function(){
-        before(function(){
-          //start balance
-          return e2e.balanceStart()
-        })
-        after(function(){
-          //stop balance
-          return e2e.balanceStop()
-        })
-        it('should balance existing inventory')
-        it('should expand copies for hot inventory')
-        it('should reduce copies for cold inventory')
-        it('should apply rules')
-        it('should expand copies')
-        it('should reduce copies')
-        it('should recover copies')
-      })
     })
     describe('purchases',function(){
       before(function(){
