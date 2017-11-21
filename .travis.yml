@@ -19,7 +19,7 @@ before_script:
   - sudo dpkg -i couchbase-server-community_5.0.0-ubuntu14.04_amd64.deb
   - sudo service couchbase-server start
   # Init cluster
-  - sleep 3
+  - sleep 5
   # This init method is busted see here: https://issues.couchbase.com/browse/MB-26556
   #- /opt/couchbase/bin/couchbase-cli cluster-init --cluster 127.0.0.1:8091 --cluster-username=Administrator --cluster-password=password --cluster-ramsize=1024 --cluster-index-ramsize=256 --cluster-fts-ramsize=256 --cluster-name=localhost --index-storage-setting=default --services=data,index,query,fts
   # This is a really lame workaround
@@ -28,6 +28,6 @@ before_script:
   - curl -X POST http://127.0.0.1:8091/settings/indexes -d "storageMode=forestdb"
   - curl -X POST http://127.0.0.1:8091/settings/web -d "username=Administrator&password=password&port=8091&"
   # Init couchbase
-  - sleep 3
+  - sleep 5
   - DEBUG=stretchfs:couchbase node bin/cbSetup.js
   - DEBUG=stretchfs:couchbase node bin/userCreate.js localhost bigpassword
