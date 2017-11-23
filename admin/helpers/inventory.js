@@ -69,8 +69,8 @@ var _queryPrep = function(hash){
   var clause = {
     from: ' FROM ' + _hndl.bucketName,
     where: {
-      summary: [' WHERE NOT CONTAINS(META().id,":")'],
-      detail: [' WHERE CONTAINS(META().id,":")']
+      summary: [' WHERE 1=1'],
+      detail: [' WHERE 1=2']
     }
   }
   if(!!hash){
