@@ -62,11 +62,10 @@ var verifyInventoryAsync = function(){
   debug('starting to verify',contentFolder)
   var qstring = 'SELECT META().id AS _id, ' +
     couch.getName(couch.type.stretchfs) + '.* FROM ' +
-    couch.getName(couch.type.stretchfs) + ' WHERE META().id LIKE $1'
+    couch.getName(couch.type.stretchfs) + ' WHERE ARRAY_CONTAINS(`map`,$1)'
   var query = couch.N1Query.fromString(qstring)
   query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
-  var inventoryKey = '%' + config.store.name
-  return cb.queryAsync(query,[inventoryKey])
+  return cb.queryAsync(query,[config.store.name])
     .then(function(result){
       var fileCount = result.length
       var progress = new ProgressBar(
