@@ -103,7 +103,7 @@ program
   .description('List staff members')
   .action(function(){
     var clause = {}
-    clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
+    clause.from = ' FROM ' + couch.getName(couch.type.stretchfs)
     clause.where = ' WHERE META().id LIKE $1'
     var query = couch.N1Query.fromString(
       'SELECT *' + clause.from + clause.where

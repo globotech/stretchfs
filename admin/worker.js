@@ -11,7 +11,7 @@ var expressSession = require('express-session')
 var http = require('http')
 var worker = require('infant').worker
 var morgan = require('morgan')
-var RedisStore = require('connect-redis')(expressSession)
+var CouchbaseStore = require('connect-couchbase')(expressSession)
 
 var app = express()
 var config = require('../config')
@@ -41,8 +41,16 @@ app.locals = {
   prettyBytes: require('pretty-bytes'),
   version: config.version
 }
-//extend moment().format() so that this one place changes everywhere
-// truthiness is checked and a placeholder can be provided in emptyString
+
+
+/**
+ * Moment standard format
+ *  extend moment().format() so that this one place changes everywhere
+ *  truthiness is checked and a placeholder can be provided in emptyString
+ * @param {Date} d
+ * @param {string} emptyString
+ * @return {string}
+ */
 app.locals.momentStandardFormat = function(d,emptyString){
   return (
     d ? app.locals.moment(d).format('YYYY-MM-DD hh:mm:ssA')
@@ -67,7 +75,13 @@ app.use(expressSession({
   },
   resave: true,
   saveUninitialized: true,
-  store: new RedisStore(),
+  store: new CouchbaseStore({
+    bucket: config.couch.buckets.stretchfs.name,
+    host: config.couch.host + ':' + config.couch.port,
+    connectionTimeout: config.couch.connectionTimeout,
+    operationTimeout: config.couch.operationTimeout,
+    prefix: 'adminSession'
+  }),
   secret: config.admin.cookie.secret
 }))
 app.use(flash())

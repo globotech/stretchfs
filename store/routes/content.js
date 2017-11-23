@@ -12,10 +12,10 @@ var requestStats = require('request-stats')
 var api = require('../../helpers/api')
 var couch = require('../../helpers/couchbase')
 var inventory = require('../../helpers/inventory')
-var redis = require('../../helpers/redis')()
 var logger = require('../../helpers/logger')
 var hashFile = require('../../helpers/hashFile')
 var purchasedb = require('../../helpers/purchasedb')
+var slotHelper = require('../../helpers/slot')
 
 var config = require('../../config')
 
@@ -35,8 +35,8 @@ P.promisifyAll(fs)
  * @param {object} res
  */
 exports.put = function(req,res){
-  redis.incr(redis.schema.counter('store','content:put'))
-  redis.incr(redis.schema.counter('store','content:filesUploaded'))
+  couch.counter(cb,couch.schema.counter('store','content:put'))
+  couch.counter(cb,couch.schema.counter('store','content:filesUploaded'))
   var file = req.params.file
   var ext = file.split('.')[1]
   var expectedHash = path.basename(file,path.extname(file))
@@ -46,8 +46,8 @@ exports.put = function(req,res){
   var sniff = hashStream.createStream(hashType)
   var inventoryKey
   sniff.on('data',function(chunk){
-    redis.incrby(
-      redis.schema.counter('store','content:bytesUploaded'),chunk.length)
+    couch.counter(cb,
+      couch.schema.counter('store','content:bytesUploaded'),chunk.length)
   })
   var dest
   hashFile.details(expectedHash,ext)
@@ -92,7 +92,7 @@ exports.put = function(req,res){
       fs.unlinkSync(dest)
       return cb.removeAsync(inventoryKey)
         .then(function(){
-          redis.incr(redis.schema.counterError('store','content:put'))
+          couch.counter(cb,couch.schema.counterError('store','content:put'))
           res.status(500)
           res.json({error: err})
         })
@@ -111,7 +111,7 @@ exports.put = function(req,res){
  * @param {object} res
  */
 exports.exists = function(req,res){
-  redis.incr(redis.schema.counter('store','content:exists'))
+  couch.counter(cb,couch.schema.counter('store','content:exists'))
   var hash = req.body.hash
   var ext = req.body.ext
   var singular = !(hash instanceof Array)
@@ -269,7 +269,7 @@ exports.send = function(req,res){
  * @param {object} res
  */
 exports.remove = function(req,res){
-  redis.incr(redis.schema.counter('store','content:remove'))
+  couch.counter(cb,couch.schema.counter('store','content:remove'))
   inventory.removeStoreInventory(req.body.hash)
     .then(function(){
       res.json({
@@ -278,11 +278,12 @@ exports.remove = function(req,res){
     })
     .catch(function(err){
       if(13 === err.code){
-        redis.incr(redis.schema.counterError('store','content:remove:notFound'))
+        couch.counter(cb,
+          couch.schema.counterError('store','content:remove:notFound'))
         res.status(404)
         res.json({error: err.message})
       } else {
-        redis.incr(redis.schema.counterError('store','content:remove'))
+        couch.counter(cb,couch.schema.counterError('store','content:remove'))
         res.json({error: err.message, err: err})
       }
     })
@@ -301,38 +302,51 @@ exports.remove = function(req,res){
  * @param {object} res
  */
 exports.download = function(req,res){
-  redis.incr(redis.schema.counter('store','content:download'))
+  couch.counter(cb,couch.schema.counter('store','content:download'))
   var hash = req.body.hash
   var ext = req.body.ext
   var detail
-  hashFile.details(hash,ext)
+  var inventoryKey = couch.schema.inventory(hash)
+  var slotKey = couch.schema.slot(
+    req.ip,
+    req.connection.remotePort,
+    req.headers['user-agent'],
+    hash
+  )
+  slotHelper.upsertAndGet(slotKey,req,hash)
+    .then(function(){
+      return hashFile.details(hash,ext)
+    })
     .then(function(result){
       detail = result
       var filePath = detail.path
-      //occupy slot on peer
-      redis.sadd(redis.schema.peerSlot(),req.ip + ':' + detail.hash)
       //update hits
-      redis.incr(redis.schema.inventoryStat(detail.hash,'hit'))
-      //add to stat collection
-      redis.sadd(redis.schema.inventoryStatCollect(),detail.hash)
+      couch.mutateIn(cb,inventoryKey,'counter','hitCount',1)
+      couch.mutateIn(cb,inventoryKey,'counter','hits.' + config.store.name,1)
+      couch.mutateIn(cb,slotKey,'counter','hitCount',1)
+      couch.mutateIn(cb,slotKey,'counter','hits.' + config.store.name,1)
       //register to track bytes sent
-      var inventoryByteKey = redis.schema.inventoryStat(detail.hash,'byte')
       requestStats(req,res,function(stat){
-        redis.incrby(inventoryByteKey,stat.res.bytes)
-        redis.srem(redis.schema.peerSlot(),req.ip + ':' + detail.hash)
+        //inventory counter
+        couch.mutateIn(cb,inventoryKey,'counter','byteCount',stat.res.bytes)
+        couch.mutateIn(cb,inventoryKey,'counter',
+          'bytes.' + config.store.name,stat.res.bytes)
+        //slot counter
+        couch.mutateIn(cb,slotKey,'counter','byteCount',stat.res.bytes)
+        couch.mutateIn(cb,slotKey,'counter',
+          'bytes.' + config.store.name,stat.res.bytes)
       })
       res.sendFile(filePath)
     })
     .catch(function(err){
-      console.log(err)
       if(13 === err.code){
-        redis.incr(
-          redis.schema.counterError('store','content:download:notFound'))
+        couch.counter(cb,
+          couch.schema.counterError('store','content:download:notFound'))
         res.status(404)
         res.json({error: err.message})
       } else {
         res.status(500)
-        redis.incr(redis.schema.counterError('store','content:download'))
+        couch.counter(cb,couch.schema.counterError('store','content:download'))
         res.json({message: err.message, error: err})
       }
     })
@@ -392,11 +406,22 @@ exports.static = function(req,res){
   //then we must send it, that simple dont overthink it
   var hash = req.params.hash
   debug('STATIC','got file static request',hash)
+  var inventory = {}
   var inventoryKey = couch.schema.inventory(hash)
   debug('STATIC','checking for inventory',inventoryKey)
+  var slotKey = couch.schema.slot(
+    req.ip,
+    req.connection.remotePort,
+    req.headers['user-agent'],
+    hash
+  )
+  debug('STATIC','got slot key',slotKey)
   cb.getAsync(inventoryKey)
     .then(function(result){
-      var inventory = result.value
+      inventory = result.value
+      return slotHelper.upsertAndGet(slotKey,req,hash)
+    })
+    .then(function(){
       debug('STATIC','got file inventory, sending content',inventory)
       if(req.query.attach){
         res.header(
@@ -405,17 +430,21 @@ exports.static = function(req,res){
         )
       }
       var filePath = path.join(contentFolder,inventory.relativePath)
-      //occupy slot on peer
-      redis.sadd(redis.schema.peerSlot(),req.ip + ':' + hash)
       //update hits
-      redis.incr(redis.schema.inventoryStat(hash,'hit'))
-      //add to stat collection
-      redis.sadd(redis.schema.inventoryStatCollect(),hash)
+      couch.mutateIn(cb,inventoryKey,'counter','hitCount',1)
+      couch.mutateIn(cb,inventoryKey,'counter','hits.' + config.store.name,1)
+      couch.mutateIn(cb,slotKey,'counter','hitCount',1)
+      couch.mutateIn(cb,slotKey,'counter','hits.' + config.store.name,1)
       //register to track bytes sent
-      var inventoryByteKey = redis.schema.inventoryStat(hash,'byte')
       requestStats(req,res,function(stat){
-        redis.incrby(inventoryByteKey,stat.res.bytes)
-        redis.srem(redis.schema.peerSlot(),req.ip + ':' + hash)
+        //inventory counter
+        couch.mutateIn(cb,inventoryKey,'counter','byteCount',stat.res.bytes)
+        couch.mutateIn(cb,inventoryKey,'counter',
+          'bytes.' + config.store.name,stat.res.bytes)
+        //slot counter
+        couch.mutateIn(cb,slotKey,'counter','byteCount',stat.res.bytes)
+        couch.mutateIn(cb,slotKey,'counter',
+          'bytes.' + config.store.name,stat.res.bytes)
       })
       //send file
       res.sendFile(filePath)
@@ -439,6 +468,9 @@ exports.play = function(req,res){
   var purchase = {}
   var inventory = {}
   debug('PLAY','got play request',token)
+  var slotKey = null
+  var inventoryKey = null
+  var purchaseKey = token
   purchasedb.get(token)
     .then(
       //continue with purchase
@@ -446,7 +478,19 @@ exports.play = function(req,res){
         debug('PLAY','got purchase result',token,result)
         purchase = result
         //get inventory
-        return cb.getAsync(couch.schema.inventory(purchase.hash))
+        slotKey = couch.schema.slot(
+          req.ip,
+          req.connection.remotePort,
+          req.headers['user-agent'],
+          purchase.hash
+        )
+        debug('PLAY','got slot key',token,slotKey)
+        inventoryKey = couch.schema.inventory(purchase.hash)
+        debug('PLAY','got inventory key',token,inventoryKey)
+        return slotHelper.upsertAndGet(slotKey,req,purchase.hash)
+          .then(function(){
+            return cb.getAsync(inventoryKey)
+          })
       },
       //purchase not found
       function(err){
@@ -490,23 +534,25 @@ exports.play = function(req,res){
             'attachment; filename=' + req.query.attach
           )
         }
-        //occupy slot on peer
-        redis.sadd(redis.schema.peerSlot(),
-          req.ip + ':' + inventory.hash + ':' + token)
         //update hits
-        redis.incr(redis.schema.inventoryStat(purchase.hash,'hit'))
-        redis.incr(redis.schema.purchaseStat(token,'hit'))
-        //add to stat collection
-        redis.sadd(redis.schema.inventoryStatCollect(),purchase.hash)
-        redis.sadd(redis.schema.purchaseStatCollect(),token)
+        couch.mutateIn(cb,inventoryKey,'counter','hitCount',1)
+        couch.mutateIn(cb,inventoryKey,'counter','hits.' + config.store.name,1)
+        couch.mutateIn(cb,slotKey,'counter','hitCount',1)
+        couch.mutateIn(cb,slotKey,'counter','hits.' + config.store.name,1)
+        //purchase hits
+        couch.mutateIn(cb,purchaseKey,'counter','hitCount',1)
         //register to track bytes sent
-        var inventoryByteKey = redis.schema.inventoryStat(purchase.hash,'byte')
-        var purchaseByteKey = redis.schema.purchaseStat(token,'byte')
         requestStats(req,res,function(stat){
-          redis.incrby(purchaseByteKey,stat.res.bytes)
-          redis.incrby(inventoryByteKey,stat.res.bytes)
-          redis.srem(redis.schema.peerSlot(),
-            req.ip + ':' + inventory.hash + ':' +token)
+          //inventory counter
+          couch.mutateIn(cb,inventoryKey,'counter','byteCount',stat.res.bytes)
+          couch.mutateIn(cb,inventoryKey,'counter',
+            'bytes.' + config.store.name,stat.res.bytes)
+          //slot counter
+          couch.mutateIn(cb,slotKey,'counter','byteCount',stat.res.bytes)
+          couch.mutateIn(cb,slotKey,'counter',
+            'bytes.' + config.store.name,stat.res.bytes)
+          //purchase counter
+          couch.mutateIn(cb,purchaseKey,'counter','byteCount',stat.res.bytes)
         })
         //send file
         res.sendFile(purchaseUri)

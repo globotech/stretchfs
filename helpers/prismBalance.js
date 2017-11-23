@@ -3,7 +3,6 @@ var P = require('bluebird')
 var debug = require('debug')('stretchfs:prismBalance')
 
 var couch = require('./couchbase')
-var redis = require('../helpers/redis')()
 
 //open couch buckets
 var cb = couch.stretchfs()
@@ -14,15 +13,15 @@ var cb = couch.stretchfs()
  * @return {P}
  */
 exports.peerList = function(){
-  redis.incr(redis.schema.counter('prism','prismBalance:peerList'))
+  couch.counter(cb,couch.schema.counter('prism','prismBalance:peerList'))
   var prismKey = couch.schema.prism()
   var storeKey = couch.schema.store()
   debug('Querying for peer list')
   return P.all([
     (function(){
       var qstring = 'SELECT ' +
-        couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) +
+        couch.getName(couch.type.stretchfs) + '.* FROM ' +
+        couch.getName(couch.type.stretchfs) +
         ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       prismKey = prismKey + '%'
@@ -37,8 +36,8 @@ exports.peerList = function(){
     }()),
     (function(){
       var qstring = 'SELECT ' +
-        couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
-        couch.getName(couch.type.STRETCHFS,true) +
+        couch.getName(couch.type.stretchfs) + '.* FROM ' +
+        couch.getName(couch.type.stretchfs) +
         ' WHERE META(b).id LIKE $1'
       var query = couch.N1Query.fromString(qstring)
       storeKey = storeKey + '%'
@@ -68,11 +67,11 @@ exports.peerList = function(){
  * @return {P}
  */
 exports.prismList = function(){
-  redis.incr(redis.schema.counter('prism','prismBalance:prismList'))
+  couch.counter(cb,couch.schema.counter('prism','prismBalance:prismList'))
   var prismKey = couch.schema.prism()
   var qstring = 'SELECT ' +
-    couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) +
+    couch.getName(couch.type.stretchfs) + '.* FROM ' +
+    couch.getName(couch.type.stretchfs) +
     'WHERE META(b).id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   prismKey = prismKey + '%'
@@ -87,71 +86,12 @@ exports.prismList = function(){
 
 
 /**
- * Populate hits from a token
- * @param {string} token
- * @param {Array} prismList
- * @return {Array}
- */
-exports.populateHits = function(token,prismList){
-  redis.incr(redis.schema.counter('prism','prismBalance:populateHits'))
-  var populate = function(prism){
-    return function(hits){
-      prism.hits = +hits
-    }
-  }
-  var promises = []
-  var prism
-  for(var i = 0; i < prismList.length; i++){
-    prism = prismList[i]
-    promises.push(
-      redis.getAsync(redis.schema.prismHits(token,prism.name))
-        .then(populate(prism))
-    )
-  }
-  return P.all(promises)
-    .then(function(){
-      return prismList
-    })
-}
-
-
-/**
- * Pick a winner from a prism list
- * @param {string} token
- * @param {Array} prismList
- * @param {Array} skip
- * @param {boolean} allowFull
- * @return {P}
- */
-exports.winner = function(token,prismList,skip,allowFull){
-  if(undefined === allowFull) allowFull = false
-  redis.incr(redis.schema.counter('prism','prismBalance:winner'))
-  if(!(skip instanceof Array)) skip = []
-  if(!(prismList instanceof Array)) prismList = []
-  var winner = false
-  return exports.populateHits(token,prismList)
-    .then(function(prismList){
-      var prism
-      for(var i = 0; i < prismList.length; i++){
-        prism = prismList[i]
-        if((-1 === skip.indexOf(prism.name)) && (allowFull || prism.writable) &&
-          ((!winner) || (winner.hits > prism.hits))) winner = prism
-      }
-      return redis.incrAsync(redis.schema.prismHits(token,winner.name))
-    })
-    .then(function(){
-      return winner
-    })
-}
-
-
-/**
  * Check existence of a hash (cached)
  * @param {string} hash
  * @return {P}
  */
 exports.contentExists = function(hash){
-  redis.incr(redis.schema.counter('prism','prismBalance:contentExists'))
+  couch.counter(cb,couch.schema.counter('prism','prismBalance:contentExists'))
   var existsKey = couch.schema.inventory(hash)
   debug(existsKey,'contentExists received')
   return cb.getAsync(existsKey)

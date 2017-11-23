@@ -76,7 +76,7 @@ var jobNotification = function(handle,status,statusDescription,silent){
 var findJobs = function(status,category,limit,prioritize){
   debug('querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
+    couch.getName(couch.type.stretchfs) + ' b ' +
     'WHERE b.status = $1 ' +
     (category ? ' AND b.category = $2' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +
@@ -99,7 +99,7 @@ var findJobsByWorker = function(workerKey,status,category,limit,prioritize){
   debug(workerKey,
     'querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
   var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) + ' b ' +
+    couch.getName(couch.type.stretchfs) + ' b ' +
     'WHERE b.workerKey = $1 AND b.status = $2 ' +
     (category ? ' AND b.category = $3' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +

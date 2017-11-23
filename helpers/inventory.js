@@ -29,6 +29,7 @@ exports.createMasterInventory = function(hash,extension){
     mimeExtension: extension,
     map: [],
     desiredMap: [],
+    tasks: [],
     hitCount: 0,
     hits: {},
     byteCount: 0,

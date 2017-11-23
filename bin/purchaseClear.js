@@ -16,7 +16,7 @@ var runInterval = function(done){
   var purchaseKey = couch.schema.purchase()
   debug('requesting purchases',purchaseKey)
   var clause = {}
-  clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
+  clause.from = ' FROM ' + couch.getName(couch.type.stretchfs)
   clause.where = ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString('DELETE' + clause.from + clause.where)
   purchaseKey = purchaseKey + '%'

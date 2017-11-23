@@ -8,7 +8,10 @@ var https = require('https')
 var http = require('http')
 var worker = require('infant').worker
 
-var redis = require('../helpers/redis')()
+var couch = require('../helpers/couchbase')
+
+//open some buckets
+var cb = couch.stretchfs()
 
 var app = express()
 var config = require('../config')
@@ -57,7 +60,7 @@ app.use(bodyParser.json({limit: '100mb'}))
 
 //track requests
 app.use(function(req,res,next){
-  redis.incr(redis.schema.counter('store','requests'))
+  couch.counter(cb,couch.schema.counter('store','requests'))
   next()
 })
 
@@ -68,10 +71,6 @@ app.post('/',routes.index)
 //health test
 app.get('/ping',routes.ping)
 app.post('/ping',routes.ping)
-
-//stats
-app.get('/stats',routes.stats)
-app.post('/stats',routes.stats)
 
 //content purchase mapping
 app.get('/purchase/uri/play/:token/:filename',routes.purchase.uri)

@@ -5,7 +5,7 @@ var stretchfs = require('stretchfs-sdk')
 
 var NotFoundError = stretchfs.NotFoundError
 var couch = require('./couchbase')
-var redis = require('../helpers/redis')()
+var slotHelper = require('./slot')
 
 //open couch buckets
 var cb = couch.stretchfs()
@@ -17,12 +17,12 @@ var cb = couch.stretchfs()
  * @return {P}
  */
 exports.storeList = function(search){
-  redis.incr(redis.schema.counter('prism','storeBalance:storeList'))
+  couch.counter(cb,couch.schema.counter('prism','storeBalance:storeList'))
   var storeKey = couch.schema.store(search)
   debug(storeKey,'getting store list')
   var qstring = 'SELECT ' +
-    couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) +
+    couch.getName(couch.type.stretchfs) + '.* FROM ' +
+    couch.getName(couch.type.stretchfs) +
     ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   storeKey = storeKey + '%'
@@ -63,7 +63,7 @@ exports.existsToArray = function(inventory,skip){
  * @return {P}
  */
 exports.populateStores = function(storeList){
-  redis.incr(redis.schema.counter('prism','storeBalance:populateStores'))
+  couch.counter(cb,couch.schema.counter('prism','storeBalance:populateStores'))
   return P.try(function(){
     return storeList
   })
@@ -81,46 +81,54 @@ exports.populateStores = function(storeList){
 
 
 /**
- * Populate hits from a token
- * @param {string} token
- * @param {Array} storeList
- * @return {P}
- */
-exports.populateHits = function(token,storeList){
-  redis.incr(redis.schema.counter('prism','storeBalance:populateHits'))
-  return P.try(function(){
-    return storeList
-  })
-    .map(function(store){
-      return redis.getAsync(redis.schema.storeHits(token,store.name))
-        .then(function(hits){
-          store.hits = +hits
-          return store
-        })
-    })
-}
-
-
-/**
  * Take the result of an existence check and pick a winner
- * @param {string} token
+ * @param {object} req
  * @param {object} inventory
  * @param {Array} skip
- * @param {boolean} allowFull
  * @return {P}
  */
-exports.winnerFromExists = function(token,inventory,skip,allowFull){
-  if(undefined === allowFull) allowFull = false
-  redis.incr(redis.schema.counter('prism','storeBalance:winnerFromExists'))
+exports.selectReadPeer = function(req,inventory,skip){
+  couch.counter(cb,couch.schema.counter('prism','storeBalance:selectReadPeer'))
   if(!(skip instanceof Array)) skip = []
   var candidates = exports.existsToArray(inventory,skip)
   if(!candidates.length) throw new NotFoundError('No store candidates found')
-  return exports.populateStores(candidates)
-    .then(function(results){
-      return exports.populateHits(token,results)
+  var slot = {}
+  var winner = false
+  //get the slot or create it
+  var slotKey = couch.schema.slot(
+    req.ip,
+    req.connection.remotePort,
+    req.headers['user-agent'],
+    inventory.hash
+  )
+  return slotHelper.upsertAndGet(slotKey,req,inventory.hash)
+    .then(function(result){
+      slot = result
+      return exports.populateStores(candidates)
     })
-    .then(function(results){
-      return exports.pickWinner(token,results,skip,allowFull)
+    .filter(function(store){
+      return (
+        store &&
+        store.roles &&
+        store.roles.indexOf('read') > 0 &&
+        -1 === skip.indexOf(store.name)
+      )
+    })
+    .map(function(store){
+      if(slot.value.hits && slot.value.hits[store.name]){
+        store.hitCount = +slot.value.hits[store.name]
+      }
+      if(!winner || (winner && store.hitCount < winner.hitCount)){
+        winner = store
+      }
+    })
+    .then(function(){
+      if(!winner) throw new Error('No stores available')
+      return winner
+    })
+    .catch(function(err){
+      if(12 !== err.code) throw err
+      return exports.selectReadPeer(req,inventory,skip)
     })
 }
 
@@ -131,40 +139,27 @@ exports.winnerFromExists = function(token,inventory,skip,allowFull){
  * @param {Array} skip
  * @return {P}
  */
-exports.winner = function(storeList,skip){
-  redis.incr(redis.schema.counter('prism','storeBalance:winner'))
-  var token = 'new'
-  return exports.populateHits(token,storeList)
-    .then(function(storeList){
-      return exports.pickWinner(token,storeList,skip)
-    })
-}
-
-
-/**
- * Pick a winner
- * @param {string} token
- * @param {array} storeList
- * @param {array} skip
- * @param {bool} allowFull
- * @return {P}
- */
-exports.pickWinner = function(token,storeList,skip,allowFull){
-  if(undefined === allowFull) allowFull = false
-  var store
+exports.selectWritePeer = function(storeList,skip){
+  couch.counter(cb,couch.schema.counter('prism','storeBalance:selectWritePeer'))
   var winner = false
-  if(!token) token = 'new'
   if(!(skip instanceof Array)) skip = []
   if(!(storeList instanceof Array)) storeList = []
-  for(var i = 0; i < storeList.length; i++){
-    store = storeList[i]
+  storeList.forEach(function(store){
     if(
-      (-1 === skip.indexOf(store.name) &&
-      (allowFull || store.roles.indexOf('write') > 0)) &&
-      ((!winner) || (winner.usage.free < store.usage.free))) winner = store
-  }
-  return redis.incrAsync(redis.schema.storeHits(token,winner.name))
-    .then(function(){
-      return winner
-    })
+      (
+        -1 === skip.indexOf(store.name) && //ensure not skipped
+        (store.roles.indexOf('write') > 0) //ensure writable
+      ) &&
+      (
+        !winner || (winner.usage.free < store.usage.free) //select most avail
+      )
+    )
+    {
+      winner = store
+    }
+  })
+  return P.try(function(){
+    if(!winner) throw new Error('No store candidates available to write')
+    return winner
+  })
 }

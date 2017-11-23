@@ -1,7 +1,10 @@
 'use strict';
-var redis = require('../../helpers/redis')()
+var couch = require('../../helpers/couchbase')
 
 var config = require('../../config')
+
+//open some buckets
+var cb = couch.stretchfs()
 
 
 /**
@@ -10,7 +13,7 @@ var config = require('../../config')
  * @param {object} res
  */
 exports.index = function(req,res){
-  redis.incr(redis.schema.counter('prism','index'))
+  couch.counter(cb,couch.schema.counter('prism','index'))
   res.json({message: 'Welcome to StretchFS version ' + config.version})
 }
 
@@ -21,23 +24,8 @@ exports.index = function(req,res){
  * @param {object} res
  */
 exports.ping = function(req,res){
-  redis.incr(redis.schema.counter('prism','ping'))
   res.json({pong: 'pong'})
 }
-
-
-/**
- * Stats routes
- * @type {object}
- */
-exports.stats = require('./stats')
-
-
-/**
- * Cache routes
- * @type {object}
- */
-exports.cache = require('./cache')
 
 
 /**

@@ -12,8 +12,9 @@ var cb = couch.stretchfs()
 inv.setup({
   couchbase: couch,
   bucket: cb,
-  bucketType: couch.type.STRETCHFS
+  bucketType: couch.type.stretchfs
 })
+
 
 /**
  * List Inventory
@@ -62,7 +63,7 @@ exports.listAction = function(req,res){
  * @param {object} res
  */
 exports.create = function(req,res){
-  list.listQuery(couch,cb,couch.type.STRETCHFS,
+  list.listQuery(couch,cb,couch.type.stretchfs,
     couch.schema.store(),'name',true)
     .then(function(result){
       res.render('inventory/create',{stores:result.rows})

@@ -45,7 +45,7 @@ var cluster = connectCouchbase(config.couch)
 var client = {
   cluster: cluster,
   type: {
-    STRETCHFS: 'stretchfs'
+    stretchfs: 'stretchfs'
   },
   initBucket: {
     stretchfs: function(manager){
@@ -106,6 +106,7 @@ client.openBucket = function(name){
       name + ': ' + err.message
     )
   }))
+  buckets[name].type = client.type[name]
   return buckets[name]
 }
 
@@ -130,6 +131,7 @@ client.closeBucket = function(name){
  * @return {string}
  */
 client.getName = function(database,escape){
+  if('undefined' === typeof escape) escape = true
   if(!config || !config.couch || !config.couch.bucket)
     throw new Error('Could not get database name, config missing!')
   if(!database)
@@ -272,6 +274,72 @@ client.createUser = function(username,password,roles){
     password: password,
     roles: roles
   })
+}
+
+
+/**
+ * Help use the couchbase counters better
+ * @param {object} db
+ * @param {string} key
+ * @param {Number} increment
+ * @return {P}
+ */
+client.counter = function(db,key,increment){
+  if(!increment) increment = 1
+  else increment = parseInt(increment,10)
+  return db.counterAsync(key,increment,{initial: 1})
+}
+
+
+/**
+ * Helper to mutate in updates with brevity
+ * @param {object} db
+ * @param {string} key
+ * @param {string} action
+ * @param {string} path
+ * @param {*} value
+ * @return {P}
+ */
+client.mutateIn = function(db,key,action,path,value){
+  return new P(function(resolve,reject){
+    return db.mutateIn(key)[action](
+      path,value,{createParents: true}
+    ).execute(function(err){
+      if(err) reject(err)
+      else resolve()
+    })
+  })
+}
+
+
+/**
+ * Clear counters in a bucket
+ * @param {object} db
+ * @return {P}
+ */
+client.clearCounters = function(db){
+  var qstring = 'DELETE FROM ' +
+    client.getName(db.type) + ' WHERE META().id LIKE $1 OR META().id LIKE $2'
+  var params = [
+    client.schema.counter() + '%',
+    client.schema.counterError() + '%'
+  ]
+  var query = client.N1Query.fromString(qstring)
+  return db.queryAsync(query,params)
+}
+
+
+/**
+ * Clear slots in a bucket
+ * @param {object} db
+ * @return {P}
+ */
+client.clearSlots = function(db){
+  var qstring = 'DELETE FROM ' +
+    client.getName(db.type) + ' WHERE META().id LIKE $1'
+  var params = [client.schema.slot() + '%']
+  var query = client.N1Query.fromString(qstring)
+  return db.queryAsync(query,params)
 }
 
 

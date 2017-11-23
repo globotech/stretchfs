@@ -1,4 +1,5 @@
 'use strict';
+var crc32 = require('crc32')
 
 
 
@@ -134,6 +135,23 @@ CouchSchema.prototype.job = function(handle){
 
 
 /**
+ * Read slot
+ * @param {string} remoteHost
+ * @param {string} remotePort
+ * @param {string} userAgent
+ * @param {string} hash
+ * @return {string}
+ */
+CouchSchema.prototype.slot = function(remoteHost,remotePort,userAgent,hash){
+  if(!remotePort) remotePort = 65537
+  if(!userAgent) userAgent = 'phantom'
+  if(!remoteHost || !hash) return 'slot:'
+  var sum = crc32(remoteHost + remotePort + userAgent + hash)
+  return this.applyPrefix('slot:' + sum)
+}
+
+
+/**
  * StretchFS User
  * @param {string} name
  * @return {string}
@@ -160,6 +178,34 @@ CouchSchema.prototype.userToken = function(token){
  */
 CouchSchema.prototype.staff = function(name){
   return this.applyPrefix('staff:' + (name || ''))
+}
+
+
+/**
+ * Counter stat
+ * @param {string} system
+ * @param {string} key
+ * @return {string}
+ */
+CouchSchema.prototype.counter = function(system,key){
+  if(!system) system = ''
+  else system = system + ':'
+  if(!key) key = ''
+  return this.applyPrefix('counter:stat:' + system + key)
+}
+
+
+/**
+ * Counter error
+ * @param {string} system
+ * @param {string} key
+ * @return {string}
+ */
+CouchSchema.prototype.counterError = function(system,key){
+  if(!system) system = ''
+  else system = system + ':'
+  if(!key) key = ''
+  return this.applyPrefix('counter:error:' + system + key)
 }
 
 

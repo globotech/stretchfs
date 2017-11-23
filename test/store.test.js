@@ -56,6 +56,12 @@ describe('store',function(){
         //remove the store record
         return cb.removeAsync(storeKey)
       })
+      .then(function(){
+        return couch.clearCounters(cb)
+      })
+      .then(function(){
+        return couch.clearSlots(cb)
+      })
   })
   describe('basic',function(){
     //home page

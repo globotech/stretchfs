@@ -52,7 +52,7 @@ var copyCondition = {
  */
 var listSingles = function(limit){
   debug('listing imbalanced inventory')
-  var tname = couch.getName(couch.type.STRETCHFS,true)
+  var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND copies < 2 ' +
     ' LIMIT ' + (limit || 5000)
@@ -74,7 +74,7 @@ var listSingles = function(limit){
  */
 var listImbalanced = function(limit){
   debug('listing imbalanced inventory')
-  var tname = couch.getName(couch.type.STRETCHFS,true)
+  var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND desiredCopies <> copies' +
     ' LIMIT ' + (limit || 10000)
@@ -96,7 +96,7 @@ var listImbalanced = function(limit){
  */
 var listHot = function(limit){
   debug('listing hot inventory needing cache copies')
-  var tname = couch.getName(couch.type.STRETCHFS,true)
+  var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND copies - cacheCopies < 0' +
     ' LIMIT ' + (limit || 250)
@@ -118,7 +118,7 @@ var listHot = function(limit){
  */
 var listGeneral = function(limit){
   debug('listing general inventory')
-  var tname = couch.getName(couch.type.STRETCHFS,true)
+  var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND ' +
     ' (lastBalancedAt IS NULL OR lastBalancedAt < $2) ' +
@@ -152,7 +152,7 @@ var addCopy = function(inventory,type,condition){
     function(){
       var copyKey
       var storeTo
-      return storeBalance.winner(storeList,skip)
+      return storeBalance.selectWritePeer(storeList,skip)
         .then(function(result){
           storeTo = result
           copyKey = couch.schema.inventoryTask(inventory.hash,storeTo.name)
@@ -200,7 +200,7 @@ var removeCopy = function(inventory,type,condition){
     function(){
       var storeFrom
       var copyKey
-      return storeBalance.winnerFromExists(inventory.hash,inventory,[],true)
+      return storeBalance.selectReadPeer(inventory.hash,inventory,[],true)
         .then(function(result){
           storeFrom = result
           copyKey = couch.schema.inventoryTask(inventory.hash,storeFrom.name)
@@ -233,6 +233,7 @@ var removeCopy = function(inventory,type,condition){
   )
 }
 
+
 /**
  * Manage a record and control job flow
  * @param {object} inventory
@@ -259,6 +260,7 @@ var validateBalance = function(inventory){
 
 /**
  * Balance an inventory record
+ * @param {object} inventory
  * @return {P}
  */
 var balanceRecord = function(inventory){
@@ -348,7 +350,7 @@ var balanceRecord = function(inventory){
 
 
 /**
- * Sync stats from redis
+ * Sync stats
  * @return {P}
  */
 var inventoryBalance= function(){

@@ -15,11 +15,11 @@ var temp = require('temp')
 var api = require('../../helpers/api')
 var NetworkError = stretchfs.NetworkError
 var NotFoundError = stretchfs.NotFoundError
+var couch = require('../../helpers/couchbase')
 var inventory = require('../../helpers/inventory')
 var prismBalance = require('../../helpers/prismBalance')
 var promiseWhile = require('../../helpers/promiseWhile')
 var purchasedb = require('../../helpers/purchasedb')
-var redis = require('../../helpers/redis')()
 var hasher = require('../../helpers/hasher')
 var hashFile = require('../../helpers/hashFile')
 var storeBalance = require('../../helpers/storeBalance')
@@ -31,6 +31,9 @@ var config = require('../../config')
 //make some promises
 P.promisifyAll(temp)
 P.promisifyAll(purchasedb)
+
+//open some buckets
+var cb = couch.stretchfs()
 
 
 /**
@@ -60,7 +63,7 @@ var sendToStorage = function(tmpfile,hash,extension){
         },
         //action
         function(){
-          return storeBalance.winner(storeList,skip)
+          return storeBalance.selectWritePeer(storeList,skip)
             .then(function(result){
               winners.push(result)
               skip.push(result.name)
@@ -96,7 +99,7 @@ var sendToStorage = function(tmpfile,hash,extension){
  * @param {object} res
  */
 exports.upload = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:upload'))
+  couch.counter(cb,couch.schema.counter('prism','content:upload'))
   debug('upload request received')
   var data = {}
   var files = {}
@@ -113,7 +116,7 @@ exports.upload = function(req,res){
     data[key] = value
   })
   busboy.on('file',function(key,file,name,encoding,mimetype){
-    redis.incr(redis.schema.counter('prism','content:filesUploaded'))
+    couch.counter(cb,couch.schema.counter('prism','content:filesUploaded'))
     debug('upload, got file')
     var type = {
       user: mimetype,
@@ -128,8 +131,8 @@ exports.upload = function(req,res){
       if(!typeBuf || typeBuf.length <= 8192){
         typeBuf = typeBuf ? new Buffer.concat([typeBuf,chunk]) : chunk
       }
-      redis.incrby(
-        redis.schema.counter('prism','content:bytesUploaded'),chunk.length)
+      couch.counter(cb,
+        couch.schema.counter('prism','content:bytesUploaded'),chunk.length)
     })
     var writeStream = fs.createWriteStream(tmpfile)
     files[key] = {
@@ -185,7 +188,7 @@ exports.upload = function(req,res){
         })
         .catch(function(err){
           fs.unlinkSync(file.tmpfile)
-          redis.incr(redis.schema.counterError('prism','content:upload'))
+          couch.counter(cb,couch.schema.counterError('prism','content:upload'))
           debug('upload error',err.message,err,err.stack)
           res.json({error: err.message})
         })
@@ -204,7 +207,7 @@ exports.upload = function(req,res){
           file = files[keys[i]]
           fs.unlinkSync(file.tmpfile)
         }
-        redis.incr(redis.schema.counterError('prism','content:upload'))
+        couch.counter(cb,couch.schema.counterError('prism','content:upload'))
         debug('upload error',err.message,err,err.stack)
         res.json({error: err.message})
       })
@@ -234,7 +237,7 @@ exports.upload = function(req,res){
  * @param {object} res
  */
 exports.retrieve = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:retrieve'))
+  couch.counter(cb,couch.schema.counter('prism','content:retrieve'))
   var retrieveRequest = req.body.request
   var hashType = req.body.hashType || config.defaultHashType || 'sha1'
   var extension = req.body.extension || 'bin'
@@ -250,7 +253,8 @@ exports.retrieve = function(req,res){
     if(!typeBuf || typeBuf.length <= 8192){
       typeBuf = typeBuf ? new Buffer.concat([typeBuf,chunk]) : chunk
     }
-    redis.schema.counter('prism','content:bytesUploaded',chunk.length)
+    couch.counter(cb,
+      couch.schema.counter('prism','content:bytesUploaded'),chunk.length)
   })
   var hash
   var writeStream = fs.createWriteStream(tmpfile)
@@ -285,7 +289,7 @@ exports.retrieve = function(req,res){
       //got here? file already exists on cluster so we are done
     })
     .then(function(){
-      redis.incr(redis.schema.counter('prism','content:filesUploaded'))
+      couch.counter(cb,couch.schema.counter('prism','content:filesUploaded'))
       var response = {
         hash: hash,
         extension: extension
@@ -298,7 +302,7 @@ exports.retrieve = function(req,res){
       debug('retrieve error',err)
       logger.log('error', err)
       logger.log('error', err.stack)
-      redis.incr(redis.schema.counterError('prism','content:retrieve'))
+      couch.counter(cb,couch.schema.counterError('prism','content:retrieve'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -334,7 +338,7 @@ exports.retrieve = function(req,res){
  * @param {object} res
  */
 exports.detail = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:detail'))
+  couch.counter(cb,couch.schema.counter('prism','content:detail'))
   var hash = req.body.hash || req.body.sha1 || ''
   var record = {}
   var singular = !(hash instanceof Array)
@@ -359,7 +363,7 @@ exports.detail = function(req,res){
       }
     })
     .catch(UserError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:detail'))
+      couch.counter(cb,couch.schema.counterError('prism','content:detail'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -387,7 +391,7 @@ exports.detail = function(req,res){
  * @param {object} res
  */
 exports.exists = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:exists'))
+  couch.counter(cb,couch.schema.counter('prism','content:exists'))
   exports.detail(req,res)
 }
 
@@ -403,7 +407,7 @@ exports.speedTest = function(req,res){
   storeBalance.storeList()
     .then(function(result){
       if(!result) throw new Error('No stores available')
-      return storeBalance.winner(result)
+      return storeBalance.selectWritePeer(result)
     })
     .then(function(result){
       if(!result) throw new Error('No store winner available')
@@ -429,7 +433,7 @@ exports.speedTest = function(req,res){
  * @param {object} res
  */
 exports.download = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:download'))
+  couch.counter(cb,couch.schema.counter('prism','content:download'))
   var hash = req.body.hash || req.body.sha1 || ''
   var winner, inventory
   prismBalance.contentExists(hash)
@@ -437,7 +441,7 @@ exports.download = function(req,res){
       inventory = result
       if(!inventory && !inventory.exists)
         throw new NotFoundError('File not found')
-      return storeBalance.winnerFromExists(hash,inventory,[],true)
+      return storeBalance.selectReadPeer(req,inventory)
     })
     .then(function(result){
       winner = result
@@ -448,8 +452,8 @@ exports.download = function(req,res){
         json: {hash: inventory.hash, ext: inventory.mimeExtension}
       })
       req.on('data',function(chunk){
-        redis.incrby(
-          redis.schema.counter('prism','content:bytesDownloaded'),
+        couch.counter(cb,
+          couch.schema.counter('prism','content:bytesDownloaded'),
           chunk.length
         )
       })
@@ -460,7 +464,8 @@ exports.download = function(req,res){
       req.pipe(res)
     })
     .catch(NotFoundError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:download:notFound'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:download:notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -488,7 +493,7 @@ exports.download = function(req,res){
  * @param {object} res
  */
 exports.purchase = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:purchase'))
+  couch.counter(cb,couch.schema.counter('prism','content:purchase'))
   //var start = +new Date()
   var hash = (req.body.hash || req.body.sha1 || '').trim()
   var ext = req.body.ext
@@ -504,7 +509,7 @@ exports.purchase = function(req,res){
       inventory = result
       if(!inventory.exists) throw new NotFoundError('File not found')
       //really right here we need to generate a unique token
-      // (unique meaning not already in the redis registry for purchases
+      // (unique meaning not already in the registry for purchases
       // since we already have a token then we should just try
       var tokenExists = true
       return promiseWhile(
@@ -544,7 +549,8 @@ exports.purchase = function(req,res){
       res.json(purchase)
     })
     .catch(NetworkError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:purchase:network'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:purchase:network'))
       res.status(503)
       res.set({
         'StretchFS-Code': 503,
@@ -554,7 +560,8 @@ exports.purchase = function(req,res){
       res.json({error: 'Failed to check existence: ' + err.message})
     })
     .catch(NotFoundError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:purchase:notFound'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:purchase:notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -564,7 +571,7 @@ exports.purchase = function(req,res){
       res.json({error: err})
     })
     .catch(UserError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:purchase'))
+      couch.counter(cb,couch.schema.counterError('prism','content:purchase'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -594,7 +601,7 @@ exports.purchase = function(req,res){
  * @param {object} res
  */
 exports.deliver = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:deliver'))
+  couch.counter(cb,couch.schema.counter('prism','content:deliver'))
   var token = req.params.token
   var filename = req.params.filename
   var queryString = req.query
@@ -689,15 +696,15 @@ exports.deliver = function(req,res){
       var validation = validateRequest(purchase)
       if(!validation.valid) throw new UserError(validation.reason)
       //we have a purchase so now... we need to pick a store....
-      return storeBalance.winnerFromExists(token,purchase.inventory,[],true)
+      return storeBalance.selectReadPeer(req,purchase.inventory)
         .then(function(winner){
           var url = makeUrl(req,winner,purchase)
           res.redirect(302,url)
         })
     })
     .catch(SyntaxError,function(err){
-      redis.incr(
-        redis.schema.counterError('prism','content:deliver:syntax'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:deliver:syntax'))
       res.status(400)
       res.set({
         'StretchFS-Code': 400,
@@ -707,8 +714,8 @@ exports.deliver = function(req,res){
       res.json({error: 'Failed to parse purchase: ' + err.message})
     })
     .catch(NotFoundError,function(err){
-      redis.incr(
-        redis.schema.counterError('prism','content:deliver:notFound'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:deliver:notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -718,7 +725,7 @@ exports.deliver = function(req,res){
       res.json({error: err.message})
     })
     .catch(UserError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:deliver'))
+      couch.counter(cb,couch.schema.counterError('prism','content:deliver'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -747,7 +754,7 @@ exports.deliver = function(req,res){
  * @param {object} res
  */
 exports.contentStatic = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:static'))
+  couch.counter(cb,couch.schema.counter('prism','content:static'))
   var hash = req.params.hash || req.params.sha1 || ''
   var filename = req.params.filename
   //support different address delivery types
@@ -762,7 +769,7 @@ exports.contentStatic = function(req,res){
       if(config.prism.denyStaticTypes.indexOf(ext) >= 0)
         throw new UserError('Invalid static file type')
       inventory = result
-      return storeBalance.winnerFromExists(hash,result,[],true)
+      return storeBalance.selectReadPeer(req,result)
     })
     .then(function(result){
       //set the extension based on the chosen winners relative path, this will
@@ -783,7 +790,8 @@ exports.contentStatic = function(req,res){
       res.redirect(302,url)
     })
     .catch(NetworkError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:static:network'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:static:network'))
       res.status(503)
       res.set({
         'StretchFS-Code': 503,
@@ -795,7 +803,8 @@ exports.contentStatic = function(req,res){
       })
     })
     .catch(NotFoundError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:static:notFound'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:static:notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -805,7 +814,7 @@ exports.contentStatic = function(req,res){
       res.json({error: err.message})
     })
     .catch(UserError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:static'))
+      couch.counter(cb,couch.schema.counterError('prism','content:static'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -823,14 +832,15 @@ exports.contentStatic = function(req,res){
  * @param {object} res
  */
 exports.purchaseRemove = function(req,res){
-  redis.incr(redis.schema.counter('prism','content:purchaseRemove'))
+  couch.counter(cb,couch.schema.counter('prism','content:purchaseRemove'))
   var token = req.body.token
   purchasedb.remove(token)
     .then(function(){
       res.json({token: token, count: 1, success: 'Purchase removed'})
     })
     .catch(UserError,function(err){
-      redis.incr(redis.schema.counterError('prism','content:purchaseRemove'))
+      couch.counter(cb,
+        couch.schema.counterError('prism','content:purchaseRemove'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,

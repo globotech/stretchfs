@@ -9,13 +9,12 @@ var prettyBytes = require('pretty-bytes')
 var config = require('../config')
 
 var couch = require('./couchbase')
-var redis = require('../helpers/redis')()
 
 
 
 /**
  * @constructor
- * @param {FILE_RECORD} file - File record to be processed
+ * @param {object} file - File record to be processed
  * @param {Array=} opt_peerList - Cached list of peers
  * @return {FileOp}
  */
@@ -61,7 +60,7 @@ FileOp.prototype.FILE_ACTIONS = {
  * @param {PEER_TYPES} type - Peer type filter. Must be an enumerated
  * value of {@link PEER_TYPES}.
  * @param {string=} opt_peerName - Peer name for further filtering
- * @return {PEER_RECORD}
+ * @return {object}
  */
 FileOp.prototype.selectPeer = function(type,opt_peerName){
   var that = this
@@ -197,10 +196,6 @@ FileOp.prototype.addClones = function(){
           console.error(file.hash,
             'Failed to send clone to ' + storeToWinner.store,err.message)
         })
-        .finally(function(){
-          var existsKey = couch.schema.inventory(file.hash)
-          redis.del(existsKey)
-        })
     }
   }
   for(var i = 0; i < that.repeat; i++){
@@ -268,10 +263,6 @@ FileOp.prototype.removeClones = function(){
         .catch(function(err){
           console.error(file.hash,'Failed to remove clone',err.message)
         })
-        .finally(function(){
-          var existsKey = couch.schema.inventory(file.hash)
-          redis.del(existsKey)
-        })
     }
   }
   for(var i = 0; i < that.repeat; i++){
@@ -326,10 +317,6 @@ FileOp.prototype.verifyFile = function(){
         .catch(function(err){
           console.error(file.hash,'Failed to verify inventory',err.message)
         })
-        .finally(function(){
-          var existsKey = couch.schema.inventory(file.hash)
-          redis.del(existsKey)
-        })
     })
 }
 
@@ -383,10 +370,6 @@ FileOp.prototype.cloneFile = function(){
           console.error(file.hash,
             'Failed to send clone to ' + storeToInfo.store,err.message)
         })
-        .finally(function(){
-          var existsKey = couch.schema.inventory(file.hash)
-          redis.del(existsKey)
-        })
     })
 }
 
@@ -427,10 +410,6 @@ FileOp.prototype.removeFile = function(){
       .catch(function(err){
         console.error(file.hash,
           'Failed to remove clone from ' + storeInfo.store,err.message)
-      })
-      .finally(function(){
-        var existsKey = couch.schema.inventory(file.hash)
-        redis.del(existsKey)
       })
   })
 }

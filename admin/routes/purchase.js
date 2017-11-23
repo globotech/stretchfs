@@ -23,7 +23,7 @@ exports.list = function(req,res){
   list.listQuery(
     couch,
     cb,
-    couch.type.STRETCHFS,
+    couch.type.stretchfs,
     search,
     '_id',
     true,
@@ -128,7 +128,9 @@ exports.save = function(req,res){
       if(data.hash) doc.hash = data.hash
       if(data.ext) doc.ext = data.ext
       if(data.referrer) doc.referrer = data.referrer
-      doc.expirationDate = new Date(+(new Date(doc.createdAt)) + lifeMs).toJSON()
+      doc.expirationDate = new Date(
+        +(new Date(doc.createdAt)) + lifeMs
+      ).toJSON()
       doc.updatedAt = timestamp.toJSON()
       return cb.upsertAsync(purchaseKey,doc,{cas: result.cas})
     })

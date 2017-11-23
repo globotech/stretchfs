@@ -106,7 +106,7 @@ var downVote = function(peer,reason,systemKey,systemType,peerCount){
   return createDownVote()
     .then(function(){
       var clause = {}
-      clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
+      clause.from = ' FROM ' + couch.getName(couch.type.stretchfs)
       clause.where = ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(
         'SELECT *' + clause.from + clause.where
@@ -191,7 +191,7 @@ var runHeartbeat = function(systemKey,systemType){
         //remove down votes
         var downKey = couch.schema.downVote(peer.name)
         var clause = {}
-        clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
+        clause.from = ' FROM ' + couch.getName(couch.type.stretchfs)
         clause.where = ' WHERE META().id LIKE $1'
         var query = couch.N1Query.fromString(
           'DELETE' + clause.from + clause.where
@@ -303,7 +303,7 @@ var runVotePrune = function(systemKey,systemType){
     return (voteExpiresAfter <= currentTimestamp)
   }
   var clause = {}
-  clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
+  clause.from = ' FROM ' + couch.getName(couch.type.stretchfs)
   clause.where = ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString(
     'SELECT *' + clause.from + clause.where
@@ -378,7 +378,7 @@ var markMeUp = function(systemKey,systemPrism,systemType,done){
     .then(function(){
       //Time to delete the downvote log
       var clause = {}
-      clause.from = ' FROM ' + couch.getName(couch.type.STRETCHFS,true)
+      clause.from = ' FROM ' + couch.getName(couch.type.stretchfs)
       clause.where = ' WHERE META().id LIKE $1'
       var query = couch.N1Query.fromString(
         'DELETE' + clause.from + clause.where

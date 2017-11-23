@@ -21,7 +21,7 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  list.listQuery(couch,cb,couch.type.STRETCHFS,
+  list.listQuery(couch,cb,couch.type.stretchfs,
     couch.schema.user(search),'name',true,start,limit)
     .then(function(result){
       res.render('user/list',{

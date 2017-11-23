@@ -41,6 +41,12 @@ describe('prism',function(){
         //remove peer record
         return cb.removeAsync(prismKey)
       })
+      .then(function(){
+        return couch.clearCounters(cb)
+      })
+      .then(function(){
+        return couch.clearSlots(cb)
+      })
   })
   //home page
   describe('prism:basic',function(){

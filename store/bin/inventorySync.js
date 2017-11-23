@@ -61,8 +61,8 @@ var verifyInventoryAsync = function(){
   }
   debug('starting to verify',contentFolder)
   var qstring = 'SELECT META().id AS _id, ' +
-    couch.getName(couch.type.STRETCHFS,true) + '.* FROM ' +
-    couch.getName(couch.type.STRETCHFS,true) + ' WHERE META().id LIKE $1'
+    couch.getName(couch.type.stretchfs) + '.* FROM ' +
+    couch.getName(couch.type.stretchfs) + ' WHERE META().id LIKE $1'
   var query = couch.N1Query.fromString(qstring)
   query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
   var inventoryKey = '%' + config.store.name

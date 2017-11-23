@@ -8,8 +8,11 @@ var http = require('http')
 var https = require('https')
 var worker = require('infant').worker
 
-var redis = require('../helpers/redis')()
+var couch = require('../helpers/couchbase')
 var userSessionValidate = require('../helpers/userSessionValidate')
+
+//open some buckets
+var cb = couch.stretchfs()
 
 var app = express()
 var config = require('../config')
@@ -59,7 +62,7 @@ app.use(bodyParser.json({limit: '100mb'}))
 
 //track requests
 app.use(function(req,res,next){
-  redis.incr(redis.schema.counter('prism','requests'))
+  couch.counter(cb,couch.schema.counter('prism','requests'))
   next()
 })
 
@@ -75,14 +78,8 @@ app.post('/',routes.index)
 app.get('/ping',routes.ping)
 app.post('/ping',routes.ping)
 
-//stats
-app.get('/stats',routes.stats.sendJSON)
-app.post('/stats',routes.stats.sendJSON)
-app.get('/statsPush',routes.stats.receiveJSON)
-app.post('/statsPush',routes.stats.receiveJSON)
-
 app.get('/crossdomain.xml',function(req,res){
-  redis.incr(redis.schema.counter('prism','crossdomain'))
+  couch.counter(cb,couch.schema.counter('prism','crossdomain'))
   res.sendFile(__dirname + '/public/crossdomain.xml')
 })
 
@@ -115,10 +112,6 @@ app.post('/content/download',userSessionValidate,routes.content.download)
 //private routes
 //--------------------
 var auth = basicAuth(config.prism.username,config.prism.password)
-
-//cache management
-app.post('/cache/flush',auth,routes.cache.flush)
-app.post('/cache/detail',auth,routes.cache.detail)
 
 //content
 app.post('/content/exists',auth,routes.content.exists)

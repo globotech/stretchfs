@@ -9,9 +9,6 @@ module.exports = {
   domain: 'stretchfs-test',
   group: 'group1',
   root: __dirname + '/data/test/prism1',
-  redis: {
-    stretchfs: 0
-  },
   store: {
     enabled: false,
     username: 'stretchfs-store',

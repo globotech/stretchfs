@@ -9,9 +9,6 @@ module.exports = {
   domain: 'stretchfs-test',
   group: 'group2',
   root: __dirname + '/data/test/store4',
-  redis: {
-    stretchfs: 5
-  },
   store: {
     enabled: true,
     host: '127.0.2.7',

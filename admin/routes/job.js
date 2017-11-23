@@ -19,7 +19,7 @@ exports.list = function(req,res){
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
   list.listQuery(
-    couch,cb,couch.type.STRETCHFS,
+    couch,cb,couch.type.stretchfs,
     couch.schema.job(search),'handle',true,start,limit
   )
     .then(function(result){

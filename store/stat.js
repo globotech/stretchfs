@@ -4,7 +4,6 @@ var debug = require('debug')('stretchfs:store:stat')
 var diskusage = P.promisifyAll(require('diskusage'))
 var child = require('infant').child
 
-var redis = require('../helpers/redis')()
 var couch = require('../helpers/couchbase')
 
 var config = require('../config')
@@ -18,158 +17,17 @@ var cb = couch.stretchfs()
 
 
 /**
- * Update the inventory stat
- * @param {string} hash
- * @param {number} hitCount
- * @param {number} byteCount
- * @return {P}
- */
-var updateInventoryStat = function(hash,hitCount,byteCount){
-  var storeName = config.store.name
-  var inventoryKey = couch.schema.inventory(hash)
-  return cb.getAsync(inventoryKey)
-    .then(function(result){
-      result.value.hitCount = result.value.hitCount + hitCount
-      result.value.byteCount = result.value.byteCount + byteCount
-      result.value.hits[storeName] = result.value.hits[storeName] + hitCount
-      result.value.bytes[storeName] = result.value.bytes[storeName] + byteCount
-      result.value.lastUpdated = new Date().toJSON()
-      return cb.upsertAsync(
-        inventoryKey,result.value,{cas: result.cas})
-    })
-    .catch(function(err){
-      if(12 !== err.code) throw err
-      return updateInventoryStat(hash,hitCount,byteCount)
-    })
-}
-
-
-/**
- * Update the purchase stat
- * @param {string} token
- * @param {number} hitCount
- * @param {number} byteCount
- * @return {P}
- */
-var updatePurchaseStat = function(token,hitCount,byteCount){
-  var purchaseKey = couch.schema.purchase(token)
-  return cb.getAsync(purchaseKey)
-    .then(function(result){
-      result.value.hitCount = result.value.hitCount + hitCount
-      result.value.byteCount = result.value.byteCount + byteCount
-      result.value.hits[storeName] = result.value.hits[storeName] + hitCount
-      result.value.bytes[storeName] = result.value.bytes[storeName] + byteCount
-      result.value.lastUpdated = new Date().toJSON()
-      return cb.upsertAsync(
-        purchaseKey,result.value,{cas: result.cas})
-    })
-    .catch(function(err){
-      if(12 !== err.code) throw err
-      return updatePurchaseStat(token,hitCount,byteCount)
-    })
-}
-
-
-/**
  * Update the peer stat
  * @param {object} diskUsage
- * @param {array} slotUsage
  * @return {P}
  */
-var updatePeerStat = function(diskUsage,slotUsage){
-  return cb.getAsync(storeKey)
-    .then(function(result){
-      result.value.usage = {
-        free: diskUsage.free,
-        total: diskUsage.total
-      }
-      result.value.slot = {
-        count: slotUsage.length,
-        list: slotUsage
-      }
-      return cb.upsertAsync(storeKey,result.value,{cas: result.cas})
-    })
-    .catch(function(err){
-      if(12 !== err.code) throw err
-      return updatePeerStat(diskUsage,slotUsage)
-    })
-}
-
-
-/**
- * Sync stats from redis
- * @return {P}
- */
-var statSyncInventory = function(){
-  debug('inventory stat sync starting')
-  var keyCount = 0
-  var overallHitCount = 0
-  var overallByteCount = 0
-  var collectKey = redis.schema.inventoryStatCollect()
-  return redis.smembersAsync(collectKey)
-    .each(function(hash){
-      keyCount++
-      //get the local keys
-      var hitCountKey = redis.schema.inventoryStat(hash,'hit')
-      var byteCountKey = redis.schema.inventoryStat(hash,'byte')
-      return P.all([
-        redis.getAsync(hitCountKey),
-        redis.getAsync(byteCountKey)
-      ])
-        .spread(function(hitCount,byteCount){
-          overallHitCount = overallHitCount + hitCount
-          overallByteCount = overallByteCount + hitCount
-          return updateInventoryStat(hitCount,byteCount)
-        })
-        .then(function(){
-          //reset counter keys and collection set
-          redis.set(hitCountKey,0)
-          redis.set(byteCountKey,0)
-        })
-    })
-    .then(function(){
-      redis.del(collectKey)
-      debug('inventory stat sync complete',
-        keyCount,overallHitCount,overallByteCount)
-    })
-}
-
-
-/**
- * Sync stats from redis
- * @return {P}
- */
-var statSyncPurchases = function(){
-  debug('purchase stat sync starting')
-  var keyCount = 0
-  var overallHitCount = 0
-  var overallByteCount = 0
-  var collectKey = redis.schema.purchaseStatCollect()
-  return redis.smembersAsync(collectKey)
-    .each(function(token){
-      keyCount++
-      //get the local keys
-      var hitCountKey = redis.schema.purchaseStat(token,'hit')
-      var byteCountKey = redis.schema.purchaseStat(token,'byte')
-      return P.all([
-        redis.getAsync(hitCountKey),
-        redis.getAsync(byteCountKey)
-      ])
-        .spread(function(hitCount,byteCount){
-          overallHitCount = overallHitCount + hitCount
-          overallByteCount = overallByteCount + hitCount
-          return updatePurchaseStat(token,hitCount,byteCount)
-        })
-        .then(function(){
-          redis.set(hitCountKey,0)
-          redis.set(byteCountKey,0)
-        })
-    })
-    .then(function(){
-      redis.del(collectKey)
-      debug('purchase stat sync complete',
-        keyCount,overallHitCount,overallByteCount)
-    })
+var updatePeerStat = function(diskUsage){
+  return P.all([
+    cb.mutateInAsync(storeKey,
+      couch.SubDocument.upsert('usage.free',diskUsage.free)),
+    cb.mutateInAsync(storeKey,
+      couch.SubDocument.upsert('usage.total',diskUsage.total))
+  ])
 }
 
 
@@ -179,20 +37,12 @@ var statSyncPurchases = function(){
  */
 var statSyncPeer = function(){
   debug('peer stat sync starting')
-  var slotKey = redis.schema.peerSlot()
-  var slotUsage = {}
   var diskUsage = {}
   return diskusage.checkAsync(config.root)
     .then(function(result){
       debug('got disk usage',result)
       diskUsage = result
-      debug('getting slots')
-      return redis.smembersAsync(slotKey)
-    })
-    .then(function(result){
-      debug('got slots',result)
-      slotUsage = result
-      return updatePeerStat(diskUsage,slotUsage)
+      return updatePeerStat(diskUsage)
     })
     .then(function(){
       debug('peer stat sync complete')
@@ -201,7 +51,7 @@ var statSyncPeer = function(){
 
 
 /**
- * Sync stats from redis
+ * Sync stats
  * @return {P}
  */
 var statSync= function(){

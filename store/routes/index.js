@@ -1,9 +1,10 @@
 'use strict';
-var ObjectManage = require('object-manage')
-
-var redis = require('../../helpers/redis')()
+var couch = require('../../helpers/couchbase')
 
 var config = require('../../config')
+
+//open some buckets
+var cb = couch.stretchfs()
 
 
 /**
@@ -12,7 +13,7 @@ var config = require('../../config')
  * @param {object} res
  */
 exports.index = function(req,res){
-  redis.incr(redis.schema.counter('store','index'))
+  couch.counter(cb,couch.schema.counter('store','index'))
   res.json({message: 'Welcome to StretchFS version ' + config.version})
 }
 
@@ -23,30 +24,7 @@ exports.index = function(req,res){
  * @param {object} res
  */
 exports.ping = function(req,res){
-  redis.incr(redis.schema.counter('store','ping'))
   res.json({pong: 'pong'})
-}
-
-
-/**
- * Print stats
- * @param {object} req
- * @param {object} res
- */
-exports.stats = function(req,res){
-  redis.incr(redis.schema.counter('store','stat'))
-  redis.getKeysPattern(redis.schema.statKeys())
-    .then(function(result){
-      var stat = new ObjectManage()
-      var keys = Object.keys(result.data)
-      for(var i = 0; i < keys.length; i++){
-        stat.$set(
-          keys[i].replace(/:/g,'.').replace('stretchfs.counter.',''),
-          result.data[keys[i]]
-        )
-      }
-      res.send(JSON.stringify(stat.$strip(),null,'  '))
-    })
 }
 
 

@@ -14,7 +14,6 @@ var api = require('../../helpers/api')
 var couch = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
 var content = stretchfs.mock.content
-var redis = require('../../helpers/redis')()
 
 var NetworkError = stretchfs.NetworkError
 var UserError = stretchfs.UserError
@@ -163,9 +162,6 @@ exports.before = function(that){
     return rmfr(__dirname + '/../assets/data')
   })
     .then(function(){
-      return redis.removeKeysPattern(redis.schema.flushKeys())
-    })
-    .then(function(){
       return P.all([
         exports.server.prism1.startAsync(),
         exports.server.prism2.startAsync(),
@@ -229,6 +225,12 @@ exports.after = function(that){
         .catch(function(err){
           if(13 !== err.code) throw err
         })
+    })
+    .then(function(){
+      return couch.clearCounters(cb)
+    })
+    .then(function(){
+      return couch.clearSlots(cb)
     })
     .then(function(){
       logger.log('info','Mock cluster stopped!')
@@ -449,6 +451,7 @@ exports.contentRetrieve = function(prism){
       res.sendFile(path.resolve(content.file))
     })
     P.promisifyAll(server)
+    var resBody = null
     return server.listenAsync(25000,'127.0.0.1')
       .then(function(){
         var port = server.address().port
@@ -466,11 +469,12 @@ exports.contentRetrieve = function(prism){
           })
       })
       .spread(function(res,body){
+        resBody = body
         expect(body.hash).to.equal(content.hash)
         expect(body.extension).to.equal(content.ext)
       })
       .catch(function(err){
-        logger.log('error','Failed to setup retrieve' + err.message,err.stack)
+        console.log(err,resBody)
         throw err
       })
       .finally(function(){

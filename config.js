@@ -38,14 +38,6 @@ config.$load({
   /**
    * Databases
    */
-  //redis
-  redis: {
-    host: '127.0.0.1',
-    port: 6379,
-    stretchfs: 0,
-    prefix: 'stretchfs',
-    options: {}
-  },
   //couchbase
   couch: {
     protocol: 'couchbase://',
@@ -244,7 +236,8 @@ config.$load({
       syncFrequency: 30000 //30 seconds
     },
     //go ahead and put this at 0 if you like corrupt files
-    minFreeBytes: 67108864 //64MB (every hard drive needs this much free)
+    minFreeBytes: 67108864, //64MB (every hard drive needs this much free)
+    slotExpiration: 14400 //4 hrs
   }
 })
 

@@ -5,7 +5,6 @@ var debug = require('debug')('stretchfs:userSessionValidate')
 var request = require('request-promise')
 
 var couch = require('../helpers/couchbase')
-var redis = require('../helpers/redis')()
 
 var config = require('../config')
 
@@ -34,14 +33,15 @@ module.exports = function(req,res,next){
   var session = {}
   //without a token lets try basic auth since it can override
   if(!token){
-    redis.incr(redis.schema.counter('prism','userSessionValidate:basic'))
+    couch.counter(cb,couch.schema.counter('prism','userSessionValidate:basic'))
     auth(req,res,next)
   } else {
-    redis.incr(redis.schema.counter('prism','userSessionValidate:full'))
+    couch.counter(cb,couch.schema.counter('prism','userSessionValidate:full'))
     cb.getAsync(tokenKey)
       .then(function(result){
         session = result.value
-        redis.incr(redis.schema.counter('prism','userSession:' + session.token))
+        couch.counter(cb,
+          couch.schema.counter('prism','userSession:' + session.token))
         req.session = session
         next()
       })
