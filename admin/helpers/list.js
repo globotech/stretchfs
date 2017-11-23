@@ -15,6 +15,7 @@ exports.integerArgDefaulted = function(arg,minimumDefault){
 }
 var integerArgDefaulted = exports.integerArgDefaulted
 
+
 /**
  * Helper for list queries
  * @param {object} cb
@@ -34,7 +35,7 @@ exports.listQuery = function(
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!type)
     throw new Error('Must know bucket type to list')
-  var bucketName = cb.getName(type,true)
+  var bucketName = cb.getName(type)
   var clause = {where:'',orderby:''}
   clause.from = ' FROM ' + bucketName
   var s = []
@@ -57,7 +58,7 @@ exports.listQuery = function(
     clause.from + clause.where
   )
   queries.data = cb.N1Query.fromString(
-    'SELECT META().id AS _id,' + bucketName + '.*' +
+    'SELECT META().id AS _id, ' + bucketName + '.*' +
     clause.from + clause.where +
     clause.orderby + clause.pagination
   )

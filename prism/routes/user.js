@@ -22,7 +22,7 @@ P.promisifyAll(request)
  * @return {*}
  */
 exports.login = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','user:login'))
+  couch.counter(cb,couch.schema.counter('prism','user-login'))
   var tokenType = req.body.tokenType || 'permanent'
   var user = {}
   var session = {}
@@ -107,7 +107,7 @@ exports.login = function(req,res){
  * @param {object} res
  */
 exports.logout = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','user:logout'))
+  couch.counter(cb,couch.schema.counter('prism','user-logout'))
   var tokenKey = couch.schema.userToken(req.session.token)
   cb.removeAsync(tokenKey)
     .then(function(){
@@ -125,7 +125,7 @@ exports.logout = function(req,res){
  * @param {object} res
  */
 exports.sessionValidate = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','user:sessionValidate'))
+  couch.counter(cb,couch.schema.counter('prism','user-sessionValidate'))
   //the middleware will have already validated us
   res.json({
     success: 'Session valid',

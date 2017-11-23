@@ -17,7 +17,7 @@ var cb = couch.stretchfs()
  * @return {P}
  */
 exports.storeList = function(search){
-  couch.counter(cb,couch.schema.counter('prism','storeBalance:storeList'))
+  couch.counter(cb,couch.schema.counter('prism','storeBalance-storeList'))
   var storeKey = couch.schema.store(search)
   debug(storeKey,'getting store list')
   var qstring = 'SELECT ' +
@@ -63,7 +63,7 @@ exports.existsToArray = function(inventory,skip){
  * @return {P}
  */
 exports.populateStores = function(storeList){
-  couch.counter(cb,couch.schema.counter('prism','storeBalance:populateStores'))
+  couch.counter(cb,couch.schema.counter('prism','storeBalance-populateStores'))
   return P.try(function(){
     return storeList
   })
@@ -88,7 +88,7 @@ exports.populateStores = function(storeList){
  * @return {P}
  */
 exports.selectReadPeer = function(req,inventory,skip){
-  couch.counter(cb,couch.schema.counter('prism','storeBalance:selectReadPeer'))
+  couch.counter(cb,couch.schema.counter('prism','storeBalance-selectReadPeer'))
   if(!(skip instanceof Array)) skip = []
   var candidates = exports.existsToArray(inventory,skip)
   if(!candidates.length) throw new NotFoundError('No store candidates found')
@@ -140,7 +140,7 @@ exports.selectReadPeer = function(req,inventory,skip){
  * @return {P}
  */
 exports.selectWritePeer = function(storeList,skip){
-  couch.counter(cb,couch.schema.counter('prism','storeBalance:selectWritePeer'))
+  couch.counter(cb,couch.schema.counter('prism','storeBalance-selectWritePeer'))
   var winner = false
   if(!(skip instanceof Array)) skip = []
   if(!(storeList instanceof Array)) storeList = []

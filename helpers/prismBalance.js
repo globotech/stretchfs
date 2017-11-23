@@ -13,7 +13,7 @@ var cb = couch.stretchfs()
  * @return {P}
  */
 exports.peerList = function(){
-  couch.counter(cb,couch.schema.counter('prism','prismBalance:peerList'))
+  couch.counter(cb,couch.schema.counter('prism','prismBalance-peerList'))
   var prismKey = couch.schema.prism()
   var storeKey = couch.schema.store()
   debug('Querying for peer list')
@@ -67,7 +67,7 @@ exports.peerList = function(){
  * @return {P}
  */
 exports.prismList = function(){
-  couch.counter(cb,couch.schema.counter('prism','prismBalance:prismList'))
+  couch.counter(cb,couch.schema.counter('prism','prismBalance-prismList'))
   var prismKey = couch.schema.prism()
   var qstring = 'SELECT ' +
     couch.getName(couch.type.stretchfs) + '.* FROM ' +
@@ -91,7 +91,7 @@ exports.prismList = function(){
  * @return {P}
  */
 exports.contentExists = function(hash){
-  couch.counter(cb,couch.schema.counter('prism','prismBalance:contentExists'))
+  couch.counter(cb,couch.schema.counter('prism','prismBalance-contentExists'))
   var existsKey = couch.schema.inventory(hash)
   debug(existsKey,'contentExists received')
   return cb.getAsync(existsKey)

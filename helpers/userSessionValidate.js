@@ -33,15 +33,15 @@ module.exports = function(req,res,next){
   var session = {}
   //without a token lets try basic auth since it can override
   if(!token){
-    couch.counter(cb,couch.schema.counter('prism','userSessionValidate:basic'))
+    couch.counter(cb,couch.schema.counter('prism','userSessionValidate-basic'))
     auth(req,res,next)
   } else {
-    couch.counter(cb,couch.schema.counter('prism','userSessionValidate:full'))
+    couch.counter(cb,couch.schema.counter('prism','userSessionValidate-full'))
     cb.getAsync(tokenKey)
       .then(function(result){
         session = result.value
         couch.counter(cb,
-          couch.schema.counter('prism','userSession:' + session.token))
+          couch.schema.counter('prism','userSession-' + session.token))
         req.session = session
         next()
       })

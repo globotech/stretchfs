@@ -20,7 +20,6 @@ if(require.main === module){
   infant.child(
     'stretchfs:' + config.prism.name + ':master',
     function(done){
-      logger.log('info', 'Beginning prism startup')
       cluster = infant.cluster(
         './worker',
         {
@@ -75,7 +74,6 @@ if(require.main === module){
             return heartbeat.startAsync()
           })
           .then(function(){
-            logger.log('info', 'Prism startup complete')
             done()
         })
         .catch(function(err){
@@ -92,7 +90,6 @@ if(require.main === module){
       }
     },
     function(done){
-      logger.log('info','Beginning prism shutdown')
       if(!config.prism.ghost){
         //mark ourselves as down
         cb.getAsync(prismKey)
@@ -119,7 +116,6 @@ if(require.main === module){
           })
           .then(function(){
             heartbeat.cp.kill('SIGKILL')
-            logger.log('info','Prism shutdown complete')
             done()
           })
           .catch(function(err){

@@ -189,7 +189,7 @@ CouchSchema.prototype.staff = function(name){
  */
 CouchSchema.prototype.counter = function(system,key){
   if(!system) system = ''
-  else system = system + ':'
+  else system = system + '-'
   if(!key) key = ''
   return this.applyPrefix('counter:stat:' + system + key)
 }
@@ -203,9 +203,18 @@ CouchSchema.prototype.counter = function(system,key){
  */
 CouchSchema.prototype.counterError = function(system,key){
   if(!system) system = ''
-  else system = system + ':'
+  else system = system + '-'
   if(!key) key = ''
   return this.applyPrefix('counter:error:' + system + key)
+}
+
+
+/**
+ * Last counter clear
+ * @return {string}
+ */
+CouchSchema.prototype.lastCounterClear = function(){
+  return this.applyPrefix('lastCounterClear')
 }
 
 

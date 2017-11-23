@@ -35,8 +35,8 @@ P.promisifyAll(fs)
  * @param {object} res
  */
 exports.put = function(req,res){
-  couch.counter(cb,couch.schema.counter('store','content:put'))
-  couch.counter(cb,couch.schema.counter('store','content:filesUploaded'))
+  couch.counter(cb,couch.schema.counter('store','content-put'))
+  couch.counter(cb,couch.schema.counter('store','content-filesUploaded'))
   var file = req.params.file
   var ext = file.split('.')[1]
   var expectedHash = path.basename(file,path.extname(file))
@@ -47,7 +47,7 @@ exports.put = function(req,res){
   var inventoryKey
   sniff.on('data',function(chunk){
     couch.counter(cb,
-      couch.schema.counter('store','content:bytesUploaded'),chunk.length)
+      couch.schema.counter('store','content-bytesUploaded'),chunk.length)
   })
   var dest
   hashFile.details(expectedHash,ext)
@@ -92,7 +92,7 @@ exports.put = function(req,res){
       fs.unlinkSync(dest)
       return cb.removeAsync(inventoryKey)
         .then(function(){
-          couch.counter(cb,couch.schema.counterError('store','content:put'))
+          couch.counter(cb,couch.schema.counterError('store','content-put'))
           res.status(500)
           res.json({error: err})
         })
@@ -111,7 +111,7 @@ exports.put = function(req,res){
  * @param {object} res
  */
 exports.exists = function(req,res){
-  couch.counter(cb,couch.schema.counter('store','content:exists'))
+  couch.counter(cb,couch.schema.counter('store','content-exists'))
   var hash = req.body.hash
   var ext = req.body.ext
   var singular = !(hash instanceof Array)
@@ -269,7 +269,7 @@ exports.send = function(req,res){
  * @param {object} res
  */
 exports.remove = function(req,res){
-  couch.counter(cb,couch.schema.counter('store','content:remove'))
+  couch.counter(cb,couch.schema.counter('store','content-remove'))
   inventory.removeStoreInventory(req.body.hash)
     .then(function(){
       res.json({
@@ -279,11 +279,11 @@ exports.remove = function(req,res){
     .catch(function(err){
       if(13 === err.code){
         couch.counter(cb,
-          couch.schema.counterError('store','content:remove:notFound'))
+          couch.schema.counterError('store','content-remove-notFound'))
         res.status(404)
         res.json({error: err.message})
       } else {
-        couch.counter(cb,couch.schema.counterError('store','content:remove'))
+        couch.counter(cb,couch.schema.counterError('store','content-remove'))
         res.json({error: err.message, err: err})
       }
     })
@@ -302,7 +302,7 @@ exports.remove = function(req,res){
  * @param {object} res
  */
 exports.download = function(req,res){
-  couch.counter(cb,couch.schema.counter('store','content:download'))
+  couch.counter(cb,couch.schema.counter('store','content-download'))
   var hash = req.body.hash
   var ext = req.body.ext
   var detail
@@ -341,12 +341,12 @@ exports.download = function(req,res){
     .catch(function(err){
       if(13 === err.code){
         couch.counter(cb,
-          couch.schema.counterError('store','content:download:notFound'))
+          couch.schema.counterError('store','content-download-notFound'))
         res.status(404)
         res.json({error: err.message})
       } else {
         res.status(500)
-        couch.counter(cb,couch.schema.counterError('store','content:download'))
+        couch.counter(cb,couch.schema.counterError('store','content-download'))
         res.json({message: err.message, error: err})
       }
     })

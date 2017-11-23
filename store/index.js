@@ -27,7 +27,6 @@ if(require.main === module){
   infant.child(
     'stretchfs:' + config.store.name + ':master',
     function(done){
-      logger.log('info','Beginning store startup')
       //bootstrap to start
       cluster = infant.cluster(
         './worker',
@@ -116,7 +115,6 @@ if(require.main === module){
           }
         })
         .then(function(){
-          logger.log('info', 'Store startup complete')
           done()
         })
         .catch(function(err){
@@ -126,7 +124,6 @@ if(require.main === module){
         })
     },
     function(done){
-      logger.log('info','Beginning store shutdown')
       //mark ourselves as down
       cb.getAsync(storeKey)
         .then(function(result){
@@ -167,7 +164,6 @@ if(require.main === module){
         })
         .then(function(){
           heartbeat.cp.kill('SIGKILL')
-          logger.log('info','Store shutdown complete')
           done()
         })
         .catch(function(err){

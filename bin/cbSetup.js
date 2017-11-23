@@ -29,6 +29,15 @@ couch.createBuckets()
   })
   .then(function(){
     console.log('Index creation complete')
+    console.log('Priming database')
+    var cb = couch.stretchfs()
+    return P.all([
+      couch.clearCounters(cb),
+      couch.clearSlots(cb)
+    ])
+  })
+  .then(function(){
+    console.log('Database has been primed')
   })
   .catch(function(err){
     console.log(err)

@@ -325,7 +325,25 @@ client.clearCounters = function(db){
     client.schema.counterError() + '%'
   ]
   var query = client.N1Query.fromString(qstring)
+  var lastClearKey = client.schema.lastCounterClear()
   return db.queryAsync(query,params)
+    .then(function(){
+      return db.getAsync(lastClearKey)
+    })
+    .then(
+      function(result){
+        result.value.lastCounterClear = new Date().toJSON()
+        return db.upsertAsync(lastClearKey,result.value,{cas: result.cas})
+          .catch(function(err){
+            console.log('Failed to update last counter clear',err)
+          })
+      },
+      function(err){
+        if(13 !== err.code) throw err
+        var params = {lastCounterClear: new Date().toJSON()}
+        return db.upsertAsync(lastClearKey,params)
+      }
+    )
 }
 
 

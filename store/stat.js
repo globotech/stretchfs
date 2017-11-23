@@ -23,10 +23,8 @@ var cb = couch.stretchfs()
  */
 var updatePeerStat = function(diskUsage){
   return P.all([
-    cb.mutateInAsync(storeKey,
-      couch.SubDocument.upsert('usage.free',diskUsage.free)),
-    cb.mutateInAsync(storeKey,
-      couch.SubDocument.upsert('usage.total',diskUsage.total))
+    couch.mutateIn(cb,storeKey,'upsert','usage.free',diskUsage.free),
+    couch.mutateIn(cb,storeKey,'upsert','usage.total',diskUsage.total)
   ])
 }
 
@@ -56,11 +54,7 @@ var statSyncPeer = function(){
  */
 var statSync= function(){
   debug('starting to sync stats')
-  return P.all([
-    statSyncInventory(),
-    statSyncPeer(),
-    statSyncPurchases()
-  ])
+  return statSyncPeer()
     .then(function(){
       debug('stat sync complete')
     })

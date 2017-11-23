@@ -99,7 +99,7 @@ var sendToStorage = function(tmpfile,hash,extension){
  * @param {object} res
  */
 exports.upload = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:upload'))
+  couch.counter(cb,couch.schema.counter('prism','content-upload'))
   debug('upload request received')
   var data = {}
   var files = {}
@@ -116,7 +116,7 @@ exports.upload = function(req,res){
     data[key] = value
   })
   busboy.on('file',function(key,file,name,encoding,mimetype){
-    couch.counter(cb,couch.schema.counter('prism','content:filesUploaded'))
+    couch.counter(cb,couch.schema.counter('prism','content-filesUploaded'))
     debug('upload, got file')
     var type = {
       user: mimetype,
@@ -132,7 +132,7 @@ exports.upload = function(req,res){
         typeBuf = typeBuf ? new Buffer.concat([typeBuf,chunk]) : chunk
       }
       couch.counter(cb,
-        couch.schema.counter('prism','content:bytesUploaded'),chunk.length)
+        couch.schema.counter('prism','content-bytesUploaded'),chunk.length)
     })
     var writeStream = fs.createWriteStream(tmpfile)
     files[key] = {
@@ -188,7 +188,7 @@ exports.upload = function(req,res){
         })
         .catch(function(err){
           fs.unlinkSync(file.tmpfile)
-          couch.counter(cb,couch.schema.counterError('prism','content:upload'))
+          couch.counter(cb,couch.schema.counterError('prism','content-upload'))
           debug('upload error',err.message,err,err.stack)
           res.json({error: err.message})
         })
@@ -207,7 +207,7 @@ exports.upload = function(req,res){
           file = files[keys[i]]
           fs.unlinkSync(file.tmpfile)
         }
-        couch.counter(cb,couch.schema.counterError('prism','content:upload'))
+        couch.counter(cb,couch.schema.counterError('prism','content-upload'))
         debug('upload error',err.message,err,err.stack)
         res.json({error: err.message})
       })
@@ -237,7 +237,7 @@ exports.upload = function(req,res){
  * @param {object} res
  */
 exports.retrieve = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:retrieve'))
+  couch.counter(cb,couch.schema.counter('prism','content-retrieve'))
   var retrieveRequest = req.body.request
   var hashType = req.body.hashType || config.defaultHashType || 'sha1'
   var extension = req.body.extension || 'bin'
@@ -254,7 +254,7 @@ exports.retrieve = function(req,res){
       typeBuf = typeBuf ? new Buffer.concat([typeBuf,chunk]) : chunk
     }
     couch.counter(cb,
-      couch.schema.counter('prism','content:bytesUploaded'),chunk.length)
+      couch.schema.counter('prism','content-bytesUploaded'),chunk.length)
   })
   var hash
   var writeStream = fs.createWriteStream(tmpfile)
@@ -289,7 +289,7 @@ exports.retrieve = function(req,res){
       //got here? file already exists on cluster so we are done
     })
     .then(function(){
-      couch.counter(cb,couch.schema.counter('prism','content:filesUploaded'))
+      couch.counter(cb,couch.schema.counter('prism','content-filesUploaded'))
       var response = {
         hash: hash,
         extension: extension
@@ -302,7 +302,7 @@ exports.retrieve = function(req,res){
       debug('retrieve error',err)
       logger.log('error', err)
       logger.log('error', err.stack)
-      couch.counter(cb,couch.schema.counterError('prism','content:retrieve'))
+      couch.counter(cb,couch.schema.counterError('prism','content-retrieve'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -338,7 +338,7 @@ exports.retrieve = function(req,res){
  * @param {object} res
  */
 exports.detail = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:detail'))
+  couch.counter(cb,couch.schema.counter('prism','content-detail'))
   var hash = req.body.hash || req.body.sha1 || ''
   var record = {}
   var singular = !(hash instanceof Array)
@@ -363,7 +363,7 @@ exports.detail = function(req,res){
       }
     })
     .catch(UserError,function(err){
-      couch.counter(cb,couch.schema.counterError('prism','content:detail'))
+      couch.counter(cb,couch.schema.counterError('prism','content-detail'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -391,7 +391,7 @@ exports.detail = function(req,res){
  * @param {object} res
  */
 exports.exists = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:exists'))
+  couch.counter(cb,couch.schema.counter('prism','content-exists'))
   exports.detail(req,res)
 }
 
@@ -433,7 +433,7 @@ exports.speedTest = function(req,res){
  * @param {object} res
  */
 exports.download = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:download'))
+  couch.counter(cb,couch.schema.counter('prism','content-download'))
   var hash = req.body.hash || req.body.sha1 || ''
   var winner, inventory
   prismBalance.contentExists(hash)
@@ -453,7 +453,7 @@ exports.download = function(req,res){
       })
       req.on('data',function(chunk){
         couch.counter(cb,
-          couch.schema.counter('prism','content:bytesDownloaded'),
+          couch.schema.counter('prism','content-bytesDownloaded'),
           chunk.length
         )
       })
@@ -465,7 +465,7 @@ exports.download = function(req,res){
     })
     .catch(NotFoundError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:download:notFound'))
+        couch.schema.counterError('prism','content-download-notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -493,7 +493,7 @@ exports.download = function(req,res){
  * @param {object} res
  */
 exports.purchase = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:purchase'))
+  couch.counter(cb,couch.schema.counter('prism','content-purchase'))
   //var start = +new Date()
   var hash = (req.body.hash || req.body.sha1 || '').trim()
   var ext = req.body.ext
@@ -550,7 +550,7 @@ exports.purchase = function(req,res){
     })
     .catch(NetworkError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:purchase:network'))
+        couch.schema.counterError('prism','content-purchase-network'))
       res.status(503)
       res.set({
         'StretchFS-Code': 503,
@@ -561,7 +561,7 @@ exports.purchase = function(req,res){
     })
     .catch(NotFoundError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:purchase:notFound'))
+        couch.schema.counterError('prism','content-purchase-notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -571,7 +571,7 @@ exports.purchase = function(req,res){
       res.json({error: err})
     })
     .catch(UserError,function(err){
-      couch.counter(cb,couch.schema.counterError('prism','content:purchase'))
+      couch.counter(cb,couch.schema.counterError('prism','content-purchase'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -601,7 +601,7 @@ exports.purchase = function(req,res){
  * @param {object} res
  */
 exports.deliver = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:deliver'))
+  couch.counter(cb,couch.schema.counter('prism','content-deliver'))
   var token = req.params.token
   var filename = req.params.filename
   var queryString = req.query
@@ -704,7 +704,7 @@ exports.deliver = function(req,res){
     })
     .catch(SyntaxError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:deliver:syntax'))
+        couch.schema.counterError('prism','content-deliver-syntax'))
       res.status(400)
       res.set({
         'StretchFS-Code': 400,
@@ -715,7 +715,7 @@ exports.deliver = function(req,res){
     })
     .catch(NotFoundError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:deliver:notFound'))
+        couch.schema.counterError('prism','content-deliver-notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -725,7 +725,7 @@ exports.deliver = function(req,res){
       res.json({error: err.message})
     })
     .catch(UserError,function(err){
-      couch.counter(cb,couch.schema.counterError('prism','content:deliver'))
+      couch.counter(cb,couch.schema.counterError('prism','content-deliver'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -754,7 +754,7 @@ exports.deliver = function(req,res){
  * @param {object} res
  */
 exports.contentStatic = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:static'))
+  couch.counter(cb,couch.schema.counter('prism','content-static'))
   var hash = req.params.hash || req.params.sha1 || ''
   var filename = req.params.filename
   //support different address delivery types
@@ -791,7 +791,7 @@ exports.contentStatic = function(req,res){
     })
     .catch(NetworkError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:static:network'))
+        couch.schema.counterError('prism','content-static-network'))
       res.status(503)
       res.set({
         'StretchFS-Code': 503,
@@ -804,7 +804,7 @@ exports.contentStatic = function(req,res){
     })
     .catch(NotFoundError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:static:notFound'))
+        couch.schema.counterError('prism','content-static-notFound'))
       res.status(404)
       res.set({
         'StretchFS-Code': 404,
@@ -814,7 +814,7 @@ exports.contentStatic = function(req,res){
       res.json({error: err.message})
     })
     .catch(UserError,function(err){
-      couch.counter(cb,couch.schema.counterError('prism','content:static'))
+      couch.counter(cb,couch.schema.counterError('prism','content-static'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
@@ -832,7 +832,7 @@ exports.contentStatic = function(req,res){
  * @param {object} res
  */
 exports.purchaseRemove = function(req,res){
-  couch.counter(cb,couch.schema.counter('prism','content:purchaseRemove'))
+  couch.counter(cb,couch.schema.counter('prism','content-purchaseRemove'))
   var token = req.body.token
   purchasedb.remove(token)
     .then(function(){
@@ -840,7 +840,7 @@ exports.purchaseRemove = function(req,res){
     })
     .catch(UserError,function(err){
       couch.counter(cb,
-        couch.schema.counterError('prism','content:purchaseRemove'))
+        couch.schema.counterError('prism','content-purchaseRemove'))
       res.status(500)
       res.set({
         'StretchFS-Code': 500,
