@@ -128,7 +128,7 @@ exports.listMain = function(search,orderField,orderAsc,offset,limit){
   if(!_hndl.bucketName)
     throw new Error('Must know bucket type/name to list')
   var clause = {
-    where: [' WHERE'],
+    where: [' WHERE 1=1'],
     orderby: ''
   }
   clause.from = ' FROM ' + _hndl.bucketName
