@@ -76,9 +76,9 @@ var _queryPrep = function(hash){
   if(!!hash){
     hash = (-1 === hash.indexOf('%')) ? hash + '%' : hash
     clause.where.summary.push(' META().id LIKE $1')
-    rv.args.push(couch.schema.inventory(hash))
+    rv.args.push(_hndl.couchbase.schema.inventory(hash))
     clause.where.detail.push(' META().id LIKE $2')
-    rv.args.push(couch.schema.inventory(hash))
+    rv.args.push(_hndl.couchbase.schema.inventory(hash))
   }
   rv.string =
     'SELECT (' +
