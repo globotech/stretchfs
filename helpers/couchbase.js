@@ -305,8 +305,10 @@ client.mutateIn = function(db,key,action,path,value){
     return db.mutateIn(key)[action](
       path,value,{createParents: true}
     ).execute(function(err){
-      if(err) reject(err)
-      else resolve()
+      if(err){
+        console.log('mutateIn error',key,action,path,value,err)
+        reject(err)
+      } else resolve()
     })
   })
 }

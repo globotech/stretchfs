@@ -12,7 +12,7 @@ var hashStream = require('sha1-stream')
 
 var api = require('../helpers/api')
 var couch = require('../helpers/couchbase')
-var purchasedb = require('../helpers/purchasedb')
+var purchasedb = require('../helpers/purchase')
 
 var content = stretchfs.mock.content
 

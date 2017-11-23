@@ -1,43 +1,19 @@
 'use strict';
 var P = require('bluebird')
-var debug = require('debug')('stretchfs:purchasedb')
+var debug = require('debug')('stretchfs:purchase')
 var moment = require('moment')
-var stretchfs = require('stretchfs-sdk')
 var Password = require('node-password').Password
 
-var UserError = stretchfs.UserError
-
-var couchbase = require('./couchbase')
+var couch = require('./couchbase')
 
 var config = require('../config')
 
 //open some buckets
-var cb = couchbase.stretchfs()
+var cb = couch.stretchfs()
 
 
-/**
- * Wrap couch calls to enumerate
- * @param {string} token
- * @return {object}
- */
-var couchWrap = function(token){
-  //here need to enumerate couch servers and chstretchfs the right connection
-  //using the token to set the proper zone and database then returning the
-  //configured couch object that can be used to work with the purchases as
-  //if they were local
-  //so first things first lets see if we have a connection to this zoned server
-  if(!token.match(/^[a-z]{1}[0-9]{8}/))
-    return null
-  var now = new Date()
-  var year = +token.slice(1,5)
-  if(year !== now.getFullYear() && year !== (now.getFullYear() -1))
-    return null
-  return cb
-}
-
-
-var PurchaseDb = function(){
-  //construct purchase db, couch is connectionless so not much to do here
+var Purchase = function(){
+  //construct purchase
 }
 
 
@@ -46,19 +22,16 @@ var PurchaseDb = function(){
  * @param {string} token
  * @return {promise}
  */
-PurchaseDb.prototype.get = function(token){
+Purchase.prototype.get = function(token){
   //get token
-  var couch
+  var purchaseKey = couch.schema.purchase(token)
   return P.try(function(){
-    debug(token,'get')
-    couch = couchWrap(token)
-    debug(token,'couch wrapped')
-    if(!couch) throw new UserError('Could not validate purchase token')
-    return couch.getAsync(token)
+    debug(purchaseKey,'get')
+    return cb.getAsync(purchaseKey)
   })
     .then(function(result){
       result = result.value
-      debug(token,'get result',result)
+      debug(purchaseKey,'get result',result)
       return result
     })
 }
@@ -69,7 +42,7 @@ PurchaseDb.prototype.get = function(token){
  * @param {string} token
  * @return {promise}
  */
-PurchaseDb.prototype.exists = function(token){
+Purchase.prototype.exists = function(token){
   debug(token,'exists')
   return this.get(token)
     .then(function(result){
@@ -90,20 +63,17 @@ PurchaseDb.prototype.exists = function(token){
  * @param {integer} life
  * @return {promise}
  */
-PurchaseDb.prototype.create = function(token,params,life){
+Purchase.prototype.create = function(token,params,life){
   //create purchase
-  var couch
+  var purchaseKey = couch.schema.purchase(token)
   debug(token,'create')
   if(!life) life = parseInt(config.purchase.life)
   return P.try(function(){
-    couch = couchWrap(token)
-    if(!couch) throw new UserError('Could not validate purchase token')
-    debug(token,'couch wrapped')
     params.life = life
     params.afterLife = parseInt(config.purchase.afterLife)
     params.expirationDate = (+new Date()) + life
     params.createdAt = new Date().toJSON()
-    return couch.upsertAsync(token,params,{
+    return cb.upsertAsync(purchaseKey,params,{
       expiry: life + parseInt(config.purchase.afterLife)
     })
   })
@@ -120,22 +90,19 @@ PurchaseDb.prototype.create = function(token,params,life){
  * @param {object} params
  * @return {promise}
  */
-PurchaseDb.prototype.update = function(token,params){
+Purchase.prototype.update = function(token,params){
   //update purchase
   var that = this
-  var couch
+  var purchaseKey = couch.schema.purchase(token)
   debug(token,'update')
   return P.try(function(){
-    couch = couchWrap(token)
-    if(!couch) throw new UserError('Could not validate purchase token')
-    debug(token,'couch wrapped getting')
     return that.get(token)
   })
     .then(function(result){
       if(result){
         debug(token,'update result received, udpating',result,params)
         params.updatedAt = new Date().toJSON()
-        return couch.upsertAsync(token,params)
+        return cb.upsertAsync(purchaseKey,params,{cas: result.cas})
       } else{
         debug(token,'doesnt exist, creating',result,params)
         that.create(token,params)
@@ -149,20 +116,11 @@ PurchaseDb.prototype.update = function(token,params){
  * @param {string} token
  * @return {promise}
  */
-PurchaseDb.prototype.remove = function(token){
+Purchase.prototype.remove = function(token){
   //remove purchase
   debug(token,'remove')
-  return this.get(token)
-    .then(function(result){
-      debug(token,'remove result',result)
-      if(result){
-        debug(token,'remove exists, removing')
-        return couchWrap(token).removeAsync(token)
-      } else {
-        debug(token,'remove doesnt exist do nothing')
-        //otherwise it doesn't exist... cool
-      }
-    })
+  var purchaseKey = couch.schema.purchase(token)
+  return cb.removeAsync(purchaseKey)
 }
 
 
@@ -171,7 +129,7 @@ PurchaseDb.prototype.remove = function(token){
  * @param {string} zone
  * @return {string}
  */
-PurchaseDb.prototype.generate = function(zone){
+Purchase.prototype.generate = function(zone){
   //the new purchase tokens are not going to be random and they are going to be
   //shorter this will save space storing keys and make look ups faster
   //they will also contain information about sharding the purchase into various
@@ -204,6 +162,6 @@ PurchaseDb.prototype.generate = function(zone){
 
 /**
  * Export a singleton
- * @type {PurchaseDb}
+ * @type {Purchase}
  */
-module.exports = new PurchaseDb()
+module.exports = new Purchase()

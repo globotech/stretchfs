@@ -18,8 +18,16 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(couch,cb,couch.type.stretchfs,
-    couch.schema.prism(search),'name',true,start,limit)
+  list.listQuery(
+    couch,
+    cb,
+    couch.type.stretchfs,
+    couch.schema.prism(search),
+    'name',
+    true,
+    start,
+    limit
+  )
     .then(function(result){
       res.render('prism/list',{
         page: list.pagination(start,result.count,limit),

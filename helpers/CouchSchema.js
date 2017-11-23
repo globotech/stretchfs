@@ -99,14 +99,10 @@ CouchSchema.prototype.purchase = function(token){
 /**
  * Inventory
  * @param {string} hash
- * @param {string} store
  * @return {string}
  */
-CouchSchema.prototype.inventory = function(hash,store){
-  return this.applyPrefix('inventory:' +
-    (hash || '') +
-    (store ? ':' + store : '')
-  )
+CouchSchema.prototype.inventory = function(hash){
+  return this.applyPrefix('inventory:' + (hash || ''))
 }
 
 

@@ -1,6 +1,6 @@
 'use strict';
 var couch = require('../../helpers/couchbase')
-var purchasedb = require('../../helpers/purchasedb')
+var purchasedb = require('../../helpers/purchase')
 var logger = require('../../helpers/logger')
 
 var config = require('../../config')

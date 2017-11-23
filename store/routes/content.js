@@ -14,7 +14,7 @@ var couch = require('../../helpers/couchbase')
 var inventory = require('../../helpers/inventory')
 var logger = require('../../helpers/logger')
 var hashFile = require('../../helpers/hashFile')
-var purchasedb = require('../../helpers/purchasedb')
+var purchasedb = require('../../helpers/purchase')
 var slotHelper = require('../../helpers/slot')
 
 var config = require('../../config')
@@ -470,7 +470,7 @@ exports.play = function(req,res){
   debug('PLAY','got play request',token)
   var slotKey = null
   var inventoryKey = null
-  var purchaseKey = token
+  var purchaseKey = couch.schema.purchase(token)
   purchasedb.get(token)
     .then(
       //continue with purchase

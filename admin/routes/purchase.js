@@ -3,7 +3,7 @@ var P = require('bluebird')
 
 var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
-var purchasedb = require('../../helpers/purchasedb')
+var purchasedb = require('../../helpers/purchase')
 
 var config = require('../../config')
 
@@ -24,7 +24,7 @@ exports.list = function(req,res){
     couch,
     cb,
     couch.type.stretchfs,
-    search,
+    couch.schema.purchase(search),
     '_id',
     true,
     offset,

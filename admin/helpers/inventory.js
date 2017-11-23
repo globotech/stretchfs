@@ -22,6 +22,8 @@ var ruleSet = {
   protectedAll:'bool',
   bannedStore:'arr'
 }
+
+
 /**
  * Provide the ruleSet to client side
  * @return {object} ruleSet with key as ruleName and value as ruleDataType
@@ -36,6 +38,8 @@ var _hndl = {
   bucketType: false,
   bucketName: ''
 }
+
+
 /**
  * Setup routine, provides stateful handles, and maintains 'current' bucketName
  * @param {object} handles to fill the internal _hndl with (same key names)
@@ -51,9 +55,9 @@ exports.setup = function(handles){
 
 
 /**
- * bullshit
- * @param hash
- * @private
+ * bullshit query prep
+ * @param {string} hash
+ * @return {object}
  */
 var _queryPrep = function(hash){
   var rv = {string:'',args:[]}
@@ -124,7 +128,7 @@ exports.listMain = function(search,orderField,orderAsc,offset,limit){
   if(!_hndl.bucketName)
     throw new Error('Must know bucket type/name to list')
   var clause = {
-    where: [ ' WHERE NOT CONTAINS(META().id,":")' ],
+    where: [],
     orderby: ''
   }
   clause.from = ' FROM ' + _hndl.bucketName
