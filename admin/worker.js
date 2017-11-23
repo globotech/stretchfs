@@ -76,7 +76,7 @@ app.use(expressSession({
   resave: true,
   saveUninitialized: true,
   store: new CouchbaseStore({
-    bucket: config.couch.buckets.stretchfs.name,
+    bucket: config.couch.bucket.stretchfs.name,
     host: config.couch.host + ':' + config.couch.port,
     connectionTimeout: config.couch.connectionTimeout,
     operationTimeout: config.couch.operationTimeout,
