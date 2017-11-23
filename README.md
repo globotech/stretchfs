@@ -134,7 +134,7 @@ server software.
 * Clonetool dropped
 * bin/createPurchasedb.js dropped
 * Replace Couchdb with Couchbase to provide a more consistent database model.
- StretchFS does is not compatible with eventual consistency which adds various
+ StretchFS is not compatible with eventual consistency which adds various
  failures that StretchFS does not know how to handle properly and results in false
  404s. These result from poor timing. The solution is to use couchbase which
  will provide StretchFS with consistent results, better timing / scaling.
@@ -149,6 +149,12 @@ no longer depend on an outside source for compute jobs.
 * Reduce bucket usage from 6 to 3, implements: stretchfs, stretchfs-inventory, stretchfs-purchase
   heartbeat, job, and peer have been merged into the primary stretchfs bucket.
 * Stores now implement a speedtest route and prisms will redirect to it
+* Dropped Redis database by implementing Couchbase features, StretchFS is now
+ backed by a single database engine, further increasing simplicity and reducing
+ dependency load in production.
+* Implemented slots to track usage on servers this can be used for elasticity
+ handling.
+* Inventory and purchase stats are now tracked directly
 
 ### 2.4.0
 
