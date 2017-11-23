@@ -23,6 +23,9 @@ var couch = require('../helpers/couchbase')
 //make some promises
 P.promisifyAll(server)
 
+//open some buckets
+var cb = couch.stretchfs()
+
 
 /**
  * Global template vars
@@ -75,13 +78,7 @@ app.use(expressSession({
   },
   resave: true,
   saveUninitialized: true,
-  store: new CouchbaseStore({
-    bucket: config.couch.bucket.stretchfs.name,
-    host: config.couch.host + ':' + config.couch.port,
-    connectionTimeout: config.couch.connectionTimeout,
-    operationTimeout: config.couch.operationTimeout,
-    prefix: 'adminSession'
-  }),
+  store: new CouchbaseStore({db: cb}),
   secret: config.admin.cookie.secret
 }))
 app.use(flash())
