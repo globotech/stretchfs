@@ -114,6 +114,7 @@ exports.hashQuery = function(search){
 
 /**
  * Helper for list queries
+ * @param {string} prefix
  * @param {string} search
  * @param {string} orderField
  * @param {string} orderAsc
@@ -121,20 +122,24 @@ exports.hashQuery = function(search){
  * @param {integer} limit
  * @return {P}
  */
-exports.listMain = function(search,orderField,orderAsc,offset,limit){
+exports.listMain = function(prefix,search,orderField,orderAsc,offset,limit){
   //validate and pre-process arguments
   if(!_hndl.couchbase || !_hndl.bucket)
     throw new Error('Must have couchbase helper and bucket-handle to list')
   if(!_hndl.bucketName)
     throw new Error('Must know bucket type/name to list')
+  var s = [prefix + '%']
   var clause = {
-    where: [' WHERE 1=1'],
+    where: [' WHERE META().id LIKE $1'],
     orderby: ''
   }
   clause.from = ' FROM ' + _hndl.bucketName
-  var s = []
-  if(!!search){
-    s.push((-1 === search.indexOf('%'))?'%' + search + '%':search)
+  search = '' + search
+  if(search){
+    s.push((-1 === search.indexOf('%')) ?
+        '%' + search + '%' :
+        search
+    )
     clause.where.push(' META().id LIKE $1')
   }
   if(orderField){

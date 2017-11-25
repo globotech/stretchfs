@@ -25,7 +25,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  inv.listMain(couch.schema.inventory(search),'hash',true,start,limit)
+  inv.listMain(couch.schema.inventory(''),search,'hash',true,start,limit)
     .then(function(result){
       res.render('inventory/list',{
         page: inv.pagination(start,result.count,limit),

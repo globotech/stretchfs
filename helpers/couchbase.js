@@ -35,8 +35,10 @@ couchbase.BucketImpl.operationTimeout = config.couch.operationTimeout || 30000
  * @return {object}
  */
 var connectCouchbase = function(conf){
+  var xopts = ('object' === typeof conf.options) ?
+    '?' + conf.options.join('&') : ''
   dsn = (conf.protocol || 'couchbase://') +
-    (conf.dsnHost || conf.host || '127.0.0.1')
+    (conf.dsnHost || conf.host || '127.0.0.1') + xopts
   debug('connecting to couchbase',dsn)
   return P.promisifyAll(new couchbase.Cluster(dsn))
 }

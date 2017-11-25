@@ -72,8 +72,8 @@ $(document).ready(function(){
     })
     .fail(function(jqXHR,textStatus,error){
       var err = textStatus + ', ' + error;
-      //TODO: handle this better (reload page?)
       console.log('Request Failed: ' + err);
       window.ignoreClick = false;
+      window.location.reload(true);
     });
 });

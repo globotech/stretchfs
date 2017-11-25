@@ -30,7 +30,7 @@
     "busboy": "^0.2.14",
     "cli-color": "^1.2.0",
     "cli-table": "^0.3.1",
-    "commander": "^2.11.0",
+    "commander": "^2.12.1",
     "compression": "^1.7.1",
     "connect-couchbase": "^0.2.10",
     "connect-couchdb": "^1.0.0",
@@ -46,7 +46,7 @@
     "event-stream": "^3.3.4",
     "express": "^4.16.2",
     "express-session": "^1.15.6",
-    "file-type": "^7.2.0",
+    "file-type": "^7.3.0",
     "graceful-fs": "^4.1.11",
     "infant": "^1.0.0",
     "json-stream": "^1.0.0",
@@ -73,10 +73,10 @@
     "sha1-stream": "^0.2.1",
     "stretchfs-sdk": "^3.1.2",
     "string": "^3.3.3",
-    "systeminformation": "^3.33.5",
+    "systeminformation": "^3.33.6",
     "temp": "^0.8.3",
     "uuid": "^3.1.0",
-    "validator": "^9.1.1",
+    "validator": "^9.1.2",
     "winston": "^2.4.0"
   },
   "scripts": {
@@ -85,7 +85,7 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
-    "mocha": "3.5.0",
+    "mocha": "4.0.1",
     "numeral": "^2.0.6",
     "promiseq": "^0.1.0",
     "rmfr": "^1.0.3"
