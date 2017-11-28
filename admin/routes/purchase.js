@@ -132,7 +132,7 @@ exports.save = function(req,res){
         +(new Date(doc.createdAt)) + lifeMs
       ).toJSON()
       doc.updatedAt = timestamp.toJSON()
-      return cb.upsertAsync(purchaseKey,doc,{cas: result.cas})
+      return cb.upsertAsync(couch.schema.purchase(purchaseKey),doc,{cas: result.cas})
     })
     .then(function(){
       req.flashPug('success','subject-id-action',
@@ -140,7 +140,7 @@ exports.save = function(req,res){
           subject: 'Purchase',
           id: purchaseKey,
           action: 'saved',
-          href: '/purchase/edit?id=' + purchaseKey
+          href: '/purchase/edit?id=' + couch.schema.purchase(purchaseKey)
         }
       )
       res.redirect('/purchase/list')

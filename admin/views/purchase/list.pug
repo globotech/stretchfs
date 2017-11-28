@@ -21,7 +21,7 @@ block content
             td
               input(type='checkbox', name='remove[]', value=row._id)
             td.mono
-              a(href='/purchase/edit?id=' + row._id)= row._id
+              a(href='/purchase/edit?id=' + row._id)= row._id.split(':')[1]
             td.mono= row.hash
             td.mono= row.ext
             td.mono= row.referrer

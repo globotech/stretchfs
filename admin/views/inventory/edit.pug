@@ -80,25 +80,17 @@ block content
                       default
                         input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=ruleSet[r.type])
       .form-group
-        label.control-label.col-sm-2 Locations
+        label.control-label.col-sm-2
+          span.badge.mono.margin-lr-8= summary.copies || 0
+          | Locations
         .col-sm-10
-          each l in detail
-            input.checkbox-input(type='checkbox', name='loc[]', id='loc[]' value=l.id, checked)
-            label.mono(for='loc[]') #{l.id.split(':')[1]}&nbsp;&nbsp;
-            a.btn.btn-xs.btn-info(href='/inventory/editIndividual?id='+l.id)
+          each l in summary.map
+            input.checkbox-input(type='checkbox', name='loc[]', id='loc[]' value=l, checked)
+            label.mono(for='loc[]') #{l}&nbsp;&nbsp;
+            a.btn.btn-xs.btn-info(href='/inventory/editIndividual?id='+summary.hash+':'+l)
               span.glyphicon.glyphicon-edit
               | &nbsp;Edit
             br
       .form-group
-        label.control-label.col-sm-2 Other Garbage
-        .col-sm-10.mono
-          input(type='hidden', name='copies', value=summary.copies||0)
-          |copies #{summary.copies||0}
-          br
-          if(summary.map)
-            input(type='hidden', name='map', value=summary.map)
-            |map: #{(summary.map||[]).join(',')}
-            br
-      .form-group
           .col-sm-offset-2.col-sm-10
-            button.btn.btn-success(type='submit') Save
+            button.btn.btn-success.col-sm-10(type='submit') Save
