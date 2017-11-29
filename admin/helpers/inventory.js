@@ -55,7 +55,7 @@ exports.setup = function(handles){
 
 
 /**
- * bullshit query prep
+ * Build and return (prep) inventory query
  * @param {string} hash
  * @return {object}
  */
@@ -92,6 +92,24 @@ var _queryPrep = function(hash){
     clause.from + clause.where.detail.join(' AND') +
     ') AS detail'
   return rv
+}
+
+
+/**
+ * Provide a list of all known hashes
+ * @return {object} Array of strings
+ */
+exports.hashListAll = function(){
+  var query = 'SELECT ARRAY_AGG(SPLIT(META().id,":")[1]) AS hashes' +
+    ' FROM ' + _hndl.bucketName +
+    ' WHERE META().id LIKE $1'
+  return _hndl.bucket.queryAsync(
+    _hndl.couchbase.N1Query.fromString(query),
+    [_hndl.couchbase.schema.inventory('%')]
+  )
+    .then(function(result){
+      return result[0].hashes
+    })
 }
 
 

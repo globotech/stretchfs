@@ -20,7 +20,9 @@ block content
       .form-group
         label.control-label.col-sm-2 Hash
         .col-sm-10.mono
-          input.form-control(type='text', name='hash', value=purchase.hash, placeholder='Hash')
+          select.form-control.mono(type='select', name='hash')
+            each hash in hashes
+              option(value=hash selected=(hash==purchase.hash)) #{hash}
       .form-group
         label.control-label.col-sm-2 File Extension
         .col-sm-10.mono

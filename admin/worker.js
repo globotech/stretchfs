@@ -173,11 +173,13 @@ app.get('/store',function(req,res){ res.redirect('/store/list') })
 app.post('/inventory/list',routes.inventory.listAction)
 app.post('/inventory/save',routes.inventory.save)
 app.get('/inventory/list',routes.inventory.list)
-app.get('/inventory/listRuleTypes',routes.inventory.listRuleTypes)
 app.get('/inventory/create',routes.inventory.create)
 app.get('/inventory/edit',routes.inventory.edit)
 app.get('/inventory/editIndividual',routes.inventory.editIndividual)
 app.get('/inventory',function(req,res){ res.redirect('/inventory/list') })
+//inventory AJAX
+app.get('/inventory/listRuleTypes',routes.inventory.listRuleTypes)
+app.get('/inventory/listHashes',routes.inventory.listHashes)
 
 //sessions
 app.post('/session/list',routes.session.listAction)

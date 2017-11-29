@@ -4,6 +4,8 @@ var P = require('bluebird')
 var list = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 var purchasedb = require('../../helpers/purchase')
+var hashListAll = require('../helpers/inventory').hashListAll
+
 
 var config = require('../../config')
 
@@ -73,7 +75,15 @@ exports.listAction = function(req,res){
  * @param {object} res
  */
 exports.create = function(req,res){
-  res.render('purchase/create')
+  hashListAll()
+    .then(function(result){
+      res.render('purchase/create',{
+        hashes: result
+      })
+    })
+    .catch(function(err){
+      res.render('error',{error: err.message})
+    })
 }
 
 
@@ -84,10 +94,16 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var purchaseKey = req.query.id
-  cb.getAsync(purchaseKey)
-    .then(function(result){
+  P.all([
+    cb.getAsync(purchaseKey),
+    hashListAll()
+  ])
+    .spread(function(result,hashes){
       result.value._id = purchaseKey
-      res.render('purchase/edit',{purchase: result.value})
+      res.render('purchase/edit',{
+        purchase: result.value,
+        hashes: hashes
+      })
     })
     .catch(function(err){
       res.render('error',{error: err.message})

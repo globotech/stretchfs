@@ -83,14 +83,15 @@ block content
         label.control-label.col-sm-2
           span.badge.mono.margin-lr-8= summary.copies || 0
           | Locations
-        .col-sm-10
-          each l in summary.map
-            input.checkbox-input(type='checkbox', name='loc[]', id='loc[]' value=l, checked)
-            label.mono(for='loc[]') #{l}&nbsp;&nbsp;
-            a.btn.btn-xs.btn-info(href='/inventory/editIndividual?id='+summary.hash+':'+l)
-              span.glyphicon.glyphicon-edit
-              | &nbsp;Edit
-            br
+        .list-group.col-sm-9
+          - var prismClasses = ['warning','info','success','danger']
+          - var pC = {}
+            each l in stores.rows
+              - var pCidx = Object.keys(pC).indexOf(l.prism)
+              - if(-1 === pCidx){pC[l.prism]=true;pCidx=Object.keys(pC).indexOf(l.prism)}
+              span.list-group-item.shrinkwrap.mono.col-sm-2.margin-r-8(class='list-group-item-'+prismClasses[pCidx])
+                input.checkbox-input(type='checkbox', name='loc['+l.name+']', id='loc['+l.name+']' value=l.name, checked=(-1 !== summary.map.indexOf(l.name)))
+                label(for='loc['+l.name+']') #{l.name}
       .form-group
           .col-sm-offset-2.col-sm-10
             button.btn.btn-success.col-sm-10(type='submit') Save

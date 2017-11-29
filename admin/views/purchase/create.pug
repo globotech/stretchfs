@@ -7,7 +7,9 @@ block content
       .form-group
         label.control-label.col-sm-2 Hash
         .col-sm-10
-          input.form-control(type='text', name='hash', placeholder='Hash')
+          select.form-control.mono(type='select', name='hash')
+            each hash in hashes
+              option(value=hash) #{hash}
       .form-group
         label.control-label.col-sm-2 File Extension
         .col-sm-10

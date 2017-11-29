@@ -87,6 +87,18 @@ exports.listRuleTypes = function(req,res){
 
 
 /**
+ * AJAX feeder for all hashes
+ * @param {object} req
+ * @param {object} res
+ */
+exports.listHashes = function(req,res){
+  inv.hashListAll().then(function(hashlist){
+    res.send(JSON.stringify(hashlist))
+  })
+}
+
+
+/**
  * Edit Inventory by hash
  * @param {object} req
  * @param {object} res
@@ -96,10 +108,13 @@ exports.edit = function(req,res){
   var hash = inventoryKey.split(':')[0] || inventoryKey
   P.all([
     inv.hashQuery(hash),
-    inv.ruleSet()
+    inv.ruleSet(),
+    list.listQuery(couch,cb,couch.type.stretchfs,
+      couch.schema.store(),'name',true)
   ])
-    .spread(function(result,ruleSet){
+    .spread(function(result,ruleSet,stores){
       result.ruleSet = ruleSet
+      result.stores = stores
       res.render('inventory/edit',result)
     })
     .catch(function(err){
