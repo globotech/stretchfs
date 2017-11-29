@@ -162,6 +162,13 @@ exports.before = function(that){
     return rmfr(__dirname + '/../assets/data')
   })
     .then(function(){
+      //remove test inventory record to prevent issues
+      return cb.removeAsync(couch.schema.inventory(content.hash))
+        .catch(function(err){
+          if(13 !== err.code) throw err
+        })
+    })
+    .then(function(){
       return P.all([
         exports.server.prism1.startAsync(),
         exports.server.prism2.startAsync(),
@@ -509,10 +516,10 @@ exports.contentSend = function(prism){
         //now we want to establish where it will go i am going to use a dirty
         //array here to save time
         var cluster = [
-          'store1',
-          'store2',
-          'store3',
-          'store4'
+          'teststore1',
+          'teststore2',
+          'teststore3',
+          'teststore4'
         ]
         cluster.forEach(function(store){
           if(-1 === body.map.indexOf(store) && !storeTo){
@@ -521,7 +528,8 @@ exports.contentSend = function(prism){
         })
         //now we need to get the configuration details so lets figure out the
         //store so we can just locally call the config
-        storeClient = api.setupAccess('store',exports.clconf[storeFrom].store)
+        var cStoreFrom = storeFrom.replace('test','')
+        storeClient = api.setupAccess('store',exports.clconf[cStoreFrom].store)
         return storeClient.postAsync({
           url: storeClient.url('/content/send'),
           json: {
@@ -535,7 +543,8 @@ exports.contentSend = function(prism){
         expect(body.success).to.equal('Clone sent')
         expect(body.fileDetail.hash).to.equal(content.hash)
         expect(body.fileDetail.ext).to.equal(content.ext)
-        storeClient = api.setupAccess('store',exports.clconf[storeTo].store)
+        var cStoreTo = storeTo.replace('test','')
+        storeClient = api.setupAccess('store',exports.clconf[cStoreTo].store)
         return storeClient.postAsync({
           url: storeClient.url('/content/remove'),
           json: {
@@ -562,7 +571,7 @@ exports.contentExists = function(prism,options){
   if(!options.hasOwnProperty('count')) options.count = 2
   if(!options.hasOwnProperty('checkExists')) options.checkExists = true
   if(!options.hasOwnProperty('deepChecks'))
-    options.deepChecks = ['prism1','prism2']
+    options.deepChecks = ['testprism1','testprism2']
   return function(){
     var client = api.setupAccess('prism',prism.prism)
     return client
@@ -579,7 +588,7 @@ exports.contentExists = function(prism,options){
         else if(options.checkExists)
           expect(parseInt(body.copies)).to.equal(parseInt(options.count))
         var prismExists
-        if(options.deepChecks.indexOf('prism1') >= 0){
+        if(options.deepChecks.indexOf('testprism1') >= 0){
           prismExists = false
           body.map.forEach(function(row){
             expect(row).to.be.a('string')
@@ -587,7 +596,7 @@ exports.contentExists = function(prism,options){
           })
           expect(prismExists).to.equal(true)
         }
-        if(options.deepChecks.indexOf('prism2') >= 0){
+        if(options.deepChecks.indexOf('testprism2') >= 0){
           prismExists = false
           body.map.forEach(function(row){
             expect(row).to.be.a('string')
@@ -611,7 +620,7 @@ exports.contentExistsBulk = function(prism,options){
   if(!options.hasOwnProperty('count')) options.count = 2
   if(!options.hasOwnProperty('checkExists')) options.checkExists = true
   if(!options.hasOwnProperty('deepChecks'))
-    options.deepChecks = ['prism1','prism2']
+    options.deepChecks = ['testprism1','testprism2']
   return function(){
     var client = api.setupAccess('prism',prism.prism)
     return client
@@ -634,14 +643,14 @@ exports.contentExistsBulk = function(prism,options){
         else if(options.checkExists)
           expect(parseInt(body.copies)).to.equal(parseInt(options.count))
         var prismExists
-        if(options.deepChecks.indexOf('prism1') !== -1){
+        if(options.deepChecks.indexOf('testprism1') !== -1){
           prismExists = true
           body.map.forEach(function(row){
             expect(row).to.be.a('string')
           })
           expect(prismExists).to.equal(true)
         }
-        if(options.deepChecks.indexOf('prism2') !== -1){
+        if(options.deepChecks.indexOf('testprism2') !== -1){
           prismExists = true
           body.map.forEach(function(row){
             expect(row).to.be.a('string')
@@ -763,7 +772,7 @@ exports.contentStatic = function(prism,localAddress,ext){
         expect(res.statusCode).to.equal(302)
         var uri = url.parse(res.headers.location)
         var host = uri.host.split('.')
-        expect(host[0]).to.match(/^store\d{1}$/)
+        expect(host[0]).to.match(/^teststore\d{1}$/)
         expect(host[1]).to.equal(prism.domain)
         expect(uri.pathname).to.equal(
           '/static/' + content.hash + '/test.' + ext
@@ -796,7 +805,7 @@ exports.contentDeliver = function(prism,localAddress,referrer){
         expect(res.statusCode).to.equal(302)
         var uri = url.parse(res.headers.location)
         var host = uri.host.split('.')
-        expect(host[0]).to.match(/^store\d{1}$/)
+        expect(host[0]).to.match(/^teststore\d{1}$/)
         expect(host[1]).to.equal(prism.domain)
       })
   }

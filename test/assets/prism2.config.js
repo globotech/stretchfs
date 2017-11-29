@@ -18,7 +18,7 @@ module.exports = {
   prism: {
     enabled: true,
     host: '127.0.2.3',
-    name: 'prism2',
+    name: 'testprism2',
     username: 'stretchfs-prism',
     password: 'it',
     timeout: 2000,
