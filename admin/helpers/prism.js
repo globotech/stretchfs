@@ -1,5 +1,4 @@
 'use strict';
-var P = require('bluebird')
 
 //list of valid roles
 var roleList = [

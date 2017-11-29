@@ -23,6 +23,27 @@ exports.store = require('./store')
 
 
 /**
+ * Peer
+ * @type {exports}
+ */
+exports.peer = require('./peer')
+
+
+/**
+ * Embed
+ * @type {exports}
+ */
+exports.embed = require('./embed')
+
+
+/**
+ * File
+ * @type {exports}
+ */
+exports.file = require('./file')
+
+
+/**
  * Inventory
  * @type {exports}
  */

@@ -1,0 +1,6 @@
+extends ../layout
+block content
+  .container
+    h1= file.name
+    +pathTree(god,file.relativeParent(god),file.name)
+    p.alert.alert-warning This file is still processing please check back later when it becomes available.

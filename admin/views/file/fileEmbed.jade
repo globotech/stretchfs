@@ -1,0 +1,24 @@
+extends ../layout
+block content
+  .container
+    h1= file.name
+    +pathTree(god,file.relativeParent(god),file.name)
+    iframe(src='#{baseUrl}/embed/#{file.embedHandle}', style='width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
+    br
+    table.table.table-striped
+      tr
+        td CDN URL
+        td #{baseUrl}/embed/#{file.embedHandle}
+      tr
+        td Embed
+        td
+          code &lt;iframe src='#{baseUrl}/embed/#{file.embedHandle}' style='width: 1000px; height: 562px;' mozallowfullscreen='true' webkitallowfullscreen='true' /&gt;
+      tr
+        td Type
+        td= file.mimeType
+      tr
+        td Size
+        td= prettyBytes(file.size)
+      tr
+        td Uploaded
+        td= new Date(file.metrics.dateCreated).toDateString()

@@ -202,6 +202,32 @@ app.get('/job/create',routes.job.create)
 app.get('/job/edit',routes.job.edit)
 app.get('/job',function(req,res){ res.redirect('/job/list') })
 
+//peer
+app.post('/peer',routes.peer.list)
+app.post('/peer/save',routes.peer.save)
+app.post('/peer/runCommand',routes.peer.runCommand)
+app.get('/peer',routes.peer.list)
+app.get('/peer/create',routes.peer.create)
+app.get('/peer/edit',routes.peer.edit)
+app.get('/peer/test',routes.peer.test)
+app.get('/peer/refresh',routes.peer.refresh)
+app.get('/peer/prepare',routes.peer.prepare)
+app.get('/peer/install',routes.peer.install)
+app.get('/peer/upgrade',routes.peer.upgrade)
+app.get('/peer/updateConfig',routes.peer.updateConfig)
+app.get('/peer/start',routes.peer.start)
+app.get('/peer/stop',routes.peer.stop)
+app.get('/peer/restart',routes.peer.restart)
+
+//embed
+app.get('/embed/:handle',routes.embed.render)
+
+//file manage
+//app.post('/file/upload',routes.file.upload)
+//app.post('/file/folderCreate',routes.file.folderCreate)
+//app.post('/file/remove',routes.file.remove)
+//app.get('/file/view',routes.file.view)
+//app.get('/file',routes.file.list)
 
 //home page
 app.get('/',function(req,res){

@@ -1,0 +1,77 @@
+extends ../layout
+append css
+  link(type='text/css', rel='stylesheet', href='/css/dropzone.css')
+append js
+  script(src='/js/table.js')
+  script(src='/js/dropzone.js')
+  script(src='//bowercdn.net/c/dropzone-3.9.0/downloads/dropzone.min.js')
+block content
+  .container
+    div
+      .pull-right
+        form.form-inline#tableSearch(role='form', action='', method='get')
+          input#path(type='hidden', name='path', value=pathEncoded)
+          if user.admin
+            .form-group
+              input.checkbox(type='checkbox', name='god', onchange='$("#path").val(","); $("#tableSearch").submit()', checked=god)
+              span God Mode
+          .form-group
+            input.form-control(type='text', name='search', placeholder='Filter Results', value=search)
+          .form-group
+            a.btn.btn-success(data-toggle='modal', data-target='#folderCreate')
+              span.glyphicon.glyphicon-plus
+              |  Create Folder
+      h1 Files
+    +alerts()
+    +pathTree(god,path)
+    #dropzone
+      form.dropzone(action='/upload?path=#{pathEncoded}#{god ? "&god=on": ""}', method='post', id='file-upload')
+    form(method='post', role='form', action='/?path=#{pathEncoded}')
+      table.table.table-striped
+        tr
+          th
+            input#toggle(type='checkbox')
+          th
+          th Name
+          th Type
+          th Created
+          th Status
+        if files.length
+          each file in files
+            tr
+              td
+                input(type='checkbox', name='remove[]', value=file.id)
+              td
+                if file.folder
+                  span.glyphicon.glyphicon-folder-close
+                else
+                  span.glyphicon.glyphicon-file
+              td
+                if file.folder
+                  a(href='/?path=#{file.encode(file.relative(god))}#{god ? "&god=on": ""}')= file.name
+                else
+                  a(href='/file?handle=#{file.handle}#{god ? "&god=on": ""}')= file.name
+              td= file.mimeType
+              td= new Date(file.metrics.dateCreated).toDateString()
+              td= file.status
+        else
+          tr
+            td(colspan='4') No entries exist
+      div
+        span #{count || 0} entries
+        div
+          button.btn.btn-danger#tableDelete(type='submit') Delete Checked
+  #folderCreate.modal(tabindex='-1', role='dialog', aria-labelledby='folderCreate', aria-hidden='true')
+    .modal-dialog.modal-sm
+      .modal-content
+        form(method='post', action='/folderCreate?path=#{pathEncoded}#{god ? "&god=on": ""}')
+          button.close(type='button', data-dismiss='modal', aria-hidden='true')
+          .modal-header
+            h2 Create Folder in #{path}
+          .modal-body
+            .form-group
+              .col-sm-10
+                input.form-control(type='text', name='name', placeholder='Folder Name; Must contain no forward slashes(/)')
+          .modal-footer
+            button.btn.btn-info.pull-left(type='button', data-dismiss='modal') Close
+            button.btn.btn-danger(type='submit') Create Folder

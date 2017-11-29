@@ -148,6 +148,11 @@ config.$load({
     enabled: false,
     port: 5973,
     host: null,
+    prism: {
+      domain: 'localhost',
+      username: '',
+      password: ''
+    },
     workers: {
       count: 1,
       maxConnections: 10000
