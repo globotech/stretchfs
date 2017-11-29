@@ -134,8 +134,14 @@ clusterConfig.store.forEach(function(store){
   logger.log('Starting pre flight checks for ' + store.name)
   var configFile = './config.' + store.name + '.js'
   if(!fs.existsSync(configFile)){
-    var configData = "'use strict';\n\nmodule.exports = {\n  " +
-      "store: {\n    enabled: true,\n    name: '" + store.name + "'"
+    var configData = "'use strict';\n\nmodule.exports = {"
+    if(store.root){
+      configData += "\n  root: '" + store.root + "'"
+    }
+    configData += ',\n  store: {\n    enabled: true'
+    if(store.name){
+      configData += ",\n    name: '" + store.name + "'"
+    }
     if(store.host){
       configData += ",\n    host: '" + store.host + "'"
     }
