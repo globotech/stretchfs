@@ -1,0 +1,183 @@
+extends layout
+block content
+  h1 StretchFS Dashboard
+  div(style='width: 1140px; padding: 0 50px;')
+    .dashboard-big-box
+      #reqCount 0
+      h3 Req/s
+    .dashboard-big-box
+      #inventoryCount 0
+      h3 Inventory Items
+    .dashboard-big-box
+      #copyCount 0
+      h3 Inventory Copies
+    .dashboard-big-box
+      #sizeCount 0
+      h3 Space Used
+    .dashboard-big-box
+      #sizeTotalCount 0
+      h3 Total Space Used
+    .dashboard-big-box
+      #jobCount 0
+      h3 Active Jobs
+    .dashboard-big-box
+      #prismCount 0
+      h3 Active Prisms
+    .dashboard-big-box
+      #storeCount 0
+      h3 Active Stores
+    .clear-both
+  canvas#mushroomHistory(width='1140', height='300', style='width: 1140; height: 300px; display: block')
+    .row
+      .col-md-6
+        h2 Todays Top 10 Items
+        table.table.table-striped
+          thead
+            tr
+              th Hash
+              th Hits
+              th Transfer
+          tbody#topItemsBody
+            tr
+              td(colspan='4') No inventory items to display.
+      .col-md-6
+        h2 Todays Top 10 Purchases
+        table.table.table-striped
+          thead
+            tr
+              th Purchase
+              th Hash
+              th Hits
+              th Transfer
+          tbody#topPurchasesBody
+            tr
+              td(colspan='4') No purchases to display.
+  script(src='//bowercdn.net/c/jquery.animateNumber-0.0.14/jquery.animateNumber.min.js')
+  script(src='//bowercdn.net/c/chart.js-2.4.0/dist/Chart.bundle.min.js')
+  script.
+    var commaSepStep = $.animateNumber.numberStepFactories.separator(',')
+    var updateStat = function(id,num){
+      $('#' + id).animateNumber(
+        {number: num,numberStep: commaSepStep},
+        1000,
+        function(){
+          $('#' + id).prop('number',num)
+        }
+      )
+    }
+    var graphExists = false
+    var stretchHistory = {}
+    var drawGraph = function(data){
+      var graphContainer = document.getElementById('mushroomHistory');
+      if(!graphExists){
+        graphExists = true
+        stretchHistory = new Chart(graphContainer,{
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [
+              {
+                data: data.data,
+                fill: true,
+                label: 'Requests',
+                backgroundColor: '#cdd0d6',
+                borderColor: '#2b6bd1'
+              }
+            ]
+          }
+        });
+      }
+      else{
+        stretchHistory.data.labels = data.labels;
+        stretchHistory.data.datasets[0].data = data.data;
+        stretchHistory.update();
+      }
+    }
+    var topItemsBody = $('#topItemsBody')
+    var topPurchases = $('#topPurchasesBody')
+    var progressBar = $('#progressBar')
+    var progressCount = 1
+    var progressPercentPrevious = 10
+    var intervalSeconds = 10
+    var intervalMilliseconds = intervalSeconds * 1000
+    var intervalStepPercent = 100 / intervalSeconds
+    var updateTopItems = function(tagList){
+      var rows = []
+      tagList.forEach(function(tag){
+        var tr = $(document.createElement('tr'));
+        tr.append($("<td><div><a href='/networkTag/edit?id=" + tag.NetworkTagId + "'>" + tag.NetworkTagName + "</a></div><a href='/network/edit?id=" + tag.NetworkId + "' style='color: #555; font-size: 10px;'>" + tag.NetworkName + "</a></div></td>"));
+        tr.append($("<td><a href='/format/edit?id=" + tag.FormatId + "'>" + tag.FormatName + "</a></td>"));
+        tr.append($("<td>" + tag.hits + "</td>"));
+        rows.push(tr);
+      })
+      topItemsBody.empty()
+      topItemsBody.append(rows)
+    }
+    var updateTopPurchases = function(zoneList){
+      var rows = []
+      zoneList.forEach(function(zone){
+        var tr = $(document.createElement('tr'));
+        tr.append($("<td><div><a href='/zone/edit?id=" + zone.SiteZoneId + "'>" + zone.SiteZoneName + "</a></div><div><a href='/site/edit?id=" + zone.SiteId + "' style='color: #555; font-size: 10px;'>" + zone.SiteName + "</a></div></td>"));
+        tr.append($("<td><a href='/format/edit?id=" + zone.FormatId + "'>" + zone.FormatName + "</a></td>"));
+        tr.append($("<td>" + zone.hits + "</td>"));
+        rows.push(tr);
+      })
+      topPurchases.empty()
+      topPurchases.append(rows)
+    }
+    var updateProgressBar = function(progressPercent){
+      if(!progressPercent){
+        progressPercent = Math.round(progressCount * intervalStepPercent)
+      }
+      if(progressPercent > 100) progressPercent = 100
+      if(progressPercent < 1) progressPercent = 1
+      if(progressPercentPrevious > progressPercent){
+        progressBar.css({width: progressPercent + '%'})
+      }
+      else{
+        progressBar.animate({width: progressPercent + '%'},500)
+      }
+      progressPercentPrevious = progressPercent
+      progressCount++
+    }
+    var lastHitCount = 0
+    var updateRate = function(reqCount){
+      if(0 === lastHitCount){
+        lastHitCount = reqCount
+        updateStat('rate',0)
+      }
+      else{
+        var delta = reqCount - lastHitCount
+        lastHitCount = reqCount
+        if(delta < 0) delta = delta * -1
+        var rate = delta / intervalSeconds
+        updateStat('rate',rate)
+      }
+    }
+    var updateDashboard = function(){
+      $.getJSON('/dashboard/getUpdate',{},function(data){
+        if(!data || !data.stats || !data.stats.reqCount){
+          console.log(data)
+          throw new Error('Invalid dashboard update response')
+        }
+        updateStat('reqCount',data.stats.reqCount)
+        updateStat('inventoryCount',data.stats.inventoryCount)
+        updateStat('copyCount',data.stats.copyCount)
+        updateStat('size',data.stats.size)
+        updateStat('sizeTotal',data.stats.sizeTotal)
+        updateStat('jobCount',data.stats.jobCount)
+        updateStat('prismCount',data.stats.prismCount)
+        updateStat('storeCount',data.stats.storeCount)
+        drawGraph(data.history)
+        updateTopItems(data.inventoryList)
+        updateTopPurchases(data.purchaseList)
+        updateRate(data.hits.reqCount)
+      })
+      progressCount = 1
+    }
+
+    $(document).ready(function(){
+      setInterval(updateDashboard,intervalMilliseconds)
+      setInterval(updateProgressBar,1000)
+      updateDashboard()
+    })

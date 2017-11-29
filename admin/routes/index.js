@@ -2,6 +2,13 @@
 
 
 /**
+ * Dashboard
+ * @type {exports}
+ */
+exports.dashboard = require('./dashboard')
+
+
+/**
  * Prisms
  * @type {exports}
  */

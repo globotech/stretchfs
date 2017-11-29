@@ -185,7 +185,7 @@ CouchSchema.prototype.staff = function(name){
  */
 CouchSchema.prototype.counter = function(system,key){
   if(!system) system = ''
-  else system = system + '-'
+  else if(system && key) system = system + '-'
   if(!key) key = ''
   return this.applyPrefix('counter:stat:' + system + key)
 }

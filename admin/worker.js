@@ -202,7 +202,11 @@ app.get('/job',function(req,res){ res.redirect('/job/list') })
 
 
 //home page
-app.get('/',routes.index)
+app.get('/',function(req,res){
+  res.redirect(301,'/prism/list')
+})
+app.get('/dashboard',routes.dashboard.index)
+app.get('/dashboard/getUpdate',routes.dashboard.getUpdate)
 
 
 /**
