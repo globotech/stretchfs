@@ -13,6 +13,7 @@ var user = {
   name: name,
   secret: bcrypt.hashSync(
     secret,bcrypt.genSaltSync(12)),
+  createdAt: new Date().toJSON(),
   roles: ['create','read','update','delete']
 }
 cb.upsertAsync(userKey,user)
