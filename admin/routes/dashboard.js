@@ -2,6 +2,7 @@
 var P = require('bluebird')
 var moment = require('moment')
 
+var couch = require('../../helpers/couchbase')
 var dashboard = require('../helpers/dashboard')
 
 

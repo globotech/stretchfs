@@ -63,6 +63,7 @@ app.use(bodyParser.json({limit: '100mb'}))
 //track requests
 app.use(function(req,res,next){
   couch.counter(cb,couch.schema.counter('requests'))
+  couch.counterHour(cb,couch.schema.counter('requests'))
   couch.counter(cb,couch.schema.counter('prism','requests'))
   couch.counter(cb,
     couch.schema.counter('prism-' + config.prism.name,'requests'))

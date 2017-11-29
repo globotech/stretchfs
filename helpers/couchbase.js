@@ -294,6 +294,21 @@ client.counter = function(db,key,increment){
 
 
 /**
+ * Store hourly counters
+ * @param {object} db
+ * @param {string} key
+ * @param {Number} increment
+ * @return {P}
+ */
+client.counterHour = function(db,key,increment){
+  key = key + ':' + Math.floor(+new Date() / 1000 / 3600)
+  if(!increment) increment = 1
+  else increment = parseInt(increment,10)
+  return db.counterAsync(key,increment,{initial: 1, expiry: 172800})
+}
+
+
+/**
  * Helper to mutate in updates with brevity
  * @param {object} db
  * @param {string} key

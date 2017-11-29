@@ -6,6 +6,13 @@ html
   head
     block css
       link(rel='stylesheet', type='text/css', href='/css/layout.css')
+    block js
+      script(src='//bowercdn.net/c/jquery-3.2.1/dist/jquery.min.js')
+      script(src='//bowercdn.net/c/bootstrap-3.3.7/dist/js/bootstrap.min.js')
+      script(src='//bowercdn.net/c/bootstrap-select-1.12.4/dist/js/bootstrap-select.min.js')
+      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.js')
+      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.date.js')
+      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.time.js')
     title StretchFS Admin
   body
     if staff
@@ -55,11 +62,3 @@ html
     block content
     .text-center
       small(style='font-size: 9px;') &copy; StretchFS. Version #{version}
-    //load scripts
-    block js
-      script(src='//bowercdn.net/c/jquery-3.2.1/dist/jquery.min.js')
-      script(src='//bowercdn.net/c/bootstrap-3.3.7/dist/js/bootstrap.min.js')
-      script(src='//bowercdn.net/c/bootstrap-select-1.12.4/dist/js/bootstrap-select.min.js')
-      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.js')
-      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.date.js')
-      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.time.js')

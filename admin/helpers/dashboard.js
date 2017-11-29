@@ -56,8 +56,8 @@ exports.counter = function(key){
  * @return {P}
  */
 exports.count = function(key){
-  var qstring = 'SELECT COUNT() AS _count FROM ' +
-    couch.getName(couch.type.STRETCHFS) + ' WHERE META().id LIKE $1'
+  var qstring = 'SELECT COUNT(META().id) AS _count FROM ' +
+    couch.getName(couch.type.stretchfs) + ' WHERE META().id LIKE $1'
   var qvalue = [key + '%']
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
@@ -79,7 +79,7 @@ exports.count = function(key){
  */
 exports.sum = function(key,name){
   var qstring = 'SELECT SUM(`' + name + '`) AS _count FROM ' +
-    couch.getName(couch.type.STRETCHFS) + ' WHERE META().id LIKE $1'
+    couch.getName(couch.type.stretchfs) + ' WHERE META().id LIKE $1'
   var qvalue = [key + '%']
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
@@ -102,8 +102,8 @@ exports.sum = function(key,name){
  */
 exports.sumMultiply = function(key,name,multiplier){
   var qstring = 'SELECT ' +
-    'SUM(MULTIPLY(`' + name + '`,`' + multiplier + '`)) AS _count FROM ' +
-    couch.getName(couch.type.STRETCHFS) + ' WHERE META().id LIKE $1'
+    'SUM(`' + name + '` * `' + multiplier + '`) AS _count FROM ' +
+    couch.getName(couch.type.stretchfs) + ' WHERE META().id LIKE $1'
   var qvalue = [key + '%']
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
@@ -125,8 +125,8 @@ exports.sumMultiply = function(key,name,multiplier){
  * @return {P}
  */
 exports.countByValue = function(key,name,value){
-  var qstring = 'SELECT COUNT() AS _count FROM ' +
-    couch.getName(couch.type.STRETCHFS) +
+  var qstring = 'SELECT COUNT(META().id) AS _count FROM ' +
+    couch.getName(couch.type.stretchfs) +
     ' WHERE META().id LIKE $1 AND `' + name + '` = $2'
   var qvalue = [key + '%',value]
   var query = couch.N1Query.fromString(qstring)
@@ -149,8 +149,8 @@ exports.countByValue = function(key,name,value){
  * @return {P}
  */
 exports.countByMember = function(key,name,value){
-  var qstring = 'SELECT COUNT() AS _count FROM ' +
-    couch.getName(couch.type.STRETCHFS) +
+  var qstring = 'SELECT COUNT(META().id) AS _count FROM ' +
+    couch.getName(couch.type.stretchfs) +
     ' WHERE META().id LIKE $1 AND $2 IN `' + name + '`'
   var qvalue = [key + '%',value]
   var query = couch.N1Query.fromString(qstring)
@@ -173,11 +173,13 @@ exports.countByMember = function(key,name,value){
  * @return {P}
  */
 exports.topRecordsByValue = function(key,name,limit){
+  if(!limit) limit = 1
+  else limit = parseInt(limit,10)
   var qstring = 'SELECT ' +
-    couch.getName(couch.type.STRETCHFS) + '.* FROM ' +
-    couch.getName(couch.type.STRETCHFS) +
+    couch.getName(couch.type.stretchfs) + '.* FROM ' +
+    couch.getName(couch.type.stretchfs) +
     ' WHERE META().id LIKE $1 ORDER BY `' + name + '` DESC LIMIT ' + limit
-  var qvalue = [key + '%',value]
+  var qvalue = [key + '%']
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
 }
@@ -192,15 +194,16 @@ exports.topRecordsByValue = function(key,name,limit){
  */
 exports.queryGraphBuckets = function(minHour,maxHour,bucketCount){
   var data = {data: [], labels: []}
-  return sequelize.query(
-    'SELECT SUM(`hits`) AS `hits`, `hour` FROM `NetworkTagStats` ' +
-    'WHERE `hour` >= :minHour AND `hour` <= :maxHour ' +
-    'GROUP BY (`hour`) ORDER BY `hour` DESC',
-    {
-      replacements: {minHour: minHour,maxHour: maxHour},
-      type: sequelize.QueryTypes.SELECT
-    }
-  )
+  var reqKey = couch.schema.counter('requests')
+  var minKey = reqKey + ':' + minHour
+  var maxKey = reqKey + ':' + maxHour
+  var qstring = 'SELECT ' + couch.getName(couch.type.stretchfs) +
+    ' AS `requests` FROM ' +couch.getName(couch.type.stretchfs) +
+    ' WHERE META().id >= $1 AND META().id <= $2 ' +
+    ' ORDER BY META().id DESC'
+  var qvalue = [minKey,maxKey]
+  var query = couch.N1Query.fromString(qstring)
+  return cb.queryAsync(query,qvalue)
     .then(function(result){
       var tryBucket = function(i){
         var thisHour = exports.makeHour(
@@ -211,7 +214,7 @@ exports.queryGraphBuckets = function(minHour,maxHour,bucketCount){
         }
         result.forEach(function(bucket){
           if(thisHour !== bucket.hour) return
-          thisBucket.data = bucket.hits
+          thisBucket.data = bucket.requests
         })
         data.labels.push(thisBucket.label)
         data.data.push(thisBucket.data)
