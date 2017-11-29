@@ -85,7 +85,7 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
-    "mocha": "4.0.1",
+    "mocha": "3.5.0",
     "numeral": "^2.0.6",
     "promiseq": "^0.1.0",
     "rmfr": "^1.0.3"
