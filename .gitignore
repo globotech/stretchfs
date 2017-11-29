@@ -3,8 +3,8 @@ node_modules
 .nodemonignore
 supervise
 npm-debug.log
-tmp
-*.local.*
-config.*x.js
+config.*.js
+!config.test.js
 /data
 /test/assets/data
+cluster.json
