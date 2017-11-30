@@ -21,7 +21,7 @@ block content
     +alerts()
     +pathTree(path)
     #dropzone
-      form.dropzone(action='/upload?path=' + pathEncoded, method='post', id='file-upload')
+      form.dropzone(action='/file/upload?path=' + pathEncoded, method='post', id='file-upload')
     form(method='post', role='form', action='/?path=' + pathEncoded)
       table.table.table-striped
         tr

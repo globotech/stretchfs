@@ -148,6 +148,7 @@ config.$load({
     enabled: false,
     port: 5973,
     host: null,
+    tmpFolder: __dirname + '/admin/public/tmp',
     prism: {
       callback: 'http://localhost:5973/file/jobUpdate',
       referer: ['localhost'],

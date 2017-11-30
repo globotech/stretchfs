@@ -20,6 +20,7 @@ var server = http.createServer(app)
 var routes = require('./routes')
 
 var couch = require('../helpers/couchbase')
+var prismConnect = require('./helpers/prismConnect')
 
 //make some promises
 P.promisifyAll(server)
@@ -272,7 +273,12 @@ app.get('/dashboard/getUpdate',routes.dashboard.getUpdate)
  */
 exports.start = function(done){
   server.listenAsync(+config.admin.port,config.admin.host)
-    .then(done)
+    .then(function(){
+      return prismConnect.doConnect()
+    })
+    .then(function(){
+      done()
+    })
     .catch(function(err){
       done(err)
     })

@@ -1,4 +1,6 @@
 'use strict';
+var P = require('bluebird')
+var Busboy = require('busboy')
 var crypto = require('crypto')
 var debug = require('debug')('gump')
 var fs = require('graceful-fs')
@@ -11,6 +13,7 @@ var temp = require('temp')
 var through2 = require('through2')
 
 var couch = require('../../helpers/couchbase')
+var promiseWhile = require('../../helpers/promiseWhile')
 
 var fileHelper = require('../helpers/file')
 var prism = require('../helpers/prismConnect')
@@ -94,12 +97,12 @@ exports.remove = function(req,res){
  */
 exports.upload = function(req,res){
   var body = {}
-  var promises = []
+  var filePromises = []
   //normalize path and deal with god mode
   var path = fileHelper.decode(req.query.path)
   //setup temp folder
-  if(!fs.existsSync(config.admin.tmpDir))
-    mkdirp.sync(config.admin.tmpDir)
+  if(!fs.existsSync(config.admin.tmpFolder))
+    mkdirp.sync(config.admin.tmpFolder)
   //url creators
   var adminBaseUrl = function(){
     if(config.admin.baseUrl) return config.admin.baseUrl
@@ -107,7 +110,7 @@ exports.upload = function(req,res){
       ':' + (config.admin.port || 5973)
   }
   //import functions
-  var sendToJob = function(file,next){
+  var sendToJob = function(file){
     var description = {
       callback: {
         request: config.admin.prism.callback
@@ -130,28 +133,25 @@ exports.upload = function(req,res){
       ]
     }
     debug(file.hash,'job description created',description)
-    prism.jobCreate(description,5,'augment')
+    return prism.jobCreate(description,5,'augment')
       .then(function(result){
         debug(file.hash,'job created',result)
         file.handle = result.handle
-        return shredder.jobStart(file.importJob)
+        return shredder.jobStart(file.handle)
       })
       .then(function(){
         debug(file.hash,'job started')
-        next()
       })
-      .catch(next)
   }
-  var sendToStorage = function(file,next){
+  var sendToStorage = function(file){
     debug(file.hash,'starting to send to StretchFS')
-    prism.contentRetrieve({
+    return prism.contentRetrieve({
       url: adminBaseUrl() + '/tmp/' + pathHelper.basename(file.tmp),
       rejectUnauthorized: false
     })
-      .then(function(){
-        next()
+      .catch(function(err){
+        console.log('Failed to send to backend',err)
       })
-      .catch(next)
       .finally(function(){
         debug(file.hash,'removing tmp file')
         return fs.unlinkAsync(file.tmp)
@@ -163,6 +163,7 @@ exports.upload = function(req,res){
     var shasum = crypto.createHash('sha1')
     var fileParams
     var fileKey
+    var currentPath = []
     //setup a sniffer to capture the sha1 for integrity
     var sniff = through2(
       function(chunk,enc,next){
@@ -194,31 +195,39 @@ exports.upload = function(req,res){
         return fileHelper.mkdirp(path)
       })
       .then(function(){
-        var currentPath = path.slice(0)
+        currentPath = path.slice(0)
         currentPath.push(file.filename)
         //lets figure out if the path is already taken
         var nameIterator = 0
+        var nameTaken = true
         return promiseWhile(
           function(){
-            return fileHelper.pathexists(currentPath)
+            return nameTaken
           },
           function(){
-            nameIterator++
-            debug(
-              file.hash,
-              'file name used, incrementing new name',
-              nameIterator
-            )
-            currentPath.pop()
-            var ext = pathHelper.extname(file.filename)
-            var basename = pathHelper.basename(file.filename,ext)
-            if(basename.match(duplicateNameExp))
-              basename = basename.replace(
-                duplicateNameExp,'(' + nameIterator + ')'
-              )
-            else basename += ' (' + nameIterator + ')'
-            file.filename = basename + ext
-            currentPath.push(file.filename)
+            return fileHelper.pathExists(currentPath)
+              .then(function(result){
+                if(!result){
+                  nameTaken = false
+                } else {
+                  nameIterator++
+                  debug(
+                    file.hash,
+                    'file name used, incrementing new name',
+                    nameIterator
+                  )
+                  currentPath.pop()
+                  var ext = pathHelper.extname(file.filename)
+                  var basename = pathHelper.basename(file.filename,ext)
+                  if(basename.match(duplicateNameExp))
+                    basename = basename.replace(
+                      duplicateNameExp,'(' + nameIterator + ')'
+                    )
+                  else basename += ' (' + nameIterator + ')'
+                  file.filename = basename + ext
+                  currentPath.push(file.filename)
+                }
+              })
           }
         )
       })
@@ -232,7 +241,7 @@ exports.upload = function(req,res){
           hash: file.hash,
           size: file.size,
           path: currentPath,
-          mimeType: file.mimeType,
+          mimeType: file.mimetype,
           status: 'ok',
           createdAt: new Date().toJSON(),
           updatedAt: new Date().toJSON()
@@ -248,29 +257,39 @@ exports.upload = function(req,res){
       })
   }
   //busboy handling
-  req.pipe(req.busboy)
-  req.busboy.on('field',function(key,value){
+  var busboy = new Busboy({
+    headers: req.headers,
+    highWaterMark: 65536, //64K
+    limits: {
+      fileSize: 2147483648 //2GB
+    }
+  })
+  busboy.on('field',function(key,value){
+    debug('upload got field',key,value)
     body[key] = value
   })
-  req.busboy.on('file',function(fieldname,readable,filename,encoding,mimetype){
-    var promise = new P()
-    var file = {
-      promise: promise,
-      tmp: temp.path({dir: config.gump.tmpDir}) + '_' + filename,
-      fieldname: fieldname,
-      readable: readable,
-      filename: filename,
-      size: 0,
-      encoding: encoding,
-      mimetype: mimetype,
-      sha1: '',
-      importJob: ''
-    }
-    promises.push(promise)
-    processFile(file)
+  busboy.on('file',function(fieldname,readable,filename,encoding,mimetype){
+    filePromises.push(new P(function(resolve,reject){
+      var file = {
+        promise: {
+          resolve: resolve,
+          reject: reject
+        },
+        tmp: temp.path({dir: config.admin.tmpFolder}) + '_' + filename,
+        fieldname: fieldname,
+        readable: readable,
+        filename: filename,
+        size: 0,
+        encoding: encoding,
+        mimetype: mimetype,
+        sha1: '',
+        importJob: ''
+      }
+      processFile(file)
+    }))
   })
-  req.busboy.on('finish',function(){
-    P.all(promises)
+  busboy.on('finish',function(){
+    P.all(filePromises)
       .then(function(){
         res.json({
           status: 'ok',
@@ -287,6 +306,7 @@ exports.upload = function(req,res){
         })
       })
   })
+  req.pipe(busboy)
 }
 
 

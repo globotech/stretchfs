@@ -1,4 +1,6 @@
 'use strict';
+var P = require('bluebird')
+
 var couch = require('../../helpers/couchbase')
 
 //open some buckets
@@ -86,13 +88,13 @@ exports.pathExists = function(path){
   path = decode(path)
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND path = $2'
-  var qvalue = [couch.schema.file() + '%',encode(path)]
+    ' WHERE META().id = $1'
+  var qvalue = [couch.schema.file(encode(path))]
   console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
     .then(function(result){
-      return (result)
+      return (result instanceof Array && result.length > 0)
     })
 }
 
@@ -115,7 +117,7 @@ exports.findByPath = function(path){
 exports.findByHandle = function(handle){
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
-    ' WHERE handle = $2'
+    ' WHERE `handle` = $2'
   var qvalue = [handle]
   console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
@@ -139,18 +141,19 @@ exports.findChildren = function(path,search){
   path = decode(path)
   var exp
   if(path.length){
-    exp = '^,' + path.join(',') + ',[^,]+,$'
+    exp = ',' + path.join(',') + ',[^,]+,$'
   } else{
-    exp = '^,[^,]+,$'
+    exp = ',[^,]+,$'
   }
+  exp = '^' + couch.schema.file(exp)
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(`path`,"' + exp +'")' +
-    ' AND name LIKE $2' +
-    ' ORDER BY folder DESC, name ASC'
+    ' WHERE REGEX_CONTAINS(META().id,"' + exp +'")' +
+    ' AND `name` LIKE $1' +
+    ' ORDER BY `folder` DESC, `name` ASC'
   if(!search) search = '%%'
   else search = '%' + search + '%'
-  var qvalue = [couch.schema.file() + '%',search]
+  var qvalue = [search]
   console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
