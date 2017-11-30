@@ -1,5 +1,5 @@
 'use strict';
-var async = require('async')
+var P = require('bluebird')
 var fs = require('graceful-fs')
 var net = require('net')
 var string = require('string')
@@ -25,25 +25,21 @@ var validStatuses = module.exports.validStatuses
  * Peer action settings
  * @type {{restart: {name: string, status: string, finalStatusSuccess: string, finalStatusError: string, cmd: string}, stop: {name: string, status: string, finalStatusSuccess: string, finalStatusError: string, cmd: string}, start: {name: string, status: string, finalStatusSuccess: string, finalStatusError: string, cmd: string}}}
  */
-var servicedir = '/etc/service/oose'
-var dtStop = ['svc -d ' + servicedir]
-var dtStart =
-  ['chmod +x /opt/oose/dt/run /opt/oose/dt/log/run','svc -u ' + servicedir]
 var actions = {
   restart: {
     name: 'restart',
     status: 'ok',
-    cmd: [].concat(dtStop,dtStart)
+    cmd: ['ndt all restart']
   },
   stop: {
     name: 'stop',
     status: 'stopped',
-    cmd: dtStop
+    cmd: ['ndt all stop']
   },
   start: {
     name: 'start',
     status: 'ok',
-    cmd: dtStart
+    cmd: ['ndt all start']
   }
 }
 
@@ -60,33 +56,30 @@ var commandFail = function(next){
 
 /**
  * Find a peer in mongo by id
- * @param {string} id
- * @param {function} done
+ * @param {string} key
+ * @return {P}
  */
-var peerFind = function(id,done){
-  PeerModel.findById(id,function(err,result){
-    if(err) return done(err.message)
-    if(!result) return done('Could not find peer')
-    done(null,result)
-  })
+var peerFind = function(key){
+  return cb.getAsync(key)
 }
 
 
 /**
  * Connect to a peer using net
  * @param {object} peer
- * @param {function} done
- * @return {*}
+ * @return {P}
  */
-var peerNetConnect = function(peer,done){
-  if(!peer.ip) return done('No IP defined for the peer')
-  var client = net.connect(peer.sshPort || 22,peer.ip)
-  client.on('connect',function(){
-    client.end()
-    done()
-  })
-  client.on('error',function(err){
-    done('Failed to connect to peer SSH: ' + err.code)
+var peerNetConnect = function(peer){
+  return new P(function(resolve,reject){
+    if(!peer.ip) return reject('No IP defined for the peer')
+    var client = net.connect(peer.sshPort || 22,peer.ip)
+    client.on('connect',function(){
+      client.end()
+      resolve()
+    })
+    client.on('error',function(err){
+      reject('Failed to connect to peer SSH: ' + err.code)
+    })
   })
 }
 
@@ -94,11 +87,19 @@ var peerNetConnect = function(peer,done){
 /**
  * Start a new SSH helper and connect to a peer
  * @param {object} peer
- * @param {function} done
+ * @return {P}
  */
-var peerSshConnect = function(peer,done){
-  var ssh = new SSH()
-  ssh.connect(peer,fs.readFileSync(config.executioner.ssh.privateKey),done)
+var peerSshConnect = function(peer){
+  return new P(function(resolve,reject){
+    var ssh = new SSH()
+    ssh.connect(
+      peer,
+      fs.readFileSync(config.executioner.ssh.privateKey),
+      function(err){
+        if(err) return reject(err)
+        resolve()
+      })
+  })
 }
 
 
@@ -108,15 +109,13 @@ var peerSshConnect = function(peer,done){
  * @param {string} level
  * @param {string} msg
  * @param {string} status
- * @param {function} done
+ * @return {P}
  */
-var peerLog = function(peer,level,msg,status,done){
-  peer.log.push({message: msg, level: level})
-  if(status && -1 < validStatuses.indexOf(status)) peer.status = status
-  peer.save(function(err){
-    if(err) return done(err.message)
-    done()
-  })
+var peerLog = function(peer,level,msg,status){
+  //TODO: this should be an atomic update
+  peer.value.log.push({message: msg, level: level})
+  if(status && -1 < validStatuses.indexOf(status)) peer.value.status = status
+  return cb.upsertAsync(peerKey,peer.value,{cas: peer.cas})
 }
 
 
@@ -170,313 +169,197 @@ exports.outputEnd = function(res){
 /**
  * Test a peer
  * @param {string} key
- * @param {function} next
+ * @return {P}
  */
-exports.test = function(key,next){
+exports.test = function(key){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(key,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt connect to the peer
-      function(next){
-        peerNetConnect(peer,next)
-      },
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerNetConnect(peer)
+    })
+    .then(function(){
       //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          //find out some information about the peer
-          client.commandBuffered('cat /etc/debian_version',function(err,result){
-            // jshint bitwise:false
-            if(err) return next(err)
-            var version = result.trim()
-            if(!version) return next('Could not get the version of Debian')
-            var match = version.match(/^(\d+)\.(\d+)/)
-            if((!match[1]) || ((match[1] >> 0) < 7))
-              return next('This version of Debian is too old: ' + version)
-            next()
-          })
-        })
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      //find out some information about the peer
+      return client.commandBuffered('cat /etc/debian_version')
+    })
+    .then(function(result){
+      var version = result.trim()
+      if(!version) return next('Could not get the version of Debian')
+      var match = version.match(/^(\d+)\.(\d+)/)
+      if((!match[1]) || ((match[1] >> 0) < 7)){
+        throw new Error('This version of Debian is too old: ' + version)
       }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'error',err,'error',next)
-            else {
-              peerLog(
-                peer,
-                'success',
-                'Successfully communicated with peer and tested OS validity',
-                peer.status.match(/error|unknown/i) ? 'staging' : peer.status,
-                next
-              )
-            }
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
+      return peerLog(
+        key,
+        peer,
+        'success',
+        'Successfully communicated with peer and tested OS validity',
+        peer.status.match(/error|unknown/i) ? 'staging' : peer.status,
+        next
       )
-    }
-  )
+    })
+    .catch(function(err){
+      return peerLog(key,peer,'error',err,'error',next)
+    })
 }
 
 
 /**
  * Refresh a peer
  * @param {string} key
- * @param {function} next
+ * @return {P}
  */
-exports.refresh = function(key,next){
+exports.refresh = function(key){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(key,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          //collect some information about the peer
-          async.parallel(
-            [
-              //get the os version
-              function(next){
-                client.commandBuffered(
-                  'cat /etc/debian_version',
-                  function(err,result){
-                    if(err) return next(err)
-                    result = result.trim()
-                    if(!result)
-                      return next('Could not get the version of Debian')
-                    peer.os.name = 'Debian'
-                    peer.os.version = result
-                    next()
-                  }
-                )
-              },
-              //get the kernel version
-              function(next){
-                client.commandBuffered('uname -r',function(err,result){
-                  result = result.trim() || peer.os.kernel
-                  peer.os.kernel = result
-                  next()
-                })
-              },
-              //get the arch
-              function(next){
-                client.commandBuffered('uname -m',function(err,result){
-                  result = result.trim() || peer.os.arch
-                  peer.os.arch = result
-                  next()
-                })
-              },
-              //get the oose version (if we can)
-              function(next){
-                client.commandBuffered(
-                  'node -p "JSON.parse(' +
-                  'require(\'fs\').readFileSync(\'/opt/oose/package.json\'))' +
-                  '.version"',
-                  function(err,result){
-                    peer.version = result.trim() || 'unknown'
-                    next()
-                  }
-                )
-              },
-              //get the uptime
-              function(next){
-                client.commandBuffered('cat /proc/uptime',function(err,result){
-                  if(err) return next(err)
-                  peer.os.uptime = result.trim().split(' ')[0] || undefined
-                  next()
-                })
-              },
-              //get the load average
-              function(next){
-                client.commandBuffered('cat /proc/loadavg',function(err,result){
-                  if(err) return next(err)
-                  result = result.trim().split(' ').splice(0,3) || undefined
-                  peer.os.load = result
-                  next()
-                })
-              }
-            ],
-            next
-          )
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'warning',err,null,next)
-            else peerLog(peer,'info','Successfully refreshed peer',null,next)
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.commandBuffered('cat /etc/debian_version')
+    })
+    .then(function(result){
+      result = result.trim()
+      if(!result)
+        throw new Error('Could not get the version of Debian')
+      peer.os.name = 'Debian'
+      peer.os.version = result
+      return client.commandBuffered('uname -r')
+    })
+    .then(function(result){
+      result = result.trim() || peer.os.kernel
+      peer.os.kernel = result
+      return client.commandBuffered('uname -m')
+    })
+    .then(function(result){
+      result = result.trim() || peer.os.arch
+      peer.os.arch = result
+      return client.commandBuffered(
+        'node -p "JSON.parse(' +
+        'require(\'fs\').readFileSync(\'/opt/oose/package.json\'))' +
+        '.version"'
       )
-    }
-  )
+    })
+    .then(function(result){
+      peer.version = result.trim() || 'unknown'
+      return client.commandBuffered('cat /proc/uptime')
+    })
+    .then(function(result){
+      peer.os.uptime = result.trim().split(' ')[0] || undefined
+      return client.commandBuffered('cat /proc/loadavg')
+    })
+    .then(function(result){
+      result = result.trim().split(' ').splice(0,3) || undefined
+      peer.os.load = result
+      return peerLog(key,peer,'info','Successfully refreshed peer',null)
+    })
+    .catch(function(err){
+      return peerLog(key,peer,'warning',err,null)
+    })
 }
 
 
 /**
  * Prepare peer for installation
- * @param {string} id peer id
+ * @param {string} key peer id
  * @param {Stream.Writable} writable
- * @param {function} next
+ * @return {P}
  */
-exports.prepare = function(id,writable,next){
+exports.prepare = function(key,writable){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(id,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          async.series(
-            [
-              //send the ssl key
-              function(next){
-                if(!config.executioner.ssl.key) return next()
-                client.sendFile(
-                  config.executioner.ssl.key,
-                  '/etc/nginx/ssl/ssl.key',
-                  next
-                )
-              },
-              //send the ssl cert
-              function(next){
-                if(!config.executioner.ssl.crt) return next()
-                client.sendFile(
-                  config.executioner.ssl.crt,
-                  '/etc/nginx/ssl/ssl.crt',
-                  next
-                )
-              },
-              //run preparation script
-              function(next){
-                client.scriptStream(
-                  __dirname + '/../scripts/prepare.sh',
-                  writable,next
-                )
-              }
-            ],
-            next
-          )
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'error',err,'error',next)
-            else {
-              peerLog(
-                peer,
-                'success',
-                'Successfully prepared peer for installation',
-                null,
-                next
-              )
-            }
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.sendFile(
+        config.executioner.ssl.key,
+        '/etc/nginx/ssl/ssl.key'
       )
-    }
-  )
+    })
+    .then(function(){
+      return client.sendFile(
+        config.executioner.ssl.crt,
+        '/etc/nginx/ssl/ssl.crt'
+      )
+    })
+    .then(function(){
+      //run preparation script
+      return client.scriptStream(__dirname + '/../scripts/prepare.sh',writable)
+    })
+    .then(function(){
+      return peerLog(
+        key,
+        peer,
+        'success',
+        'Successfully prepared peer for installation',
+        null
+      )
+    })
+    .catch(function(err){
+      return peerLog(key,peer,'error',err,'error')
+    })
 }
 
 
 /**
  * Install peer
- * @param {string} id peer id
+ * @param {string} key peer id
  * @param {Stream.Writable} writable
- * @param {function} next
+ * @return {P}
  */
-exports.install = function(id,writable,next){
+exports.install = function(key,writable){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(id,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          client.scriptStream(
-            __dirname + '/../scripts/install.sh',
-            writable,
-            next
-          )
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'error',err,'error',next)
-            else {
-              peerLog(
-                peer,
-                'success',
-                'Successfully installed peer',
-                'stopped',
-                next)
-            }
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.scriptStream(__dirname + '/../scripts/install.sh',writable)
+    })
+    .then(function(){
+      return peerLog(
+        key,
+        peer,
+        'success',
+        'Successfully installed peer',
+        'stopped'
       )
-    }
-  )
+    })
+    .catch(function(){
+      return peerLog(key,peer,'error',err,'error')
+    })
 }
 
 
@@ -484,116 +367,79 @@ exports.install = function(id,writable,next){
  * Upgrade a peer
  * @param {string} key
  * @param {Stream.Writable} writable
- * @param {function} next
+ * @return {P}
  */
-exports.upgrade = function(key,writable,next){
+exports.upgrade = function(key,writable){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(key,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          client.scriptStream(
-            __dirname + '/../scripts/upgrade.sh',
-            writable,
-            next
-          )
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'error',err,null,next)
-            else peerLog(peer,'success','Successfully upgraded peer',null,next)
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
-      )
-    }
-  )
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.scriptStream(__dirname + '/../scripts/upgrade.sh',writable)
+    })
+    .then(function(){
+      return peerLog(key,peer,'success','Successfully upgraded peer',null)
+    })
+    .catch(function(err){
+      return peerLog(peer,'error',err,null)
+    })
 }
 
 
 /**
  * Update config
- * @param {string} id peer id
- * @param {function} next
+ * @param {string} key peer key
+ * @return {P}
  */
-exports.updateConfig = function(id,next){
+exports.updateConfig = function(key){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(id,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          client.client.sftp(function(err,sftp){
-            if(err) return next(err)
-            async.series(
-              [
-                //rename old config file
-                function(next){
-                  sftp.rename(
-                    '/opt/oose/config.local.js',
-                    '/opt/oose/config.local.js.bak',
-                    next
-                  )
-                },
-                //upload new config file
-                function(next){
-                  var stream = sftp.createWriteStream(
-                    '/opt/oose/config.local.js'
-                  )
-                  stream.on('error',function(err){next(err)})
-                  stream.on('finish',function(){next()})
-                  stream.end(peer.config)
-                }
-              ],
-              next
-            )
-          })
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'warning',err,null,next)
-            else peerLog(peer,'info','Successfully updated config',null,next)
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
+  var client
+  var sftp
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.client.sftp()
+    })
+    .then(function(result){
+      sftp = result
+      //rename old config file
+      return sftp.rename(
+        '/opt/oose/config.local.js',
+        '/opt/oose/config.local.js.bak'
       )
-    }
-  )
+    })
+    .then(function(){
+      return new P(function(resolve,reject){
+        var stream = sftp.createWriteStream(
+          '/opt/oose/config.local.js'
+        )
+        stream.on('error',function(err){reject(err)})
+        stream.on('finish',function(){resolve()})
+        stream.end(peer.config)
+      })
+    })
+    .then(function(){
+      return peerLog(key,peer,'info','Successfully updated config',null)
+    })
+    .catch(function(err){
+      return peerLog(key,peer,'warning',err,null)
+    })
 }
 
 
@@ -601,61 +447,38 @@ exports.updateConfig = function(id,next){
  * Peer action (start,stop,restart)
  * @param {string} key
  * @param {object} action
- * @param {function} next
- * @return {*}
+ * @return {P}
  */
-exports.action = function(key,action,next){
-  action = actions[action]
-  if(!action) return next('Could not find action preset')
+exports.action = function(key,action){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(key,function(err,result){
-          if(err) return next(err)
-          peer = result
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          async.series(
-            [
-              //stop/start/restart
-              function(next){
-                client.commandBuffered(action.cmd,next)
-              }
-            ],
-            next
-          )
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err) peerLog(peer,'warning',err,null,next)
-            else
-              peerLog(
-                peer,
-                'info',
-                'Peer ' + action.name + ' successful',
-                action.status || null,
-                next
-              )
-          }
-        ],function(error){
-          next(err || error)
-        }
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      action = actions[action]
+      if(!action) throw new Error('Could not find action preset')
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.commandBuffered(action.cmd)
+    })
+    .then(function(){
+      return peerLog(
+        key,
+        peer,
+        'info',
+        'Peer ' + action.name + ' successful',
+        action.status || null
       )
-    }
-  )
+    })
+    .catch(function(err){
+      return peerLog(key,peer,'warning',err,null)
+    })
 }
 
 
@@ -664,57 +487,40 @@ exports.action = function(key,action,next){
  * @param {string} key
  * @param {string} command
  * @param {Stream.Writable} writable
- * @param {function} next
+ * @return {P}
  */
-exports.custom = function(key,command,writable,next){
+exports.custom = function(key,command,writable){
   var peer
-  async.series(
-    [
-      //retrieve the peer
-      function(next){
-        peerFind(key,function(err,result){
-          if(err) return next(err)
-          peer = result
-          exports.banner(writable,'Peer ' + peer.hostname)
-          next()
-        })
-      },
-      //attempt to login to the peer with ssh
-      function(next){
-        peerSshConnect(peer,function(err,client){
-          if(err) return next(err)
-          client.on('error',commandFail(next))
-          client.commandShell(command,writable,next)
-        })
-      }
-    ],
-    function(err){
-      if('object' === typeof err) err = err.message
-      async.series(
-        [
-          function(next){
-            if(err)
-              peerLog(
-                peer,
-                'error',
-                'Error executing ' + command + ':' + err,
-                null,
-                next
-              )
-            else
-              peerLog(
-                peer,
-                'success',
-                  'Successfully executed: ' + command,
-                null,
-                next
-              )
-          }
-        ],
-        function(error){
-          next(err || error)
-        }
+  var client
+  return peerFind(key)
+    .then(function(result){
+      peer = result
+      exports.banner(writable,'Peer ' + peer.hostname)
+      return peerSshConnect(peer)
+    })
+    .then(function(result){
+      client = result
+      client.on('error',commandFail(function(err){
+        throw new Error('Command failed: ' + err,err)
+      }))
+      return client.commandShell(command,writable)
+    })
+    .then(function(){
+      return peerLog(
+        key,
+        peer,
+        'success',
+        'Successfully executed: ' + command,
+        null
       )
-    }
-  )
+    })
+    .catch(function(err){
+      return peerLog(
+        key,
+        peer,
+        'error',
+        'Error executing ' + command + ':' + err,
+        null
+      )
+    })
 }
