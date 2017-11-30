@@ -114,7 +114,19 @@ exports.edit = function(req,res){
   ])
     .spread(function(result,ruleSet,stores){
       result.ruleSet = ruleSet
-      result.stores = stores
+      result.stores = {}
+      var pC = {}
+      stores.rows.forEach(function(l,i){
+        var pCidx = Object.keys(pC).indexOf(l.prism)
+        if(-1 === pCidx){
+          pC[l.prism]=true
+          pCidx=Object.keys(pC).indexOf(l.prism)
+        }
+        l.id = 'loc[' + i + ']'
+        l.class = 'prism' + ('0000' + pCidx).slice(-4)
+        l.checked = (-1 !== result.summary.map.indexOf(l.name))
+        result.stores[l.name] = l
+      })
       res.render('inventory/edit',result)
     })
     .catch(function(err){
