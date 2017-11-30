@@ -98,6 +98,9 @@ exports.remove = function(req,res){
 exports.upload = function(req,res){
   var body = {}
   var filePromises = []
+  if(!prism.helperConnected){
+    throw new Error('No connection to prism established cannot upload')
+  }
   //normalize path and deal with god mode
   var path = fileHelper.decode(req.query.path)
   //setup temp folder
@@ -365,19 +368,16 @@ exports.jobUpdate = function(req,res){
   }
   var handle = req.body.handle
   var file
+  var fileKey
   fileHelper.findByHandle(handle)
     .then(function(result){
       file = result
-      if(!file.value.job) file.value.job = {}
-      file.value.job.status = req.body.status
-      file.value.job.message = req.body.statusDescription
-      file.value.job.stepsComplete = req.body.stepComplete
-      file.value.job.stepsTotal = req.body.stepTotal
-      file.value.job.framesComplete = req.body.frameComplete
-      file.value.job.framesTotal = req.body.frameTotal
-    })
-    .then(function(){
+      fileKey = file.value._id
       if('complete' !== file.shredder.status) return
+      if(!prism.helperConnected){
+        throw new Error('Prism connection not established cannot' +
+          ' process job update')
+      }
       file.status = 'ok'
       //remove tmp file
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
@@ -412,6 +412,19 @@ exports.jobUpdate = function(req,res){
       if(fs.existsSync(file.tmp)) fs.unlinkSync(file.tmp)
     })
     .then(function(){
+      return cb.getAsync(fileKey)
+    })
+    .then(function(result){
+      if(!result.value.job) result.value.job = {}
+      result.value.job.status = req.body.status
+      result.value.job.message = req.body.statusDescription
+      result.value.job.stepsComplete = req.body.stepComplete
+      result.value.job.stepsTotal = req.body.stepTotal
+      result.value.job.framesComplete = req.body.frameComplete
+      result.value.job.framesTotal = req.body.frameTotal
+      return cb.upsertAsync(fileKey,result.value,{cas: result.cas})
+    })
+    .then(function(){
       res.json({success: 'Update successful'})
     })
     .catch(function(err){
@@ -430,6 +443,9 @@ exports.download = function(req,res){
   var file, url
   fileHelper.findByHandle(req.query.handle)
     .then(function(result){
+      if(!prism.helperConnected){
+        throw new Error('Prism connection not established cannot download')
+      }
       file = result.value[0]
       return prism.contentPurchase(
         file.hash,
@@ -461,6 +477,9 @@ exports.embed = function(req,res){
   var purchase
   fileHelper.findByHandle(req.params.handle)
     .then(function(result){
+      if(!prism.helperConnected){
+        throw new Error('Prism connection not established cannot download')
+      }
       file = result.value[0]
       return prism.contentPurchase(
         file.hash,

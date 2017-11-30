@@ -1,6 +1,8 @@
 'use strict';
 var Prism = require('stretchfs-sdk').Prism
 
+var logger = require('../../helpers/logger')
+
 var config = require('../../config')
 
 //setup to talk to prism
@@ -20,15 +22,15 @@ var prism = new Prism({
 prism.doConnect = function(host,port){
   if(config.admin.prism.token){
     prism.setSession(config.admin.prism.token)
+    prism.helperConnected = true
     return prism.connect(host,port)
   } else {
-    return prism.connect(host,port)
-      .then(function(){
-        return prism.login(
-          config.admin.prism.username,
-          config.admin.prism.password
-        )
-      })
+    prism.helperConnected = false
+    logger.log('warn','No Prism token present,' +
+      ' cannot establish admin connection to cluster,' +
+      ' file management will be disabled. Login style auth' +
+      ' is not enabled on this instance, tokens only.'
+    )
   }
 }
 
