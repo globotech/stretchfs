@@ -5,12 +5,13 @@ var compress = require('compression')
 var cookieParser = require('cookie-parser')
 var flash = require('connect-flash')
 var compileFile = require('pug').compileFile
-var electricity = require('electricity')
 var express = require('express')
 var expressSession = require('express-session')
 var http = require('http')
 var worker = require('infant').worker
 var morgan = require('morgan')
+var path = require('path')
+var serveStatic = require('serve-static')
 var CouchbaseStore = require('connect-couchbase')(expressSession)
 
 var app = express()
@@ -100,7 +101,31 @@ app.use(function(req,res,next){
   }
   next()
 })
-app.use(electricity.static(__dirname + '/public'))
+//public static files
+app.use(serveStatic(__dirname + '/public'))
+//npm installed scripts
+var setupScriptServer = function(name,scriptPath){
+  if(!scriptPath) scriptPath = name
+  scriptPath = path.resolve(path.join(__dirname,'..','node_modules',scriptPath))
+  app.use('/node_modules/' + name,serveStatic(scriptPath))
+}
+//DEFINE external public script packages here, then access them by using
+// /script/<name> such as /script/bootstrap/dist/bootstrap.min.js
+setupScriptServer('bootstrap')
+setupScriptServer('bootstrap-select')
+setupScriptServer('chart.js')
+setupScriptServer('dropzone')
+setupScriptServer('html5-boilerplate')
+setupScriptServer('jquery')
+setupScriptServer('jquery-ui-dist')
+setupScriptServer('video.js')
+setupScriptServer('videojs-chromecast')
+setupScriptServer('videojs-contextmenu')
+setupScriptServer('videojs-contextmenu-ui')
+setupScriptServer('videojs-flash')
+setupScriptServer('videojs-ie8')
+setupScriptServer('videojs-swf')
+setupScriptServer('videojs-vtt.js')
 
 app.use(function(req,res,next){
   //allow public routes

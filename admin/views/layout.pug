@@ -7,22 +7,19 @@ html
     block css
       link(rel='stylesheet', type='text/css', href='/css/layout.css')
     block js
-      script(src='//bowercdn.net/c/jquery-3.2.1/dist/jquery.min.js')
-      script(src='//bowercdn.net/c/bootstrap-3.3.7/dist/js/bootstrap.min.js')
-      script(src='//bowercdn.net/c/bootstrap-select-1.12.4/dist/js/bootstrap-select.min.js')
-      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.js')
-      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.date.js')
-      script(src='//bowercdn.net/c/pickadate-3.5.6/lib/compressed/picker.time.js')
+      script(src='/node_modules/jquery/dist/jquery.min.js')
+      script(src='/node_modules/bootstrap/dist/js/bootstrap.min.js')
+      script(src='/node_modules/bootstrap-select/dist/js/bootstrap-select.min.js')
     title StretchFS Admin
   body
     if staff
       //navbar
       .navbar.navbar-fixed-top.navbar-inverse(role='navigation')
         .container
-          a.navbar-brand(href='/') StretchFS
+          a.navbar-brand(href='/dashboard') StretchFS
           ul.nav.navbar-nav
             li
-              a(href='/') Dashboard
+              a(href='/dashboard') Dashboard
             li.dropdown
               a.dropdown-toggle(href='#', id='navDropContent', role='button', data-toggle='dropdown', aria-haspopup='true', aria-expanded='false')
                 | Content <span class="caret"></span>
