@@ -146,7 +146,7 @@ server software.
 * Merge Shredder 2.0 into StretchFS renaming it to the StretchFS Job system. StretchFS will
 no longer depend on an outside source for compute jobs.
 * Started with Couchbase support for 4.5+ now supports Couchbase 5.0+
-* Reduce bucket usage from 6 to 3, implements: stretchfs, stretchfs-inventory, stretchfs-purchase
+* Reduce bucket usage from 6 to 1, implements: stretchfs
   heartbeat, job, and peer have been merged into the primary stretchfs bucket.
 * Stores now implement a speedtest route and prisms will redirect to it
 * Dropped Redis database by implementing Couchbase features, StretchFS is now
