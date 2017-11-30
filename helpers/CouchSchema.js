@@ -75,6 +75,16 @@ CouchSchema.prototype.store = function(name){
 
 
 /**
+ * Peer
+ * @param {string} name
+ * @return {string}
+ */
+CouchSchema.prototype.peer = function(name){
+  return this.applyPrefix('peer:' + (name || ''))
+}
+
+
+/**
  * DownVote Key
  * @param {string} castee
  * @param {string} caster
@@ -111,7 +121,7 @@ CouchSchema.prototype.inventory = function(hash){
  * @param {string} path
  * @return {string}
  */
-CouchSchema.prototype.staff = function(path){
+CouchSchema.prototype.file = function(path){
   return this.applyPrefix('file:' + (path || ''))
 }
 

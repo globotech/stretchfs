@@ -1,6 +1,4 @@
 'use strict';
-var async = require('async')
-var dns = require('dns')
 var entities = new (require('html-entities').XmlEntities)()
 var through2 = require('through2')
 
@@ -14,7 +12,6 @@ var cb = couch.stretchfs()
 
 var operationCompleteMessage =
   'Operation complete, close this window and refresh the previous page'
-var validStatuses = peerHelper.validStatuses
 
 
 /**
@@ -33,202 +30,90 @@ var encodeEntities = function(res){
 
 
 /**
+ * List actions
+ * @param {object} req
+ * @param {object} res
+ */
+exports.listAction = function(req,res){
+  P.try(function(){
+    return req.body.listSelected || []
+  })
+    .each(function(peerName){
+      var peerKey = couch.schema.peer(peerName)
+      var action = req.body.action || 'refresh'
+      //update config, refresh, test the peer
+      if(action in ['updateConfig','refresh','test']){
+        return peerHelper[action](peerKey)
+          .then(function(){
+            req.flash('success','Peer ' + req.body.action + ' complete')
+            res.redirect('/peer/list')
+          })
+      //start stop restart, lifecycle peer actions
+      } else if(action in ['start','stop','restart']){
+        return peerHelper.action(peerKey,action)
+          .then(function(){
+            req.flash('success','Peer ' + req.body.action + ' complete')
+            res.redirect('/peer/list')
+          })
+      //custom peer commands
+      } else if(req.body.runCommand){
+        peerHelper.outputStart(res,'Command: ' + req.body.command)
+        return peerHelper.custom(peerKey,req.body.command,encodeEntities(res))
+          .then(function(){
+            peerHelper.banner(res,operationCompleteMessage)
+            peerHelper.outputEnd(res)
+          })
+      //prepare, install, upgrade, canned peer scripts
+      } else if(action in ['prepare','install','upgrade']){
+        peerHelper.outputStart(res,action)
+        return peerHelper[action](peerKey,encodeEntities(res))
+          .then(function(){
+            peerHelper.banner(res,operationCompleteMessage)
+            peerHelper.outputEnd(res)
+          })
+      //remove peers if needed
+      } else if('remove' === action){
+        return cb.removeAsync(peerKey)
+          .then(function(){
+            req.flash('success','Deleted peer(s)')
+          })
+      //nothing matched
+      } else {
+        req.flash('warning','No action submitted')
+        res.redirect('/peer/list')
+      }
+    })
+}
+
+
+/**
  * List peers
  * @param {object} req
  * @param {object} res
  */
 exports.list = function(req,res){
-  if(
-    'post' === req.method.toLowerCase() &&
-    req.body.remove &&
-    req.body.remove.length
-  ){
-    //test
-    if(req.body.test){
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.test(id,next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          else req.flash('success','Peers tested')
-          res.redirect('/peer')
-        }
-      )
-    }
-    //refresh
-    else if(req.body.refresh){
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.refresh(id,next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          else req.flash('success','Peers refreshed')
-          res.redirect('/peer')
-        }
-      )
-    }
-    //prepare
-    else if(req.body.prepare){
-      peerHelper.outputStart(res,'Prepare')
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.prepare(id,encodeEntities(res),next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          peerHelper.banner(res,operationCompleteMessage)
-          peerHelper.outputEnd(res)
-        }
-      )
-    }
-    //install
-    else if(req.body.install){
-      peerHelper.outputStart(res,'Install')
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.install(id,encodeEntities(res),next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          peerHelper.banner(res,operationCompleteMessage)
-          peerHelper.outputEnd(res)
-        }
-      )
-    }
-    //upgrade
-    else if(req.body.upgrade){
-      peerHelper.outputStart(res,'Upgrade')
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.upgrade(id,encodeEntities(res),next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          peerHelper.banner(res,operationCompleteMessage)
-          peerHelper.outputEnd(res)
-        }
-      )
-    }
-    //custom
-    else if(req.body.runCommand){
-      peerHelper.outputStart(res,'Command: ' + req.body.command)
-      async[req.body.runCommandParallel ? 'each' : 'eachSeries'](
-        req.body.remove,
-        function(id,next){
-          peerHelper.custom(id,req.body.command,encodeEntities(res),next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          peerHelper.banner(res,operationCompleteMessage)
-          peerHelper.outputEnd(res)
-        }
-      )
-    }
-    //update config
-    else if(req.body.updateConfig){
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.updateConfig(id,next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          else req.flash('success','Peers config updated')
-          res.redirect('/peer')
-        }
-      )
-    }
-    //start
-    else if (req.body.start){
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.action(id,'start',next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          else req.flash('success','Peers started')
-          res.redirect('/peer')
-        }
-      )
-    }
-    //stop
-    else if (req.body.stop){
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.action(id,'stop',next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          else req.flash('success','Peers stopped')
-          res.redirect('/peer')
-        }
-      )
-    }
-    //restart
-    else if (req.body.restart){
-      async.each(
-        req.body.remove,
-        function(id,next){
-          peerHelper.action(id,'restart',next)
-        },
-        function(err){
-          if(err) req.flash('error',err)
-          else req.flash('success','Peers restarted')
-          res.redirect('/peer')
-        }
-      )
-    }
-    //delete
-    else if (req.body.delete){
-      list.remove(Peer,req.body.remove,function(err,count){
-        if(err)
-          req.flash(
-            'error',
-            'Removed ' + count + ' item(s) before removal failed ' + err
-          )
-        else {
-          req.flash('success','Deleted ' + count + ' item(s)')
-          res.redirect('/peer')
-        }
-      })
-    }
-    //nothing matched
-    else {
-      req.flash('warning','No action submitted')
-      res.redirect('/peer')
-    }
-  } else {
-    // jshint bitwise:false
-    var limit = (req.query.limit >> 0) || 10
-    var start = (req.query.start >> 0) || 0
-    var search = req.query.search || ''
-    if(start < 0) start = 0
-    Peer.list(
-      {
-        start: start,
+  var limit = parseInt(req.query.limit,10) || 10
+  var start = parseInt(req.query.start,10) || 0
+  var search = req.query.search || ''
+  list.listQuery(
+    couch,
+    cb,
+    couch.type.stretchfs,
+    couch.schema.peer(search),
+    'name',
+    true,
+    start,
+    limit
+  )
+    .then(function(result){
+      res.render('peer/list',{
+        page: list.pagination(start,result.count,limit),
+        count: result.count,
+        search: search,
         limit: limit,
-        find: search
-      },
-      function(err,count,results){
-        res.render('peer/list',{
-          page: list.pagination(start,count,limit),
-          count: count,
-          search: search,
-          limit: limit,
-          list: results
-        })
-      }
-    )
-  }
+        list: result.rows
+      })
+    })
 }
 
 
@@ -248,18 +133,14 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  Peer.findById(req.query.id,function(err,result){
-    if(err){
-      req.flash('error',err)
-      res.redirect('/peer')
-    } else{
-      if(!result) result = {}
+  var peerKey = couch.schema.peer(req.query.id)
+  cb.getAsync(peerKey)
+    .then(function(result){
       res.render('peer/edit',{
-        peer: result,
-        statuses: validStatuses
+        peer: result.value,
+        statuses: peerHelper.validStatuses
       })
-    }
-  })
+    })
 }
 
 
@@ -269,69 +150,36 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  var id, doc
-  async.series(
-    [
-      //try to find the peer
-      function(next){
-        Peer.findById(req.body.id,function(err,result){
-          if(err) return next(err.message)
-          if(!result) doc = new Peer()
-          else doc = result
-          next()
-        })
+  var peerKey = couch.schema.peer(req.body.id)
+  cb.getAsync(peerKey)
+    .then(
+      function(result){
+        result.value.name = req.body.name
+        result.value.host = req.body.host
+        result.value.sshPort = req.body.sshPort || 22
+        result.value.config = req.body.config || null
+        result.value.status = req.body.status || 'unknown'
+        return cb.upsertAsync(peerKey,result.value,{cas: result.cas})
       },
-      //resolve ip if we have to
-      function(next){
-        if(req.body.ip) return next()
-        dns.lookup(req.body.hostname,function(err,result){
-          if(err) return next(err.message)
-          if(!result) return next('Could not look up IP from hostname')
-          req.body.ip = result
-          next()
-        })
-      },
-      //populate doc
-      function(next){
-        doc.hostname = req.body.hostname
-        doc.ip = req.body.ip
-        doc.sshPort = req.body.sshPort || 22
-        doc.config = req.body.config || undefined
-        if(-1 === validStatuses.indexOf(doc.status))
-          doc.status = 'unknown'
-        if(-1 === validStatuses.indexOf(req.body.status))
-          req.body.status = doc.status
-        if(doc.status !== req.body.status)
-          doc.status = req.body.status
-        next()
-      },
-      //log
-      function(next){
-        //come up with a snapshot for the log
-        var snapshot = doc.toJSON()
-        delete snapshot.log
-        delete snapshot._id
-        doc.log.push({
-          message: 'Peer saved ' + JSON.stringify(snapshot),
-          level: 'success'
-        })
-        next()
-      },
-      //save
-      function(next){
-        doc.save(function(err,result){
-          if(err) return next(err.message)
-          id = result.id
-          next()
-        })
+      function(err){
+        if(13 !== err.code) throw err
+        var peerParams = {
+          name: req.body.name,
+          host: req.body.host,
+          sshPort: req.body.sshPort || 22,
+          config: req.body.config || null,
+          status: req.body.status || 'unknown',
+          log: [
+            {message: 'Peer created', level: 'success'}
+          ]
+        }
+        return cb.upsertAsync(peerKey,peerParams)
       }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer saved')
-      res.redirect(id ? '/peer/edit?id=' + id : '/peer')
-    }
-  )
+    )
+    .then(function(){
+      req.flash('success','Peer saved')
+      res.redirect('/peer/list')
+    })
 }
 
 
@@ -341,18 +189,12 @@ exports.save = function(req,res){
  * @param {object} res
  */
 exports.test = function(req,res){
-  async.series(
-    [
-      function(next){
-        peerHelper.test(req.query.id,next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer tested successfully')
-      res.redirect(req.query.id ? '/peer/edit?id=' + req.query.id : '/peer')
-    }
-  )
+  var peerKey = couch.schema.peer(req.query.id)
+  peerHelper.test(peerKey)
+    .then(function(){
+      req.flash('success','Peer tested ok')
+      res.redirect('/peer/edit?id=' + req.query.id)
+    })
 }
 
 
@@ -362,18 +204,12 @@ exports.test = function(req,res){
  * @param {object} res
  */
 exports.refresh = function(req,res){
-  async.series(
-    [
-      function(next){
-        peerHelper.refresh(req.query.id,next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer refreshed successfully')
-      res.redirect(req.query.id ? '/peer/edit?id=' + req.query.id : '/peer')
-    }
-  )
+  var peerKey = couch.schema.peer(req.query.id)
+  peerHelper.refresh(peerKey)
+    .then(function(){
+      req.flash('success','Peer refreshed ok')
+      res.redirect('/peer/edit?id=' + req.query.id)
+    })
 }
 
 
@@ -383,20 +219,14 @@ exports.refresh = function(req,res){
  * @param {object} res
  */
 exports.prepare = function(req,res){
+  var peerKey = couch.schema.peer(req.query.id)
   peerHelper.outputStart(res,'Prepare')
-  async.series(
-    [
-      function(next){
-        peerHelper.prepare(req.query.id,encodeEntities(res),next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer prepared successfully')
+  peerHelper.prepare(peerKey,encodeEntities(res))
+    .then(function(){
+      req.flash('success','Peer prepared ok')
       peerHelper.banner(res,operationCompleteMessage)
       peerHelper.outputEnd(res)
-    }
-  )
+    })
 }
 
 
@@ -406,20 +236,14 @@ exports.prepare = function(req,res){
  * @param {object} res
  */
 exports.install = function(req,res){
+  var peerKey = couch.schema.peer(req.query.id)
   peerHelper.outputStart(res,'Install')
-  async.series(
-    [
-      function(next){
-        peerHelper.install(req.query.id,encodeEntities(res),next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer installed successfully')
+  peerHelper.install(peerKey,encodeEntities(res))
+    .then(function(){
+      req.flash('success','Peer installed ok')
       peerHelper.banner(res,operationCompleteMessage)
       peerHelper.outputEnd(res)
-    }
-  )
+    })
 }
 
 
@@ -429,20 +253,14 @@ exports.install = function(req,res){
  * @param {object} res
  */
 exports.upgrade = function(req,res){
+  var peerKey = couch.schema.peer(req.query.id)
   peerHelper.outputStart(res,'Upgrade')
-  async.series(
-    [
-      function(next){
-        peerHelper.upgrade(req.query.id,encodeEntities(res),next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer upgraded successfully')
+  peerHelper.upgrade(peerKey,encodeEntities(res))
+    .then(function(){
+      req.flash('success','Peer upgraded ok')
       peerHelper.banner(res,operationCompleteMessage)
       peerHelper.outputEnd(res)
-    }
-  )
+    })
 }
 
 
@@ -452,20 +270,14 @@ exports.upgrade = function(req,res){
  * @param {object} res
  */
 exports.runCommand = function(req,res){
+  var peerKey = couch.schema.peer(req.query.id)
   peerHelper.outputStart(res,'Command: ' + req.body.command)
-  async.series(
-    [
-      function(next){
-        peerHelper.custom(req.body.id,req.body.command,encodeEntities(res),next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Command executed')
+  peerHelper.custom(peerKey,req.body.command,encodeEntities(res))
+    .then(function(){
+      req.flash('success','Peer command executed ok')
       peerHelper.banner(res,operationCompleteMessage)
       peerHelper.outputEnd(res)
-    }
-  )
+    })
 }
 
 
@@ -475,18 +287,12 @@ exports.runCommand = function(req,res){
  * @param {object} res
  */
 exports.updateConfig = function(req,res){
-  async.series(
-    [
-      function(next){
-        peerHelper.updateConfig(req.query.id,next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer config updated successfully')
-      res.redirect(req.query.id ? '/peer/edit?id=' + req.query.id : '/peer')
-    }
-  )
+  var peerKey = couch.schema.peer(req.query.id)
+  peerHelper.updateConfig(peerKey)
+    .then(function(){
+      req.flash('success','Peer config updated ok')
+      res.redirect('/peer/edit?id=' + req.query.id)
+    })
 }
 
 
@@ -496,18 +302,12 @@ exports.updateConfig = function(req,res){
  * @param {object} res
  */
 exports.start = function(req,res){
-  async.series(
-    [
-      function(next){
-        peerHelper.action(req.query.id,'start',next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer started')
-      res.redirect(req.query.id ? '/peer/edit?id=' + req.query.id : '/peer')
-    }
-  )
+  var peerKey = couch.schema.peer(req.query.id)
+  peerHelper.action(peerKey,'start')
+    .then(function(){
+      req.flash('success','Peer started')
+      res.redirect('/peer/edit?id=' + req.query.id)
+    })
 }
 
 
@@ -517,18 +317,12 @@ exports.start = function(req,res){
  * @param {object} res
  */
 exports.stop = function(req,res){
-  async.series(
-    [
-      function(next){
-        peerHelper.action(req.query.id,'stop',next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer stopped')
-      res.redirect(req.query.id ? '/peer/edit?id=' + req.query.id : '/peer')
-    }
-  )
+  var peerKey = couch.schema.peer(req.query.id)
+  peerHelper.action(peerKey,'stop')
+    .then(function(){
+      req.flash('success','Peer stopped')
+      res.redirect('/peer/edit?id=' + req.query.id)
+    })
 }
 
 
@@ -538,16 +332,10 @@ exports.stop = function(req,res){
  * @param {object} res
  */
 exports.restart = function(req,res){
-  async.series(
-    [
-      function(next){
-        peerHelper.action(req.query.id,'restart',next)
-      }
-    ],
-    function(err){
-      if(err) req.flash('error',err)
-      else req.flash('success','Peer restarted')
-      res.redirect(req.query.id ? '/peer/edit?id=' + req.query.id : '/peer')
-    }
-  )
+  var peerKey = couch.schema.peer(req.query.id)
+  peerHelper.action(peerKey,'restart')
+    .then(function(){
+      req.flash('success','Peer restarted')
+      res.redirect('/peer/edit?id=' + req.query.id)
+    })
 }

@@ -251,8 +251,12 @@ app.get('/embed/:handle',routes.file.embed)
 app.post('/file/upload',routes.file.upload)
 app.post('/file/folderCreate',routes.file.folderCreate)
 app.post('/file/remove',routes.file.remove)
+app.post('/file/list',routes.file.listAction)
 app.get('/file/detail',routes.file.detail)
-app.get('/file',routes.file.list)
+app.get('/file/list',routes.file.list)
+app.get('/file',function(req,res){
+  res.redirect(301,'/file/list')
+})
 
 //home page
 app.get('/',function(req,res){
