@@ -161,7 +161,7 @@ block content
       }
       var updateDashboard = function(){
         $.getJSON('/dashboard/getUpdate',{},function(data){
-          if(!data || !data.stats || !data.stats.reqCount){
+          if(!data || !data.stats){
             console.log(data)
             throw new Error('Invalid dashboard update response')
           }

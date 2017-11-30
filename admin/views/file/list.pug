@@ -4,17 +4,13 @@ append css
 append js
   script(src='/js/table.js')
   script(src='/js/dropzone.js')
-  script(src='/node_modules/dropzdone/downloads/dropzone.min.js')
+  script(src='/node_modules/dropzone/dist/min/dropzone.min.js')
 block content
   .container
     div
       .pull-right
         form.form-inline#tableSearch(role='form', action='', method='get')
           input#path(type='hidden', name='path', value=pathEncoded)
-          if user.admin
-            .form-group
-              input.checkbox(type='checkbox', name='god', onchange='$("#path").val(","); $("#tableSearch").submit()', checked=god)
-              span God Mode
           .form-group
             input.form-control(type='text', name='search', placeholder='Filter Results', value=search)
           .form-group
@@ -23,10 +19,10 @@ block content
               |  Create Folder
       h1 Files
     +alerts()
-    +pathTree(god,path)
+    +pathTree(path)
     #dropzone
-      form.dropzone(action='/upload?path=#{pathEncoded}#{god ? "&god=on": ""}', method='post', id='file-upload')
-    form(method='post', role='form', action='/?path=#{pathEncoded}')
+      form.dropzone(action='/upload?path=' + pathEncoded, method='post', id='file-upload')
+    form(method='post', role='form', action='/?path=' + pathEncoded)
       table.table.table-striped
         tr
           th
@@ -48,11 +44,11 @@ block content
                   span.glyphicon.glyphicon-file
               td
                 if file.folder
-                  a(href='/?path=#{file.encode(file.relative(god))}#{god ? "&god=on": ""}')= file.name
+                  a(href='/file/list?path=' + file.path)= file.name
                 else
-                  a(href='/file?handle=#{file.handle}#{god ? "&god=on": ""}')= file.name
+                  a(href='/file/detail?handle=' + file.handle)= file.name
               td= file.mimeType
-              td= new Date(file.metrics.dateCreated).toDateString()
+              td.mono= momentStandardFormat(file.createdAt,'Unknown')
               td= file.status
         else
           tr

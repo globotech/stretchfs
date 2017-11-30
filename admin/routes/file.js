@@ -51,7 +51,7 @@ exports.list = function(req,res){
  * @param {object} req
  * @param {object} res
  */
-exports.fileRemove = function(req,res){
+exports.listAction = function(req,res){
   P.try(function(){
     return req.body.remove || []
   })
@@ -65,6 +65,24 @@ exports.fileRemove = function(req,res){
     .catch(function(err){
       console.log(err)
       req.flash('error','Failed to remove item ' + err.message)
+    })
+}
+
+
+/**
+ * Remove file
+ * @param {object} req
+ * @param {object} res
+ */
+exports.remove = function(req,res){
+  fileHelper.remove(req.body.path)
+    .then(function(){
+      req.flash('success','File removed successfully')
+      res.redirect('/file/list')
+    })
+    .catch(function(err){
+      console.log(err)
+      req.flash('error','Failed to remove file ' + err.message)
     })
 }
 

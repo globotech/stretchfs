@@ -1,7 +1,0 @@
-extends ../layout
-block content
-  .container
-    h1= file.name
-    +pathTree(god,file.relativeParent(god),file.name)
-    p.alert.alert-danger This file has failed to be processed
-    p= file.importError
