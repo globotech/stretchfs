@@ -155,6 +155,10 @@ no longer depend on an outside source for compute jobs.
 * Implemented slots to track usage on servers this can be used for elasticity
  handling.
 * Inventory and purchase stats are now tracked directly
+* Implemented file manager into admin panel for direct file management (this
+ also exposes the file mapping service stretchfs will offer)
+* Implemented peer manager from OOSE 0.6 executioner, converted to modern code
+practices.
 
 ### 2.4.0
 
