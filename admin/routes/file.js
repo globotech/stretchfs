@@ -140,7 +140,7 @@ exports.upload = function(req,res){
       .then(function(result){
         debug(file.hash,'job created',result)
         file.handle = result.handle
-        return shredder.jobStart(file.handle)
+        return prism.jobStart(file.handle)
       })
       .then(function(){
         debug(file.hash,'job started')
@@ -185,7 +185,7 @@ exports.upload = function(req,res){
         file.hash = shasum.digest('hex')
         debug(file.filename,'successfully stored tmp file with hash',file.hash)
         if(file.mimetype.match(/^video\//i)){
-          debug(file.hash,'sending to shredder as its audio/video')
+          debug(file.hash,'sending to job as its audio/video')
           return sendToJob(file)
         }
         else{
@@ -194,7 +194,7 @@ exports.upload = function(req,res){
         }
       })
       .then(function(){
-        debug(file.hash,'ensuring parent folder exists in gump tree')
+        debug(file.hash,'ensuring parent folder exists in tree')
         return fileHelper.mkdirp(path)
       })
       .then(function(){
@@ -408,8 +408,8 @@ exports.jobUpdate = function(req,res){
         })
     })
     .then(function(){
-      if('error' !== file.shredder.status) return
-      if(fs.existsSync(file.tmp)) fs.unlinkSync(file.tmp)
+      if('error' !== file.value.job.status) return
+      if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
     })
     .then(function(){
       return cb.getAsync(fileKey)

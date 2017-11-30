@@ -154,6 +154,8 @@ config.$load({
       callback: 'http://localhost:5973/file/jobUpdate',
       referrer: ['localhost'],
       domain: 'localhost',
+      host: 'localhost',
+      port: 5971,
       username: '',
       password: ''
     },
