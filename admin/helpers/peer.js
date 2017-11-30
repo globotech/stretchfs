@@ -93,11 +93,11 @@ var peerSshConnect = function(peer){
   return new P(function(resolve,reject){
     var ssh = new SSH()
     ssh.connect(
-      peer,
+      peer.value,
       fs.readFileSync(config.executioner.ssh.privateKey),
       function(err){
         if(err) return reject(err)
-        resolve()
+        resolve(ssh)
       })
   })
 }
@@ -112,7 +112,7 @@ var peerSshConnect = function(peer){
  * @return {P}
  */
 var peerLog = function(peer,level,msg,status){
-  //TODO: this should be an atomic update
+  if(!peer.value.log) peer.value.log = []
   peer.value.log.push({message: msg, level: level})
   if(status && -1 < validStatuses.indexOf(status)) peer.value.status = status
   return cb.upsertAsync(peerKey,peer.value,{cas: peer.cas})
@@ -239,18 +239,19 @@ exports.refresh = function(key){
       result = result.trim()
       if(!result)
         throw new Error('Could not get the version of Debian')
-      peer.os.name = 'Debian'
-      peer.os.version = result
+      if(!peer.value.of) peer.value.os = {}
+      peer.value.os.name = 'Debian'
+      peer.value.os.version = result
       return client.commandBuffered('uname -r')
     })
     .then(function(result){
       result = result.trim() || peer.os.kernel
-      peer.os.kernel = result
+      peer.value.os.kernel = result
       return client.commandBuffered('uname -m')
     })
     .then(function(result){
       result = result.trim() || peer.os.arch
-      peer.os.arch = result
+      peer.value.os.arch = result
       return client.commandBuffered(
         'node -p "JSON.parse(' +
         'require(\'fs\').readFileSync(\'/opt/oose/package.json\'))' +
@@ -258,16 +259,16 @@ exports.refresh = function(key){
       )
     })
     .then(function(result){
-      peer.version = result.trim() || 'unknown'
+      peer.value.version = result.trim() || 'unknown'
       return client.commandBuffered('cat /proc/uptime')
     })
     .then(function(result){
-      peer.os.uptime = result.trim().split(' ')[0] || undefined
+      peer.value.os.uptime = result.trim().split(' ')[0] || undefined
       return client.commandBuffered('cat /proc/loadavg')
     })
     .then(function(result){
       result = result.trim().split(' ').splice(0,3) || undefined
-      peer.os.load = result
+      peer.value.os.load = result
       return peerLog(key,peer,'info','Successfully refreshed peer',null)
     })
     .catch(function(err){
