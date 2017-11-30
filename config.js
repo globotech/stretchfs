@@ -150,6 +150,7 @@ config.$load({
     host: null,
     prism: {
       callback: 'http://localhost:5973/file/jobUpdate',
+      referer: ['localhost'],
       domain: 'localhost',
       username: '',
       password: ''

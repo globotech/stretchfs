@@ -394,3 +394,34 @@ exports.download = function(req,res){
       res.redirect(302,url)
     })
 }
+
+
+/**
+ * Embed Video from File
+ * @param {object} req
+ * @param {object} res
+ */
+exports.embed = function(req,res){
+  var file
+  var purchase
+  fileHelper.findByHandle(req.params.handle)
+    .then(function(result){
+      file = result
+      return prism.contentPurchase(
+        file.value.hash,
+        mime.getExtension(file.value.name),
+        config.admin.prism.referer
+      )
+    })
+    .then(function(result){
+      purchase = result
+      var purchaseUrl = prism.urlPurchase(purchase,file.value.name)
+      var previewUrl = prism.urlStatic(file.value.hash,file.value.name)
+      res.render('file/embed',{
+        file: file,
+        purchase: purchase,
+        videoUrl: purchaseUrl,
+        previewUrl: previewUrl
+      })
+  })
+}

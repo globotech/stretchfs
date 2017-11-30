@@ -30,13 +30,6 @@ exports.peer = require('./peer')
 
 
 /**
- * Embed
- * @type {exports}
- */
-exports.embed = require('./embed')
-
-
-/**
  * File
  * @type {exports}
  */

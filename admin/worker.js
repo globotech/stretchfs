@@ -245,14 +245,14 @@ app.get('/peer/stop',routes.peer.stop)
 app.get('/peer/restart',routes.peer.restart)
 
 //embed
-app.get('/embed/:handle',routes.embed.render)
+app.get('/embed/:handle',routes.file.embed)
 
 //file manage
-//app.post('/file/upload',routes.file.upload)
-//app.post('/file/folderCreate',routes.file.folderCreate)
-//app.post('/file/remove',routes.file.remove)
-//app.get('/file/view',routes.file.view)
-//app.get('/file',routes.file.list)
+app.post('/file/upload',routes.file.upload)
+app.post('/file/folderCreate',routes.file.folderCreate)
+app.post('/file/remove',routes.file.remove)
+app.get('/file/detail',routes.file.detail)
+app.get('/file',routes.file.list)
 
 //home page
 app.get('/',function(req,res){
