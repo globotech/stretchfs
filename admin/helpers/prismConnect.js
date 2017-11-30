@@ -1,5 +1,5 @@
 'use strict';
-var Prism = require('oose-sdk').Prism
+var Prism = require('stretchfs-sdk').Prism
 
 var config = require('../../config')
 
