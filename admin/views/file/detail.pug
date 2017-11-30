@@ -2,8 +2,10 @@ extends ../layout
 block content
   .container
     h1= file.name
-    +pathTree(god,file.relativeParent(god),file.name)
+    +pathTree(fileHelper.parentPath(file.path),file.name)
     br
+    if file.mimeType.match(/(video|audio)/i)
+      iframe(src='/embed/' + file.handle, style='width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
     div
       a.btn.btn-success(href='/download?handle=#{file.handle}')
         span.glyphicon.glyphicon-download-alt
@@ -12,7 +14,7 @@ block content
     table.table.table-striped
       tr
         td CDN URL
-        td #{baseUrl}/download?handle=#{file.handle}
+        td #{baseUrl}/detail?handle=#{file.handle}
       tr
         td Type
         td= file.mimeType
@@ -21,4 +23,4 @@ block content
         td= prettyBytes(file.size)
       tr
         td Uploaded
-        td= new Date(file.metrics.dateCreated).toDateString()
+        td= momentStandardFormat(file.createdAt,'Unknown')

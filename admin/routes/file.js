@@ -233,7 +233,9 @@ exports.upload = function(req,res){
           size: file.size,
           path: currentPath,
           mimeType: file.mimeType,
-          status: 'ok'
+          status: 'ok',
+          createdAt: new Date().toJSON(),
+          updatedAt: new Date().toJSON()
         }
         return cb.upsertAsync(fileKey,fileParams)
       })

@@ -1,24 +1,92 @@
-extends ../layout
-block content
-  .container
-    h1= file.name
-    +pathTree(god,file.relativeParent(god),file.name)
-    iframe(src='#{baseUrl}/embed/#{file.embedHandle}', style='width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
-    br
-    table.table.table-striped
-      tr
-        td CDN URL
-        td #{baseUrl}/embed/#{file.embedHandle}
-      tr
-        td Embed
-        td
-          code &lt;iframe src='#{baseUrl}/embed/#{file.embedHandle}' style='width: 1000px; height: 562px;' mozallowfullscreen='true' webkitallowfullscreen='true' /&gt;
-      tr
-        td Type
-        td= file.mimeType
-      tr
-        td Size
-        td= prettyBytes(file.size)
-      tr
-        td Uploaded
-        td= new Date(file.metrics.dateCreated).toDateString()
+doctype html
+html(lang='end')
+  head
+    title #{name}
+    meta(name='keywords', content=embed.name)
+    meta(name='description', content=embed.description)
+    meta(name='medium', content='video')
+    meta(property="og:title", content=embed.name)
+    meta(property="og:description", content=embed.description)
+    meta(property="og:image", content=previewUrl)
+    meta(property="og:video", content=videoUrl)
+    link(rel='icon', href='/images/gump-favicon.png', type='image/png')
+    block js
+      script(src='/node_modules/dist/jquery.min.js')
+  body(style='background: #000; overflow: hidden; margin: 0px; padding: 0px; font-family: arial;')
+    div(id='videoLoading' style='position: absolute; color: #fff; width: 100%; height: 100%; text-align: center; background: url(../images/animegg-loading.gif) center no-repeat;')
+      div(style='margin-top: 300px') Please wait while the video is loading....
+        | If you do not see a video within 1 minute, try reloading
+    script(src='/jw7/jwplayer.js')
+    #player
+    //Player
+    script.
+      jwplayer.key = 'OuzzDaXX2aXR/LIJxk0fuyUeo5KGdnTxFe8wNw==';
+      var jwplayerOptions = {
+        file: '#{videoUrl}',
+        image: '#{previewUrl}',
+        width: '100%',
+        height: $(window).height(),
+        abouttext: 'Gump',
+        aboutlink: 'https://gump.oose.io',
+        logo: {
+          file: '/images/gump-watermark.png',
+          link: 'http://gump.oose.io',
+          margin: '20',
+          position: 'top-right'
+        },
+        sharing: {
+          link: 'http://gump.oose.io/embed/#{embed.handle}',
+          code: '<iframe src="http://gump.oose.io/embed/#{embed.handle}" />'
+        },
+        advertising: {
+          client: 'vast',
+          tag: '//tag.yourupload.com/mushroom/u2x2xiR5m818'
+        }
+      }
+      var player = jwplayer.setup(jwplayerOptions)
+      var resizePlayer = function(player){
+        player.resize('100%',$(window).height())
+      }
+      $(window).resize(function(){
+        resizePlayer(player)
+      })
+      player.on('fullscreen',function(){
+        resizePlayer(player)
+      })
+      $(document).ready(function(){
+        resizePlayer(player)
+      })
+    script(type='text/javascript', src='/jwplayer/MagicBox.js')
+    script.
+      new MagicBox({
+        player: player,
+        url: '//tag.yourupload.com/mushroom/EdKmMaM1bc4W'
+      })
+    //counters
+    img(src='http://whos.amung.us/swidget/pa2k9dsbs4kh.png', style='display: none')
+    img(src='http://whos.amung.us/swidget/66d2fz5nko8k.png', style='display: none')
+    //rev hits
+    script(type='text/javascript', src='//tag.yourupload.com/mushroom/uY66y3YdYyNf')
+    script(type='text/javascript', src='//tag.yourupload.com/mushroom/m6S2N6PNND7I')
+    // Piwik
+    script(type = 'text/javascript').
+      var _paq = _paq || [];
+      _paq.push(["setDomains",["*.gump.oose.io"]]);
+      _paq.push(['trackPageView']);
+      _paq.push(['enableLinkTracking']);
+      (function(){
+        var u = "//stats.yourupload.com/";
+        _paq.push(['setTrackerUrl',u + 'piwik.php']);
+        _paq.push(['setSiteId','5']);
+        var d = document,g = d.createElement('script'),s = d.getElementsByTagName('script')[0];
+        g.type = 'text/javascript';
+        g.async = true;
+        g.defer = true;
+        g.src = u + 'piwik.js';
+        s.parentNode.insertBefore(g,s);
+      })();
+    noscript
+      p
+        img(src = '//stats.yourupload.com/piwik.php?idsite=5', style = 'border:0;', alt = '')
+    // End Piwik Code
+
