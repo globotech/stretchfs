@@ -110,7 +110,7 @@ exports.selectReadPeer = function(req,inventory,skip){
       return (
         store &&
         store.roles &&
-        store.roles.indexOf('read') > 0 &&
+        store.roles.indexOf('read') >= 0 &&
         -1 === skip.indexOf(store.name)
       )
     })

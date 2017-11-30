@@ -5,16 +5,24 @@ block content
     +pathTree(fileHelper.parentPath(file.path),file.name)
     br
     if file.mimeType.match(/(video|audio)/i)
-      iframe(src='/embed/' + file.handle, style='width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
+      iframe(src='/file/embed/' + file.handle, style='width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
     div
-      a.btn.btn-success(href='/download?handle=#{file.handle}')
+      a.btn.btn-success(href='/file/download?handle=' + file.handle)
         span.glyphicon.glyphicon-download-alt
         |  Download
     br
     table.table.table-striped
-      tr
-        td CDN URL
-        td #{baseUrl}/detail?handle=#{file.handle}
+      if file.mimeType.match(/(video|audio)/i)
+        tr
+          td Embed URL
+          td #{baseUrl}/file/embed?handle=#{file.handle}
+        tr
+          td Watch URL
+          td #{baseUrl}/file/detail?handle=#{file.handle}
+      else
+        tr
+          td CDN URL
+          td #{urlStatic}
       tr
         td Type
         td= file.mimeType

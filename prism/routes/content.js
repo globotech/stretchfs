@@ -497,7 +497,7 @@ exports.purchase = function(req,res){
   //var start = +new Date()
   var hash = (req.body.hash || req.body.sha1 || '').trim()
   var ext = req.body.ext
-  var referrer = req.body.referrer
+  var referrer = req.body.referrer || ['localhost']
   var life = req.body.life || config.purchase.life
   var token, inventory, purchase
   P.try(function(){
@@ -706,42 +706,22 @@ exports.deliver = function(req,res){
       couch.counter(cb,
         couch.schema.counterError('prism','content-deliver-syntax'))
       res.status(400)
-      res.set({
-        'StretchFS-Code': 400,
-        'StretchFS-Reason': 'SyntaxError',
-        'StretchFS-Message': err.message
-      })
       res.json({error: 'Failed to parse purchase: ' + err.message})
     })
     .catch(NotFoundError,function(err){
       couch.counter(cb,
         couch.schema.counterError('prism','content-deliver-notFound'))
       res.status(404)
-      res.set({
-        'StretchFS-Code': 404,
-        'StretchFS-Reason': 'NotFoundError',
-        'StretchFS-Message': err.message
-      })
       res.json({error: err.message})
     })
     .catch(UserError,function(err){
       couch.counter(cb,couch.schema.counterError('prism','content-deliver'))
       res.status(500)
-      res.set({
-        'StretchFS-Code': 500,
-        'StretchFS-Reason': 'UserError',
-        'StretchFS-Message': err.message
-      })
       res.json({error: err.message})
     })
     .catch(function(err){
       res.status(501)
       res.json({error: err.message})
-      res.set({
-        'StretchFS-Code': 501,
-        'StretchFS-Reason': 'Unknown error',
-        'StretchFS-Message': err.message
-      })
       logger.log('error', 'Unhandled error on content deliver  ' + err.message)
       logger.log('error', err.stack)
     })

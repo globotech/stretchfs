@@ -7,7 +7,7 @@ var config = require('../../config')
 var prism = new Prism({
   username: config.admin.prism.username,
   password: config.admin.prism.password,
-  domain: config.admin.prism.host || 'localhost'
+  domain: config.admin.prism.domain
 })
 
 

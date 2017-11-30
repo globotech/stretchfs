@@ -22,7 +22,7 @@ block content
     +pathTree(path)
     #dropzone
       form.dropzone(action='/file/upload?path=' + pathEncoded, method='post', id='file-upload')
-    form(method='post', role='form', action='/?path=' + pathEncoded)
+    form(method='post', role='form', action='/file/list?path=' + pathEncoded)
       table.table.table-striped
         tr
           th
@@ -36,7 +36,7 @@ block content
           each file in files
             tr
               td
-                input(type='checkbox', name='remove[]', value=file.id)
+                input(type='checkbox', name='remove[]', value=file.path)
               td
                 if file.folder
                   span.glyphicon.glyphicon-folder-close

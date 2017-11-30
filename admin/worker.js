@@ -254,6 +254,7 @@ app.post('/file/folderCreate',routes.file.folderCreate)
 app.post('/file/remove',routes.file.remove)
 app.post('/file/list',routes.file.listAction)
 app.get('/file/detail',routes.file.detail)
+app.get('/file/download',routes.file.download)
 app.get('/file/list',routes.file.list)
 app.get('/file',function(req,res){
   res.redirect(301,'/file/list')
@@ -274,7 +275,10 @@ app.get('/dashboard/getUpdate',routes.dashboard.getUpdate)
 exports.start = function(done){
   server.listenAsync(+config.admin.port,config.admin.host)
     .then(function(){
-      return prismConnect.doConnect()
+      return prismConnect.doConnect(
+        config.admin.prism.host,
+        config.admin.prism.port
+      )
     })
     .then(function(){
       done()

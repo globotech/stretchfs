@@ -37,6 +37,7 @@ var decode = function(path){
  * @return {Array}
  */
 exports.relativePath = function(path){
+  if(!(path instanceof Array)) path = decode(path)
   path = path.slice(0)
   return path
 }
@@ -48,7 +49,7 @@ exports.relativePath = function(path){
  * @return {array}
  */
 exports.relativePathParent = function(path){
-  path = exports.parentPath()
+  path = exports.parentPath(path)
   return path
 }
 
@@ -59,6 +60,7 @@ exports.relativePathParent = function(path){
  * @return {array}
  */
 exports.parentPath = function(path){
+  if(!(path instanceof Array)) path = decode(path)
   path = path.slice(0)
   path.pop()
   return path
@@ -87,7 +89,7 @@ exports.decode = decode
 exports.pathExists = function(path){
   path = decode(path)
   var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
+  var qstring = 'SELECT META().id AS _id FROM ' + tname +
     ' WHERE META().id = $1'
   var qvalue = [couch.schema.file(encode(path))]
   console.log(qstring,qvalue)
@@ -116,8 +118,8 @@ exports.findByPath = function(path){
  */
 exports.findByHandle = function(handle){
   var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
-    ' WHERE `handle` = $2'
+  var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
+    ' WHERE `handle` = $1'
   var qvalue = [handle]
   console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
@@ -147,7 +149,7 @@ exports.findChildren = function(path,search){
   }
   exp = '^' + couch.schema.file(exp)
   var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
+  var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE REGEX_CONTAINS(META().id,"' + exp +'")' +
     ' AND `name` LIKE $1' +
     ' ORDER BY `folder` DESC, `name` ASC'
@@ -169,7 +171,7 @@ exports.findDescendants = function(path){
   if(!path instanceof Array) path = path.split('/')
   var exp = '^,' + path.join(',')
   var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
+  var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,"' + exp + '")' +
     ' ORDER BY folder DESC, name ASC'
   var qvalue = [couch.schema.file() + '%']

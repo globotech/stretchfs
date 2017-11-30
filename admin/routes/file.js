@@ -240,8 +240,9 @@ exports.upload = function(req,res){
           tmp: file.tmp,
           hash: file.hash,
           size: file.size,
-          path: currentPath,
+          path: fileHelper.encode(currentPath),
           mimeType: file.mimetype,
+          mimeExtension: file.extension,
           status: 'ok',
           createdAt: new Date().toJSON(),
           updatedAt: new Date().toJSON()
@@ -270,6 +271,7 @@ exports.upload = function(req,res){
   })
   busboy.on('file',function(fieldname,readable,filename,encoding,mimetype){
     filePromises.push(new P(function(resolve,reject){
+      mimetype = mime.getType(filename)
       var file = {
         promise: {
           resolve: resolve,
@@ -282,6 +284,7 @@ exports.upload = function(req,res){
         size: 0,
         encoding: encoding,
         mimetype: mimetype,
+        extension: mime.getExtension(mimetype),
         sha1: '',
         importJob: ''
       }
@@ -335,11 +338,14 @@ exports.folderCreate = function(req,res){
  * @param {object} res
  */
 exports.detail = function(req,res){
-  var fileKey = couch.schema.file(req.query.path)
-  cb.getAsync(fileKey)
+  fileHelper.findByHandle(req.query.handle)
     .then(function(result){
+      var file = result.value[0]
       res.render('file/detail',{
-        file: result
+        baseUrl: config.admin.baseUrl,
+        file: file,
+        fileHelper: fileHelper,
+        urlStatic: req.protocol + ':' + prism.urlStatic(file.hash,file.name)
       })
     })
 }
@@ -424,12 +430,21 @@ exports.download = function(req,res){
   var file, url
   fileHelper.findByHandle(req.query.handle)
     .then(function(result){
-      file = result
+      file = result.value[0]
       return prism.contentPurchase(
-        file.value.hash,mime.extension(file.value.mimeType))
+        file.hash,
+        file.mimeExtension,
+        config.admin.prism.referrer
+      )
     })
     .then(function(result){
-      url = prism.urlPurchase(result,file.name)
+      console.log(result)
+      url = prism.urlPurchase(result,file.name) +
+        '?attach=' + encodeURIComponent(file.name)
+      if('production' !== process.env.NODE_ENV){
+        url = 'https:' + url
+        url += '&addressType=ip'
+      }
       console.log(url)
       res.redirect(302,url)
     })
@@ -446,17 +461,20 @@ exports.embed = function(req,res){
   var purchase
   fileHelper.findByHandle(req.params.handle)
     .then(function(result){
-      file = result
+      file = result.value[0]
       return prism.contentPurchase(
-        file.value.hash,
-        mime.getExtension(file.value.name),
-        config.admin.prism.referer
+        file.hash,
+        file.mimeExtension,
+        config.admin.prism.referrer
       )
     })
     .then(function(result){
       purchase = result
-      var purchaseUrl = prism.urlPurchase(purchase,file.value.name)
-      var previewUrl = prism.urlStatic(file.value.hash,file.value.name)
+      var purchaseUrl = prism.urlPurchase(purchase,file.name)
+      var previewUrl = prism.urlStatic(
+        file.resource.preview.hash,
+        file.resource.preview.name
+      )
       res.render('file/embed',{
         file: file,
         purchase: purchase,

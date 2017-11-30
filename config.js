@@ -149,9 +149,10 @@ config.$load({
     port: 5973,
     host: null,
     tmpFolder: __dirname + '/admin/public/tmp',
+    baseUrl: 'http://localhost:5973',
     prism: {
       callback: 'http://localhost:5973/file/jobUpdate',
-      referer: ['localhost'],
+      referrer: ['localhost'],
       domain: 'localhost',
       username: '',
       password: ''
