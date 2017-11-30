@@ -149,6 +149,7 @@ config.$load({
     port: 5973,
     host: null,
     prism: {
+      callback: 'http://localhost:5973/file/jobUpdate',
       domain: 'localhost',
       username: '',
       password: ''

@@ -30,28 +30,6 @@ var decode = function(path){
 
 
 /**
- * Remove file
- * @param {string} path
- * @return {P}
- */
-exports.remove = function(path){
-  path = decode(path)
-  var exp = '^,' + path.join(',')
-  var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT META().id AS _id FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,$2)' +
-    ' ORDRE BY folder DESC, name ASC'
-  var qvalue = [couch.schema.file() + '%',exp]
-  console.log(qstring,qvalue)
-  var query = couch.N1Query.fromString(qstring)
-  return cb.queryAsync(query,qvalue)
-    .each(function(file){
-      return cb.removeAsync(file._id)
-    })
-}
-
-
-/**
  * Relative path (prefix removed)
  * @param {string} path
  * @return {Array}
@@ -120,11 +98,44 @@ exports.pathExists = function(path){
 
 
 /**
- * Find children of a path
+ * Find file by path
  * @param {string} path
  * @return {P}
  */
-exports.findChildren = function(path){
+exports.findByPath = function(path){
+  return cb.getAsync(couch.schema.file(encode(decode(path))))
+}
+
+
+/**
+ * Find file by handle
+ * @param {string} handle
+ * @return {P}
+ */
+exports.findByHandle = function(handle){
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT ' + tname + '. * FROM ' + tname +
+    ' WHERE handle = $2'
+  var qvalue = [handle]
+  console.log(qstring,qvalue)
+  var query = couch.N1Query.fromString(qstring)
+  return cb.queryAsync(query,qvalue)
+    .then(function(result){
+      return {
+        value: result,
+        cas: null
+      }
+    })
+}
+
+
+/**
+ * Find children of a path
+ * @param {string} path
+ * @param {string} search
+ * @return {P}
+ */
+exports.findChildren = function(path,search){
   path = decode(path)
   var exp
   if(path.length){
@@ -134,9 +145,11 @@ exports.findChildren = function(path){
   }
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT ' + tname + '. * FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,$2)' +
+    ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,$2) AND name LIKE $3' +
     ' ORDRE BY folder DESC, name ASC'
-  var qvalue = [couch.schema.file() + '%',exp]
+  if(!search) search = '%%'
+  else search = '%' + search + '%'
+  var qvalue = [couch.schema.file() + '%',exp,search]
   console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
@@ -189,5 +202,27 @@ exports.mkdirp = function(path){
           }
           return cb.upsertAsync(fileKey,file)
         })
+    })
+}
+
+
+/**
+ * Remove file
+ * @param {string} path
+ * @return {P}
+ */
+exports.remove = function(path){
+  path = decode(path)
+  var exp = '^,' + path.join(',')
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT META().id AS _id FROM ' + tname +
+    ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,$2)' +
+    ' ORDRE BY folder DESC, name ASC'
+  var qvalue = [couch.schema.file() + '%',exp]
+  console.log(qstring,qvalue)
+  var query = couch.N1Query.fromString(qstring)
+  return cb.queryAsync(query,qvalue)
+    .each(function(file){
+      return cb.removeAsync(file._id)
     })
 }

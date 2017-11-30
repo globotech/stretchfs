@@ -56,6 +56,22 @@ var client = {
       })
         .then(function(){
           return manager.createIndexAsync(
+            'name',['name'],{ignoreIfExists: true})
+        })
+        .then(function(){
+          return manager.createIndexAsync(
+            'handle',['handle'],{ignoreIfExists: true})
+        })
+        .then(function(){
+          return manager.createIndexAsync(
+            'createdAt',['createdAt'],{ignoreIfExists: true})
+        })
+        .then(function(){
+          return manager.createIndexAsync(
+            'updatedAt',['updatedAt'],{ignoreIfExists: true})
+        })
+        .then(function(){
+          return manager.createIndexAsync(
             'jobAssign',['category','priority','status'],{ignoreIfExists: true})
         })
         .then(function(){

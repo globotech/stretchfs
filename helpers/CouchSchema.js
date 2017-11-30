@@ -107,6 +107,16 @@ CouchSchema.prototype.inventory = function(hash){
 
 
 /**
+ * File
+ * @param {string} path
+ * @return {string}
+ */
+CouchSchema.prototype.staff = function(path){
+  return this.applyPrefix('file:' + (path || ''))
+}
+
+
+/**
  * Inventory Copy Task (in the StretchFS bucket)
  * @param {string} hash
  * @param {string} store
