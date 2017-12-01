@@ -8,3 +8,4 @@ config.*.js
 /data
 /test/assets/data
 cluster.json
+admin/public/tmp

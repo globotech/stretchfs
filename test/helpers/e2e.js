@@ -771,9 +771,7 @@ exports.contentStatic = function(prism,localAddress,ext){
       .spread(function(res){
         expect(res.statusCode).to.equal(302)
         var uri = url.parse(res.headers.location)
-        var host = uri.host.split('.')
-        expect(host[0]).to.match(/^teststore\d{1}$/)
-        expect(host[1]).to.equal(prism.domain)
+        expect(uri.host).to.match(/^127\.\d+\.\d+\.\d+:\d+$/)
         expect(uri.pathname).to.equal(
           '/static/' + content.hash + '/test.' + ext
         )
@@ -804,9 +802,7 @@ exports.contentDeliver = function(prism,localAddress,referrer){
       .spread(function(res){
         expect(res.statusCode).to.equal(302)
         var uri = url.parse(res.headers.location)
-        var host = uri.host.split('.')
-        expect(host[0]).to.match(/^teststore\d{1}$/)
-        expect(host[1]).to.equal(prism.domain)
+        expect(uri.host).to.match(/^127\.\d+\.\d+\.\d+:\d+$/)
       })
   }
 }
