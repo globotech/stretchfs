@@ -37,13 +37,14 @@ P.promisifyAll(infant)
 var jobNotification = function(handle,status,statusDescription,silent){
   if('undefined' === typeof silent) silent = false
   var jobResult = {}
-  return cb.getAsync(handle)
+  var jobKey = couch.schema.job(handle)
+  return cb.getAsync(jobKey)
     .then(function(result){
       jobResult = result
       jobResult.value.status = status
       jobResult.value.statusDescription = statusDescription
       //notify database of our change
-      return cb.upsertAsync(handle,jobResult.value,{cas: jobResult.cas})
+      return cb.upsertAsync(jobKey,jobResult.value,{cas: jobResult.cas})
     })
     .then(function(){
       //notify our callbacks
@@ -75,14 +76,16 @@ var jobNotification = function(handle,status,statusDescription,silent){
  */
 var findJobs = function(status,category,limit,prioritize){
   debug('querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.stretchfs) + ' b ' +
-    'WHERE b.status = $1 ' +
-    (category ? ' AND b.category = $2' : '') +
+  var jobFilterKey = couch.schema.job() + '%'
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
+    ' WHERE META().id LIKE $1 AND status = $2 ' +
+    (category ? ' AND category = $3' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +
     (limit ? ' LIMIT ' + limit : '')
+  var qvalue = [jobFilterKey,status,category]
   var query = couch.N1Query.fromString(qstring)
-  return cb.queryAsync(query,[status,category])
+  return cb.queryAsync(query,qvalue)
 }
 
 
@@ -98,14 +101,16 @@ var findJobs = function(status,category,limit,prioritize){
 var findJobsByWorker = function(workerKey,status,category,limit,prioritize){
   debug(workerKey,
     'querying for ' + status + ' ' + category + ' jobs',limit,prioritize)
-  var qstring = 'SELECT b.* FROM ' +
-    couch.getName(couch.type.stretchfs) + ' b ' +
-    'WHERE b.workerKey = $1 AND b.status = $2 ' +
-    (category ? ' AND b.category = $3' : '') +
+  var jobFilterKey = couch.schema.job() + '%'
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
+    ' WHERE META().id LIKE $1 AND workerKey = $2 AND status = $3 ' +
+    (category ? ' AND b.category = $4' : '') +
     (prioritize ? ' ORDER BY priority ASC' : '') +
     (limit ? ' LIMIT ' + limit : '')
+  var qvalue = [jobFilterKey,workerKey,status,category]
   var query = couch.N1Query.fromString(qstring)
-  return cb.queryAsync(query,[workerKey,status,category])
+  return cb.queryAsync(query,qvalue)
 }
 
 
@@ -282,6 +287,7 @@ var superviseJobComplete = function(){
     .each(function(job){
       debug('found job for completion',job)
       var handle = job.handle
+      var jobKey = couch.schema.job(handle)
       var jobFolder = jobHelper.folder(job.handle)
       //kill the job process (for good measure)
       if(jobsProcessing[handle]){
@@ -290,11 +296,11 @@ var superviseJobComplete = function(){
         delete jobsProcessing[handle]
       }
       //remove the completion flag
-      return cb.getAsync(couch.schema.job(handle))
+      return cb.getAsync(jobKey)
         .then(function(result){
           result.value.status = 'cleanup'
           result.value.completedAt = new Date().toJSON()
-          return cb.upsertAsync(handle,result.value,{cas: result.cas})
+          return cb.upsertAsync(jobKey,result.value,{cas: result.cas})
         })
         .then(function(){
           //tell master the job has been completed
@@ -322,6 +328,7 @@ var superviseJobRemove = function(){
     .each(function(job){
       debug('found job for removal',job)
       var handle = job.handle
+      var jobKey = couch.schema.job(handle)
       var jobFolder = jobHelper.folder(job.handle)
       //kill the job process (for good measure)
       if(jobsProcessing[handle]){
@@ -332,7 +339,7 @@ var superviseJobRemove = function(){
       //destroy the job folder
       return rimraf(jobFolder)
         .then(function(){
-          return cb.removeAsync(handle)
+          return cb.removeAsync(jobKey)
         })
     })
     .then(function(){
@@ -548,13 +555,13 @@ var superviseJobAssign = function(){
       return result
     })
     .each(function(job){
-      return cb.getAndLockAsync(job.handle)
+      var jobKey = couch.schema.job(job.handle)
+      return cb.getAndLockAsync(jobKey)
         .then(function(result){
           result.value.status = 'queued_start'
           result.value.workerName = config.store.name
           result.value.workerKey = workerKey
-          return cb.upsertAsync(
-            job.handle,result.value,{cas: result.cas})
+          return cb.upsertAsync(jobKey,result.value,{cas: result.cas})
         })
     })
     .then(function(){
@@ -650,6 +657,7 @@ if(require.main === module){
       debug('aborting any active jobs')
       abortProcessingJobs()
         .then(function(){
+          //good night
           done()
         })
         .catch(done)

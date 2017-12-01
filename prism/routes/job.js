@@ -42,11 +42,13 @@ exports.detail = function(req,res){
 exports.create = function(req,res){
   var data = req.body
   var job = {}
+  var jobKey = ''
   if('string' === typeof data.description){
     data.description = JSON.parse(data.description)
   }
   P.try(function(){
     var jobHandle = new Password({length: 12, special: false}).toString()
+    jobKey = couch.schema.job(jobHandle)
     job = {
       handle: jobHandle,
       description: data.description,
@@ -58,7 +60,7 @@ exports.create = function(req,res){
         session: req.session
       }
     }
-    return cb.upsertAsync(jobHandle,job,{expiry: config.job.recordLife})
+    return cb.upsertAsync(jobKey,job,{expiry: config.job.recordLife})
   })
     .then(function(){
       res.json(job)
@@ -76,12 +78,13 @@ exports.create = function(req,res){
  */
 exports.update = function(req,res){
   var handle = req.body.handle
+  var jobKey = couch.schema.job(handle)
   var description = req.body.description
   var priority = req.body.priority
   var status = req.body.status
   var force = req.query.force || false
   var job = new ObjectManage()
-  cb.getAsync(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for update')
       job.$load(result.value)
@@ -109,7 +112,8 @@ exports.update = function(req,res){
  */
 exports.remove = function(req,res){
   var handle = req.body.handle
-  cb.removeAsync(handle)
+  var jobKey = couch.schema.job(handle)
+  cb.removeAsync(jobKey)
     .then(function(){
       res.json({success: 'Job removed', count: 1})
     })
@@ -126,15 +130,16 @@ exports.remove = function(req,res){
  */
 exports.start = function(req,res){
   var handle = req.body.handle
+  var jobKey = couch.schema.job(handle)
   var job = {}
-  cb.getAsync(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for start')
       job = result.value
       if('staged' !== job.status)
         throw new Error('Job cannot be started after being started')
       job.status = 'queued'
-      return cb.upsertAsync(handle,job,{cas: result.cas})
+      return cb.upsertAsync(jobKey,job,{cas: result.cas})
     })
     .then(function(){
       res.json(job)
@@ -152,6 +157,7 @@ exports.start = function(req,res){
  */
 exports.retry = function(req,res){
   var handle = req.body.handle
+  var jobKey = couch.schema.job(handle)
   var job = {}
   var validStatus = [
     'error',
@@ -162,7 +168,7 @@ exports.retry = function(req,res){
     'processing',
     'archived'
   ]
-  cb.getAsync(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for retry')
       job = result.value
@@ -178,7 +184,7 @@ exports.retry = function(req,res){
         job.worker = null
       }
       job.retriedAt = new Date().toJSON()
-      return cb.upsertAsync(handle,job,{cas: result.cas})
+      return cb.upsertAsync(jobKey,job,{cas: result.cas})
     })
     .then(function(){
       res.json(job)
@@ -196,8 +202,9 @@ exports.retry = function(req,res){
  */
 exports.abort = function(req,res){
   var handle = req.body.handle
+  var jobKey = couch.schema.job(handle)
   var job = {}
-  cb.getAsync(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for abort')
       job = result.value
@@ -205,7 +212,7 @@ exports.abort = function(req,res){
         throw new Error('Job cannot be aborted when not processing')
       job.status = 'queued_abort'
       job.abortedAt = new Date().toJSON()
-      return cb.upsertAsync(handle,job,{cas: result.cas})
+      return cb.upsertAsync(jobKey,job,{cas: result.cas})
     })
     .then(function(){
       res.json(job)
@@ -223,10 +230,11 @@ exports.abort = function(req,res){
  */
 exports.contentExists = function(req,res){
   var handle = req.body.handle
+  var jobKey = couch.schema.job(handle)
   var file = req.body.file
   var job = {}
   var exists = false
-  cb.getAsync(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       job = result.value
@@ -250,10 +258,11 @@ exports.contentExists = function(req,res){
  */
 exports.contentDownload = function(req,res){
   var handle = req.params.handle
+  var jobKey = couch.schema.job(handle)
   var file = req.params.file
   var job = {}
   var worker = {}
-  cb.getAsync(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       job = result.value
