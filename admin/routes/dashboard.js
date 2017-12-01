@@ -1,6 +1,7 @@
 'use strict';
 var P = require('bluebird')
 var moment = require('moment')
+var prettyBytes = require('pretty-bytes')
 
 var couch = require('../../helpers/couchbase')
 var dashboard = require('../helpers/dashboard')
@@ -34,7 +35,7 @@ exports.getUpdate = function(req,res){
       couch.schema.counter('requests')
     ),
     //inventory item count
-    dashboard.count(),
+    dashboard.count(inventoryKey),
     //inventory copy count
     dashboard.sum(inventoryKey,'copies'),
     //space used
@@ -63,16 +64,19 @@ exports.getUpdate = function(req,res){
       stats.inventoryCount = dashboard.formatHits(result[1])
       stats.copyCount = dashboard.formatHits(result[2])
       stats.size = dashboard.formatHits(result[3])
+      stats.sizeHuman = prettyBytes(+result[3])
       stats.sizeTotal = dashboard.formatHits(result[4])
+      stats.sizeTotalHuman = prettyBytes(+result[4])
       stats.jobCount = dashboard.formatHits(result[5])
       stats.prismCount = dashboard.formatHits(result[6])
       stats.storeCount = dashboard.formatHits(result[7])
-      res.json({
+      var response = {
         stats: stats,
         history: result[8],
         inventoryList: result[9],
         purchaseList: result[10]
-      })
+      }
+      res.json(response)
     })
 }
 

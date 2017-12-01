@@ -16,10 +16,12 @@ block content
         #copyCount 0
         h3 Inventory Copies
       .dashboard-big-box
-        #sizeCount 0
+        #sizeCount(style='font-size: 1.3em; display: inline;') 0
+        #sizeLabel(style='font-size: 1em; display: inline;') B
         h3 Space Used
       .dashboard-big-box
-        #sizeTotalCount 0
+        #sizeTotalCount(style='font-size: 1.3em; display: inline;') 0
+        #sizeTotalLabel(style='font-size: 1em; display: inline;') B
         h3 Total Space
       .dashboard-big-box
         #jobCount 0
@@ -70,6 +72,19 @@ block content
           }
         )
       }
+      var updateSize = function(id,num){
+        var parts = num.split(' ')
+        var size = parts[0]
+        var label = parts[1]
+        $('#' + id + 'Count').animateNumber(
+          {number: size,numberStep: commaSepStep},
+          1000,
+          function(){
+            $('#' + id + 'Count').prop('number',size)
+          }
+        )
+        $('#' + id + 'Label').text(label)
+      }
       var graphExists = false
       var stretchHistory = {}
       var drawGraph = function(data){
@@ -106,25 +121,25 @@ block content
       var intervalSeconds = 10
       var intervalMilliseconds = intervalSeconds * 1000
       var intervalStepPercent = 100 / intervalSeconds
-      var updateTopItems = function(tagList){
+      var updateTopItems = function(inventoryList){
         var rows = []
-        tagList.forEach(function(tag){
+        inventoryList.forEach(function(row){
           var tr = $(document.createElement('tr'));
-          tr.append($("<td><div><a href='/networkTag/edit?id=" + tag.NetworkTagId + "'>" + tag.NetworkTagName + "</a></div><a href='/network/edit?id=" + tag.NetworkId + "' style='color: #555; font-size: 10px;'>" + tag.NetworkName + "</a></div></td>"));
-          tr.append($("<td><a href='/format/edit?id=" + tag.FormatId + "'>" + tag.FormatName + "</a></td>"));
-          tr.append($("<td>" + tag.hits + "</td>"));
+          tr.append($("<td><div><a href='/inventory/edit?id=" + row.hash + "'>" + row.hash + "</a></div></td>"));
+          tr.append($("<td>" + row.hitCount + "</td>"));
+          tr.append($("<td>" + row.byteCount + "</td>"));
           rows.push(tr);
         })
         topItemsBody.empty()
         topItemsBody.append(rows)
       }
-      var updateTopPurchases = function(zoneList){
+      var updateTopPurchases = function(purchaseList){
         var rows = []
-        zoneList.forEach(function(zone){
+        purchaseList.forEach(function(row){
           var tr = $(document.createElement('tr'));
-          tr.append($("<td><div><a href='/zone/edit?id=" + zone.SiteZoneId + "'>" + zone.SiteZoneName + "</a></div><div><a href='/site/edit?id=" + zone.SiteId + "' style='color: #555; font-size: 10px;'>" + zone.SiteName + "</a></div></td>"));
-          tr.append($("<td><a href='/format/edit?id=" + zone.FormatId + "'>" + zone.FormatName + "</a></td>"));
-          tr.append($("<td>" + zone.hits + "</td>"));
+          tr.append($("<td><div><a href='/purchase/edit?id=" + row.token + "'>" + row.token + "</a></div><div><a href='/inventory/edit?id=" + row.hash + "' style='color: #555; font-size: 10px;'>" + row.hash + "</a></div></td>"));
+          tr.append($("<td>" + row.hitCount + "</td>"));
+          tr.append($("<td>" + row.byteCount + "</td>"));
           rows.push(tr);
         })
         topPurchases.empty()
@@ -168,8 +183,8 @@ block content
           updateStat('reqCount',data.stats.reqCount)
           updateStat('inventoryCount',data.stats.inventoryCount)
           updateStat('copyCount',data.stats.copyCount)
-          updateStat('size',data.stats.size)
-          updateStat('sizeTotal',data.stats.sizeTotal)
+          updateSize('size',data.stats.sizeHuman)
+          updateSize('sizeTotal',data.stats.sizeTotalHuman)
           updateStat('jobCount',data.stats.jobCount)
           updateStat('prismCount',data.stats.prismCount)
           updateStat('storeCount',data.stats.storeCount)
