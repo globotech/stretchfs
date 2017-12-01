@@ -146,7 +146,7 @@ CouchSchema.prototype.inventoryTask = function(hash,store){
  * @return {string}
  */
 CouchSchema.prototype.job = function(handle){
-  return this.applyPrefix('job:' + handle || '')
+  return this.applyPrefix('job:' + (handle || ''))
 }
 
 

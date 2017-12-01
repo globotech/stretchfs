@@ -122,7 +122,7 @@ config.$load({
   },
   //job system
   job: {
-    enabled: false,
+    enabled: true,
     recordLife: 2591999, //29.99 days
     superviseFrequency: 7000, //7 seconds
     dispatchFrequency: 11000, //11 seconds
@@ -133,7 +133,7 @@ config.$load({
       cleanup: 7200000, //2 hours
       complete: 7200000 //2 hours
     },
-    programs: []
+    programs: ['ffmpeg']
   },
   //purchase system
   purchase: {
@@ -151,7 +151,11 @@ config.$load({
     tmpFolder: __dirname + '/admin/public/tmp',
     baseUrl: 'http://localhost:5973',
     prism: {
-      callback: 'http://localhost:5973/file/jobUpdate',
+      callback: {
+        method: 'post',
+        url: 'http://localhost:5973/file/jobUpdate',
+        rejectUnauthorized: false
+      },
       referrer: ['localhost'],
       domain: 'localhost:5970',
       token: 'changeme',

@@ -5,7 +5,7 @@ block content
     +pathTree(fileHelper.parentPath(file.path),file.name)
     br
     if file.mimeType.match(/(video|audio)/i)
-      iframe(src='/file/embed/' + file.handle, style='width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
+      iframe(src='/file/embed/' + file.handle, style='border: 0; width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
     div
       a.btn.btn-success(href='/file/download?handle=' + file.handle)
         span.glyphicon.glyphicon-download-alt

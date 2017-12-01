@@ -1,0 +1,68 @@
+mixin videojs(file,handle,resources)
+  link(href='/node_modules/video.js/dist/video-js.min.css', type='text/css', rel='stylesheet')
+  link(href='/css/videojs.css', type='text/css', rel='stylesheet')
+  link(href='/node_modules/videojs-contextmenu-ui/dist/videojs-contextmenu-ui.css', type='text/css', rel='stylesheet')
+  link(href='/css/videojs-download-button.css', type='text/css', rel='stylesheet')
+  link(href='/css/videojs-flat.scss', type='text/css', rel='stylesheet')
+  script(src='/node_modules/es5-shim/es5-shim.min.js')
+  script(src='/node_modules/videojs-ie8/dist/videojs-ie8.min.js', type='text/javascript')
+  script(src='/node_modules/video.js/dist/video.min.js', type='text/javascript')
+  script(src='/node_modules/videojs-flash/dist/videojs-flash.min.js', type='text/javascript')
+  script(src='/node_modules/videojs-persistvolume/videojs.persistvolume.js', type='text/javascript')
+  script(src='/node_modules/videojs-contextmenu/dist/videojs-contextmenu.min.js', type='text/javascript')
+  script(src='/node_modules/videojs-contextmenu-ui/dist/videojs-contextmenu-ui.min.js', type='text/javascript')
+  script(src='/js/videojs-download-button.js', type='text/javascript')
+  - var mimeType = file.mimeType.replace('video/flash','video/x-flv')
+  if 'video/x-flv' === mimeType
+    div(id='flashwarn', style='height: 17px; background-color: #d9edf7; color: #31708f; padding: 2px; font-family: arial; font-size: 10pt')
+      | Flash may need to be enabled to work! <a target='_blank' style='color: blue' href='https://github.com/videojs/videojs-flash/issues/26#issuecomment-329698398'>Read more here!</a>
+    script.
+      setTimeout(function(){
+        $('#flashwarn').slideUp('slow')
+      },10000)
+  video#player.video-js.vjs-default-skin.vjs-big-play-centered(
+    controls='true',
+    preload='none',
+    width='640',
+    height='480',
+    poster='' + resources.preview
+  )
+    source(
+      src=resources.video,
+      type='' + file.mimeType.replace("video/flash","video/x-flv"),
+      data-title=file.name
+    )
+    p.vjs-no-js
+      | To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="/html5-video-support/" target="_blank">supports HTML5 video</a>
+  script.
+    videojs.options.flash.swf = '/node_modules/videojs-swf/dist/video-js.swf'
+    var player = videojs('player')
+    player.persistvolume({
+      namespace: '#{baseUrl}'
+    })
+    player.contextmenu()
+    player.contextmenuUI({
+      content: [
+        {href: '#{baseUrl}/watch/#{handle}',label: 'Watch this Video'},
+        {href: '#{baseUrl}',label: 'StretchFS'},
+        {href: '#{baseUrl}',label: 'Version #{version}'}
+      ]
+    })
+    player.downloadButton({
+      href: '#{baseUrl}/watch/#{handle}'
+    })
+    var playerContainer = document.getElementById('player')
+    var resizePlayer = function(){
+      var player = $(playerContainer)
+      player.width($(window).width())
+      player.height($(window).height())
+    }
+    $(window).resize(function(){
+      resizePlayer()
+    })
+    $(document).ready(function(){
+      resizePlayer()
+    })
+
+mixin player(file,handle,resources)
+  +videojs(file,handle,resources)

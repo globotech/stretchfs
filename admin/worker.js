@@ -116,6 +116,7 @@ setupScriptServer('bootstrap')
 setupScriptServer('bootstrap-select')
 setupScriptServer('chart.js')
 setupScriptServer('dropzone')
+setupScriptServer('es5-shim')
 setupScriptServer('html5-boilerplate')
 setupScriptServer('jquery')
 setupScriptServer('jquery-ui-dist')
@@ -125,20 +126,9 @@ setupScriptServer('videojs-contextmenu')
 setupScriptServer('videojs-contextmenu-ui')
 setupScriptServer('videojs-flash')
 setupScriptServer('videojs-ie8')
+setupScriptServer('videojs-persistvolume')
 setupScriptServer('videojs-swf')
 setupScriptServer('videojs-vtt.js')
-
-app.use(function(req,res,next){
-  //allow public routes
-  if(req.url.match(/\/api\//)) return next()
-  //private
-  if(!req.session.staff && req.url.indexOf('/login') < 0){
-    res.redirect('/login')
-  } else {
-    app.locals.staff = req.session.staff
-    next()
-  }
-})
 
 
 // development only
@@ -149,17 +139,27 @@ if('development' === app.get('env'))
 //public routes
 //----------------
 
-//app.post('/api/shredderUpdate',routes.shredder.update)
+app.post('/file/jobUpdate',routes.file.jobUpdate)
 
 //----------------
 //private routes
 //----------------
 
-
 //auth
 app.post('/login',routes.staff.loginAction)
 app.get('/login',routes.staff.login)
 app.get('/logout',routes.staff.logout)
+
+//require auth
+app.use(function(req,res,next){
+  //private
+  if(!req.session.staff && req.url.indexOf('/login') < 0){
+    res.redirect('/login')
+  } else {
+    app.locals.staff = req.session.staff
+    next()
+  }
+})
 
 //staff
 app.post('/staff/list',routes.staff.listAction)

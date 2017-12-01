@@ -1,5 +1,6 @@
 'use strict';
 var P = require('bluebird')
+var escapeRegexString = require('escape-regex-string')
 
 var couch = require('../../helpers/couchbase')
 
@@ -122,12 +123,6 @@ exports.findByHandle = function(handle){
   var qvalue = [handle]
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
-    .then(function(result){
-      return {
-        value: result,
-        cas: null
-      }
-    })
 }
 
 
@@ -141,7 +136,7 @@ exports.findChildren = function(path,search){
   path = decode(path)
   var exp
   if(path.length){
-    exp = ',' + path.join(',') + ',[^,]+,$'
+    exp = ',' + escapeRegexString(path.join(',')) + ',[^,]+,$'
   } else{
     exp = ',[^,]+,$'
   }
@@ -166,7 +161,7 @@ exports.findChildren = function(path,search){
  */
 exports.findDescendants = function(path){
   if(!path instanceof Array) path = path.split('/')
-  var exp = '^,' + path.join(',')
+  var exp = '^,' + escapeRegexString(path.join(','))
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,"' + exp + '")' +
@@ -216,7 +211,7 @@ exports.mkdirp = function(path){
  */
 exports.remove = function(path){
   path = decode(path)
-  var exp = '^,' + path.join(',')
+  var exp = '^,' + escapeRegexString(path.join(','))
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT META().id AS _id FROM ' + tname +
     ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(`path`,$2)' +

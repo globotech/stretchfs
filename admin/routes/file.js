@@ -2,7 +2,7 @@
 var P = require('bluebird')
 var Busboy = require('busboy')
 var crypto = require('crypto')
-var debug = require('debug')('gump')
+var debug = require('debug')('stretchfs:admin:file')
 var fs = require('graceful-fs')
 var mime = require('mime')
 var mkdirp = require('mkdirp')
@@ -129,6 +129,7 @@ exports.upload = function(req,res){
       ],
       augment: [
         {
+          resource: 'preview.jpeg',
           program: 'ffmpeg',
           args: ['-i','video.mp4','-ss','00:00:30',
                  '-f','image2','-vframes','1','-y','preview.jpeg']
@@ -343,7 +344,7 @@ exports.folderCreate = function(req,res){
 exports.detail = function(req,res){
   fileHelper.findByHandle(req.query.handle)
     .then(function(result){
-      var file = result.value[0]
+      var file = result[0]
       res.render('file/detail',{
         baseUrl: config.admin.baseUrl,
         file: file,
@@ -371,19 +372,37 @@ exports.jobUpdate = function(req,res){
   var fileKey
   fileHelper.findByHandle(handle)
     .then(function(result){
+      fileKey = result[0]._id
+      return cb.getAsync(fileKey)
+    })
+    .then(function(result){
       file = result
-      fileKey = file.value._id
-      if('complete' !== file.shredder.status) return
+      if(!file.value.job) file.value.job = {}
+      file.value.job.status = req.body.status
+      file.value.job.statusDescription = req.body.statusDescription
+      file.value.job.manifest = req.body.manifest
+      file.value.job.workerName = req.body.workerName
+      file.value.job.workerKey = req.body.workerKey
+      file.value.job.stepsComplete = req.body.stepComplete
+      file.value.job.stepsTotal = req.body.stepTotal
+      file.value.job.framesComplete = req.body.frameComplete
+      file.value.job.framesTotal = req.body.frameTotal
+      file.value.job.framesDescription = req.body.framesDescription
+      file.value.job.log = req.body.log
+      file.value.job.lastLogUpdate = req.body.lastLogUpdate
+      if(req.body.completedAt)
+        file.value.job.completedAt = req.body.completedAt
+      if('complete' !== file.value.job.status) return
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
       }
-      file.status = 'ok'
+      file.value.job.status = 'finished'
       //remove tmp file
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
       //import the files to oose
       var resource = {}
-      prism.jobContentExists(handle,'video.mp4')
+      return prism.jobContentExists(handle,'video.mp4')
         .then(function(result){
           if(!result) return
           return prism.contentRetrieve({
@@ -409,20 +428,12 @@ exports.jobUpdate = function(req,res){
     })
     .then(function(){
       if('error' !== file.value.job.status) return
+      //remove tmp file on error report
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
     })
     .then(function(){
-      return cb.getAsync(fileKey)
-    })
-    .then(function(result){
-      if(!result.value.job) result.value.job = {}
-      result.value.job.status = req.body.status
-      result.value.job.message = req.body.statusDescription
-      result.value.job.stepsComplete = req.body.stepComplete
-      result.value.job.stepsTotal = req.body.stepTotal
-      result.value.job.framesComplete = req.body.frameComplete
-      result.value.job.framesTotal = req.body.frameTotal
-      return cb.upsertAsync(fileKey,result.value,{cas: result.cas})
+      //update db
+      return cb.upsertAsync(fileKey,file.value,{cas: file.cas})
     })
     .then(function(){
       res.json({success: 'Update successful'})
@@ -446,7 +457,7 @@ exports.download = function(req,res){
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot download')
       }
-      file = result.value[0]
+      file = result[0]
       return prism.contentPurchase(
         file.hash,
         file.mimeExtension,
@@ -474,9 +485,9 @@ exports.embed = function(req,res){
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot download')
       }
-      file = result.value[0]
+      file = result[0]
       return prism.contentPurchase(
-        file.hash,
+        file.resource.video,
         file.mimeExtension,
         config.admin.prism.referrer
       )
@@ -485,14 +496,16 @@ exports.embed = function(req,res){
       purchase = result
       var purchaseUrl = prism.urlPurchase(purchase,file.name)
       var previewUrl = prism.urlStatic(
-        file.resource.preview.hash,
-        file.resource.preview.name
+        file.resource.preview,
+        'preview.jpeg'
       )
       res.render('file/embed',{
         file: file,
         purchase: purchase,
-        videoUrl: purchaseUrl,
-        previewUrl: previewUrl
+        resources: {
+          video: purchaseUrl,
+          preview: previewUrl
+        }
       })
   })
 }

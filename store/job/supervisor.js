@@ -79,9 +79,9 @@ var findJobs = function(status,category,limit,prioritize){
   var jobFilterKey = couch.schema.job() + '%'
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND status = $2 ' +
-    (category ? ' AND category = $3' : '') +
-    (prioritize ? ' ORDER BY priority ASC' : '') +
+    ' WHERE META().id LIKE $1 AND `status` = $2 ' +
+    (category ? ' AND `category` = $3' : '') +
+    (prioritize ? ' ORDER BY `priority` DESC' : '') +
     (limit ? ' LIMIT ' + limit : '')
   var qvalue = [jobFilterKey,status,category]
   var query = couch.N1Query.fromString(qstring)
@@ -104,9 +104,9 @@ var findJobsByWorker = function(workerKey,status,category,limit,prioritize){
   var jobFilterKey = couch.schema.job() + '%'
   var tname = couch.getName(couch.type.stretchfs)
   var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND workerKey = $2 AND status = $3 ' +
-    (category ? ' AND b.category = $4' : '') +
-    (prioritize ? ' ORDER BY priority ASC' : '') +
+    ' WHERE META().id LIKE $1 AND `workerKey` = $2 AND `status` = $3 ' +
+    (category ? ' AND `category` = $4' : '') +
+    (prioritize ? ' ORDER BY `priority` ASC' : '') +
     (limit ? ' LIMIT ' + limit : '')
   var qvalue = [jobFilterKey,workerKey,status,category]
   var query = couch.N1Query.fromString(qstring)
