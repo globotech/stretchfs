@@ -203,7 +203,6 @@ exports.queryGraphBuckets = function(minHour,maxHour,bucketCount){
     ' ORDER BY META().id DESC'
   var qvalue = [minKey,maxKey]
   var query = couch.N1Query.fromString(qstring)
-  console.log(qstring,qvalue)
   return cb.queryAsync(query,qvalue)
     .map(function(row){
       var _id = row._id
@@ -212,7 +211,6 @@ exports.queryGraphBuckets = function(minHour,maxHour,bucketCount){
       return row
     })
     .then(function(result){
-      console.log(result)
       var tryBucket = function(i){
         var thisHour = exports.makeHour(
           moment(minHour * 3600000).add(i,'hours'))
