@@ -1,6 +1,5 @@
 'use strict';
 var P = require('bluebird')
-var ObjectManage = require('object-manage')
 var Password = require('node-password').Password
 var path = require('path')
 var request = require('request')
@@ -23,7 +22,8 @@ request = P.promisify(request)
  */
 exports.detail = function(req,res){
   var handle = req.body.handle
-  cb.getAsync(handle)
+  var jobKey = couch.schema.job(handle)
+  cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found')
       res.json(result.value)
@@ -83,21 +83,21 @@ exports.update = function(req,res){
   var priority = req.body.priority
   var status = req.body.status
   var force = req.query.force || false
-  var job = new ObjectManage()
+  var job
   cb.getAsync(jobKey)
     .then(function(result){
       if(!result || !result.value) throw new Error('No job found for update')
-      job.$load(result.value)
+      job = result.value
       if('staged' !== job.status && !force)
         throw new Error('Job cannot be updated after being started')
-      if(description) job.$load({description: description})
+      if(description) job.description = description
       if(priority) job.priority = priority
       if(status && force) job.status = status
       job.updatedAt = new Date().toJSON()
-      return cb.upsertAsync(handle,job.$strip(),{cas: result.cas})
+      return cb.upsertAsync(jobKey,job,{cas: result.cas})
     })
     .then(function(){
-      res.json(job.$strip())
+      res.json(job)
     })
     .catch(function(err){
       res.json({error: err.message})
