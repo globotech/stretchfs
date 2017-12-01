@@ -136,8 +136,10 @@ block content
       var updateTopPurchases = function(purchaseList){
         var rows = []
         purchaseList.forEach(function(row){
+          row.token = row._id.replace('purchase:','')
           var tr = $(document.createElement('tr'));
-          tr.append($("<td><div><a href='/purchase/edit?id=" + row.token + "'>" + row.token + "</a></div><div><a href='/inventory/edit?id=" + row.hash + "' style='color: #555; font-size: 10px;'>" + row.hash + "</a></div></td>"));
+          tr.append($("<td><a href='/purchase/edit?id=" + row.token + "'>" + row.token + "</a></td>"));
+          tr.append($("<td><a href='/inventory/edit?id=" + row.hash + "'>" + row.hash + "</a></td>"));
           tr.append($("<td>" + parseInt(row.hitCount || 0,10) + "</td>"));
           tr.append($("<td>" + parseInt(row.byteCount || 0,10) + "</td>"));
           rows.push(tr);

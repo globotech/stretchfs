@@ -176,11 +176,14 @@ exports.topRecordsByValue = function(key,name,limit){
   if(!limit) limit = 1
   else limit = parseInt(limit,10)
   var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
+  var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 ORDER BY `' + name + '` DESC LIMIT ' + limit
   var qvalue = [key + '%']
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
+    .then(function(result){
+      return result
+    })
 }
 
 

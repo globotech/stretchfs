@@ -102,7 +102,7 @@ CouchSchema.prototype.downVote = function(castee,caster){
  * @return {string}
  */
 CouchSchema.prototype.purchase = function(token){
-  return this.applyPrefix('purchase:' + token || '')
+  return this.applyPrefix('purchase:' + (token || ''))
 }
 
 
