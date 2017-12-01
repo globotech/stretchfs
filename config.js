@@ -153,7 +153,8 @@ config.$load({
     prism: {
       callback: 'http://localhost:5973/file/jobUpdate',
       referrer: ['localhost'],
-      domain: 'localhost',
+      domain: 'localhost:5970',
+      token: 'changeme',
       host: 'localhost',
       port: 5971,
       username: '',
@@ -175,6 +176,7 @@ config.$load({
     name: 'prism1',
     accessLog: false,
     port: 5971,
+    httpPort: 5970,
     host: null,
     /*
     listen: [
@@ -226,6 +228,7 @@ config.$load({
     defaultRoles: ['active','online','read','write'],
     accessLog: false,
     port: 5972,
+    httpPort: 5974,
     host: null,
     /*
     listen: [

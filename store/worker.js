@@ -20,6 +20,7 @@ var sslOptions = {
   cert: fs.readFileSync(config.ssl.pem)
 }
 var server = https.createServer(sslOptions,app)
+var httpServer = http.createServer(app)
 //if the config calls for additional servers set them up now
 var listenServer = []
 if(config.store.listen && config.store.listen.length){
@@ -48,6 +49,7 @@ if(config.store.listen && config.store.listen.length){
 var routes = require('./routes')
 //make some promises
 P.promisifyAll(server)
+P.promisifyAll(httpServer)
 
 //access logging
 if(config.store.accessLog){
@@ -110,6 +112,9 @@ app.post('/content/verify',routes.content.verify)
 exports.start = function(done){
   server.listenAsync(+config.store.port,config.store.host)
     .then(function(){
+      return httpServer.listenAsync(+config.store.httpPort,config.store.host)
+    })
+    .then(function(){
       return listenServer
     })
     .each(function(listen){
@@ -128,6 +133,10 @@ exports.start = function(done){
 exports.stop = function(done){
   //dont wait for this since it will take to long and we are stopping now
   server.close()
+  httpServer.close()
+  listenServer.forEach(function(listen){
+    listen.server.close()
+  })
   //just return now
   process.nextTick(done)
 }

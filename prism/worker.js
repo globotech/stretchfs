@@ -21,6 +21,7 @@ var sslOptions = {
   cert: fs.readFileSync(config.ssl.pem)
 }
 var server = https.createServer(sslOptions,app)
+var httpServer = http.createServer(app)
 //if the config calls for additional servers set them up now
 var listenServer = []
 if(config.prism.listen && config.prism.listen.length){
@@ -50,6 +51,7 @@ var routes = require('./routes')
 
 //make some promises
 P.promisifyAll(server)
+P.promisifyAll(httpServer)
 
 //access logging
 if(config.store.accessLog){
@@ -144,6 +146,9 @@ app.get('/:token/:filename',routes.content.deliver)
 exports.start = function(done){
   server.listenAsync(+config.prism.port,config.prism.host)
     .then(function(){
+      return httpServer.listenAsync(+config.prism.httpPort,config.prism.host)
+    })
+    .then(function(){
       return listenServer
     })
     .each(function(listen){
@@ -162,6 +167,7 @@ exports.start = function(done){
 exports.stop = function(done){
   //dont wait for this since it will take to long and we are stopping now
   server.close()
+  httpServer.close()
   listenServer.forEach(function(listen){
     listen.server.close()
   })

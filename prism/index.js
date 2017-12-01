@@ -47,6 +47,7 @@ if(require.main === module){
               doc.name = config.prism.name
               doc.host = config.prism.host || '127.0.0.1'
               doc.port = config.prism.port
+              doc.httpPort = config.prism.httpPort
               if(!doc.roles) doc.roles = []
               if(doc.roles.indexOf('active') < 0) doc.roles.push('active')
               if(doc.roles.indexOf('online') < 0) doc.roles.push('online')
@@ -61,6 +62,7 @@ if(require.main === module){
                 name: config.prism.name,
                 host: config.prism.host || '127.0.0.1',
                 port: config.prism.port,
+                httpPort: config.prism.httpPort,
                 roles: ['active','online'],
                 createdAt: new Date().toJSON(),
                 updatedAt: new Date().toJSON()

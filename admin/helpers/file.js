@@ -92,7 +92,6 @@ exports.pathExists = function(path){
   var qstring = 'SELECT META().id AS _id FROM ' + tname +
     ' WHERE META().id = $1'
   var qvalue = [couch.schema.file(encode(path))]
-  console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
     .then(function(result){
@@ -121,7 +120,6 @@ exports.findByHandle = function(handle){
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
     ' WHERE `handle` = $1'
   var qvalue = [handle]
-  console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
     .then(function(result){
@@ -156,7 +154,6 @@ exports.findChildren = function(path,search){
   if(!search) search = '%%'
   else search = '%' + search + '%'
   var qvalue = [search]
-  console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
 }
@@ -225,7 +222,6 @@ exports.remove = function(path){
     ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(`path`,$2)' +
     ' ORDER BY folder DESC, name ASC'
   var qvalue = [couch.schema.file() + '%',exp]
-  console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
     .each(function(file){

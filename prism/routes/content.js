@@ -4,6 +4,7 @@ var Busboy = require('busboy')
 var debug = require('debug')('stretchfs:prism:content')
 var fileType = require('file-type')
 var fs = require('graceful-fs')
+var isIP = require('isipaddress')
 var mime = require('mime')
 var stretchfs = require('stretchfs-sdk')
 var path = require('path')
@@ -621,11 +622,17 @@ exports.deliver = function(req,res){
     if(req.get('X-Forwarded-Protocol')){
       proto = 'https' === req.get('X-Forwarded-Protocol') ? 'https' : 'http'
     }
+    var storePort = proto === 'https' ? store.port : store.httpPort
     var host = store.name + '.' + config.domain
-    if('ip' === addressType || 'ipv4' === addressType){
-      host = store.host + ':' + store.port
-    } else if('ipv6' === addressType){
-      host = (store.host6 || store.host) + ':[' + store.port + ']'
+    if(
+      req.headers.host.match(/localhost/i) ||
+      'ip' === addressType ||
+      'ipv4' === addressType ||
+      isIP.v4(req.headers.host.replace(/:.*$/,''))
+    ){
+      host = store.host + ':' + storePort
+    } else if('ipv6' === addressType && isIP.v6(req.headers.host)){
+      host = (store.host6 || store.host) + ':[' + storePort + ']'
     }
     var compileQueryString = function(queryString){
       var str = '?'
@@ -759,11 +766,17 @@ exports.contentStatic = function(req,res){
       if(req.get('X-Forwarded-Protocol')){
         proto = 'https' === req.get('X-Forwarded-Protocol') ? 'https' : 'http'
       }
+      var storePort = proto === 'https' ? result.port : result.httpPort
       var host = result.name + '.' + config.domain
-      if('ip' === addressType || 'ipv4' === addressType){
-        host = result.host + ':' + result.port
-      } else if('ipv6' === addressType){
-        host = (result.host6 || result.host) + ':[' + result.port + ']'
+      if(
+        req.headers.host.match(/localhost/i) ||
+        'ip' === addressType ||
+        'ipv4' === addressType ||
+        isIP.v4(req.headers.host.replace(/:.*$/,''))
+      ){
+        host = result.host + ':' + storePort
+      } else if('ipv6' === addressType && isIP.v6(req.headers.host)){
+        host = (result.host6 || result.host) + ':[' + storePort + ']'
       }
       var url = proto + '://' + host +
         '/static/' + inventory.hash + '/' + filename

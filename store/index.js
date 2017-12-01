@@ -59,6 +59,7 @@ if(require.main === module){
             doc.name = config.store.name
             doc.host = config.store.host || '127.0.0.1'
             doc.port = config.store.port
+            doc.httpPort = config.store.httpPort
             if(doc.roles.indexOf('active') < 0) doc.roles.push('active')
             if(doc.roles.indexOf('online') < 0) doc.roles.push('online')
             doc.updatedAt = new Date().toJSON()
@@ -73,6 +74,7 @@ if(require.main === module){
               name: config.store.name,
               host: config.store.host || '127.0.0.1',
               port: config.store.port,
+              httpPort: config.store.httpPort,
               usage: {free: 1000000, total: 100000000},
               slot: {count: 0, list: []},
               roles: config.store.defaultRoles,

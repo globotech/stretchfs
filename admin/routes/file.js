@@ -454,14 +454,8 @@ exports.download = function(req,res){
       )
     })
     .then(function(result){
-      console.log(result)
-      url = prism.urlPurchase(result,file.name) +
+      url = req.protocol + ':' + prism.urlPurchase(result,file.name) +
         '?attach=' + encodeURIComponent(file.name)
-      if('production' !== process.env.NODE_ENV){
-        url = 'https:' + url
-        url += '&addressType=ip'
-      }
-      console.log(url)
       res.redirect(302,url)
     })
 }
