@@ -30,17 +30,12 @@ block content
         .col-sm-10.mono
           input.form-control(type='text', name='port', placeholder='Prism Port', value=prism.port)
       .form-group
-        label.control-label.col-sm-2 Active
-        .col-sm-10.mono
-          input(type='checkbox', name='role_active', checked=(0<=prism.roles.indexOf('active')))
-      .form-group
-        label.control-label.col-sm-2 Writable
-        .col-sm-10.mono
-          input(type='checkbox', name='role_writable', checked=(0<=prism.roles.indexOf('writable')))
-      .form-group
-        label.control-label.col-sm-2 Online
-        .col-sm-10.mono
-          input(type='checkbox', name='role_online', checked=(0<=prism.roles.indexOf('online')))
+        label.control-label.col-sm-2 Roles
+        .list-group.col-sm-9
+          each r,i in prism.roles
+            span.list-group-item.list-group-item-success.shrinkwrap.mono.col-sm-2
+              input.checkbox-input(type='checkbox', name='roles[' + i + ']', id='roles[' + i + ']', value=r, checked=true)
+              label(for='roles[' + i + ']')= r
       .form-group
         .col-sm-offset-2.col-sm-10
           button.btn.btn-success.col-sm-10(type='submit') Save

@@ -79,6 +79,7 @@ exports.edit = function(req,res){
   cb.getAsync(prismKey)
     .then(function(result){
       result.value._id = prismKey
+      result.value.roles = result.value.roles.sort()
       res.render('prism/edit',{prism: result.value})
     })
     .catch(function(err){

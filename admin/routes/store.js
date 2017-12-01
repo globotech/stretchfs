@@ -71,7 +71,25 @@ exports.edit = function(req,res){
   cb.getAsync(storeKey)
     .then(function(result){
       result.value._id = storeKey
-      result.value.prismKey = couch.schema.prism(result.value.prism)
+      result.value.prismPrefix = couch.schema.prism()
+      if(('object' !== typeof result.value.group) && !Array.isArray(result.value.group)){
+        result.value.group = []
+      }
+      if(result.value.prism){
+        result.value.prismKey = couch.schema.prism(result.value.prism)
+        if(-1 === result.value.group.indexOf(result.value.prismKey)){
+          result.value.group.push(result.value.prismKey)
+        }
+      } else {
+        result.value.group.forEach(function(g){
+          if(0 === g.indexOf(couch.schema.prism())){
+            result.value.prismKey = g
+            result.value.prism = g.slice(couch.schema.prism().length)
+          }
+        })
+      }
+      result.value.group = result.value.group.sort()
+      result.value.roles = result.value.roles.sort()
       res.render('store/edit',{store: result.value})
     })
     .catch(function(err){
