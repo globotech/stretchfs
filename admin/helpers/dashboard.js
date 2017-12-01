@@ -175,9 +175,8 @@ exports.countByMember = function(key,name,value){
 exports.topRecordsByValue = function(key,name,limit){
   if(!limit) limit = 1
   else limit = parseInt(limit,10)
-  var qstring = 'SELECT ' +
-    couch.getName(couch.type.stretchfs) + '.* FROM ' +
-    couch.getName(couch.type.stretchfs) +
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT ' + tname + '.* FROM ' + tname +
     ' WHERE META().id LIKE $1 ORDER BY `' + name + '` DESC LIMIT ' + limit
   var qvalue = [key + '%']
   var query = couch.N1Query.fromString(qstring)
@@ -197,14 +196,23 @@ exports.queryGraphBuckets = function(minHour,maxHour,bucketCount){
   var reqKey = couch.schema.counter('requests')
   var minKey = reqKey + ':' + minHour
   var maxKey = reqKey + ':' + maxHour
-  var qstring = 'SELECT ' + couch.getName(couch.type.stretchfs) +
-    ' AS `requests` FROM ' +couch.getName(couch.type.stretchfs) +
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT META().id AS _id, ' + tname + ' AS `requests`' +
+    ' FROM ' + tname +
     ' WHERE META().id >= $1 AND META().id <= $2 ' +
     ' ORDER BY META().id DESC'
   var qvalue = [minKey,maxKey]
   var query = couch.N1Query.fromString(qstring)
+  console.log(qstring,qvalue)
   return cb.queryAsync(query,qvalue)
+    .map(function(row){
+      var _id = row._id
+      delete row._id
+      row.hour = +_id.replace(reqKey + ':','')
+      return row
+    })
     .then(function(result){
+      console.log(result)
       var tryBucket = function(i){
         var thisHour = exports.makeHour(
           moment(minHour * 3600000).add(i,'hours'))
