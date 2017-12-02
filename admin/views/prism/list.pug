@@ -15,8 +15,9 @@ block content
           th Created #{timezone}
           th Updated #{timezone}
           th Active
-          th Writable
           th Online
+          th Readable
+          th Writable
         each row in list
           tr
             td
@@ -29,7 +30,9 @@ block content
             td
               +active(0<=row.roles.indexOf('active'))
             td
-              +active(0<=row.roles.indexOf('writable'))
-            td
               +active(0<=row.roles.indexOf('online'))
+            td
+              +active(0<=row.roles.indexOf('read'))
+            td
+              +active(0<=row.roles.indexOf('write'))
       +tableFooter(page,count)

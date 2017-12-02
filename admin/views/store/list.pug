@@ -14,9 +14,10 @@ block content
           th Host:Port
           th Usage
           th Connections
-          th Writable
-          th Available
           th Active
+          th Online
+          th Readable
+          th Writable
         each row in list
           - var percentUsed = 0
           - row.stepTotal = parseInt(row.stepTotal || 1)
@@ -42,9 +43,12 @@ block content
                 .col-xs-11.text-right.text-nowrap #{prettyBytes(row.usage.total - row.usage.free)} / #{prettyBytes(row.usage.total)} (#{prettyBytes(row.usage.free)} free)
             td.mono= row.slot.count
             td
-              +active(row.writable)
+              +active(0<=row.roles.indexOf('active'))
             td
-              +active(row.available)
+              +active(0<=row.roles.indexOf('online'))
             td
-              +active(row.active)
+              +active(0<=row.roles.indexOf('read'))
+            td
+              +active(0<=row.roles.indexOf('write'))
+
       +tableFooter(page,count)
