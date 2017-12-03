@@ -11,7 +11,9 @@ block content
           th
             input#toggle(type='checkbox')
           th Name
-          th Host:Port
+          th Host
+            br
+            | Port/httpPort
           th Usage
           th Connections
           th Active
@@ -19,20 +21,21 @@ block content
           th Readable
           th Writable
         each row in list
-          - var percentUsed = 0
           - row.stepTotal = parseInt(row.stepTotal || 1)
           - row.stepComplete = parseInt(row.stepComplete || 0)
-          - percentUsed = (((row.usage.total - row.usage.free)  / row.usage.total) * 100).toFixed(0)
+          - var percentUsed = (((row.usage.total - row.usage.free)  / row.usage.total) * 100).toFixed(0)
           - var statusClass = 'success'
           - if(percentUsed > 30) statusClass ='info'
           - if(percentUsed > 75) statusClass ='warning'
           - if(percentUsed > 90) statusClass ='danger'
           tr
             td
-              input(type='checkbox', name='remove[]', value=row._id)
+              input(type='checkbox', name='remove[]', value=row.name)
             td.mono
-              a(href='/store/edit?id=' + row._id)= row.name
-            td.mono= [row.host,row.port].join(':')
+              a(href='/store/edit?name=' + row.name)= row.name
+            td.mono= row.host
+              br
+              =[row.port,row.httpPort].join('/')
             td.mono
               div
               .progress.progress-striped(style='margin-bottom:0;')
@@ -50,5 +53,4 @@ block content
               +active(0<=row.roles.indexOf('read'))
             td
               +active(0<=row.roles.indexOf('write'))
-
       +tableFooter(page,count)

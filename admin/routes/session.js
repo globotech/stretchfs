@@ -1,7 +1,7 @@
 'use strict';
 var P = require('bluebird')
 
-var list = require('../helpers/list')
+var listHelper = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
@@ -17,11 +17,11 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  list.listQuery(couch,cb,couch.type.stretchfs,
+  listHelper.listQuery(couch,cb,couch.type.stretchfs,
     couch.schema.userToken(search),'token',true,start,limit)
     .then(function(result){
       res.render('session/list',{
-        page: list.pagination(start,result.count,limit),
+        page: listHelper.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,

@@ -4,7 +4,7 @@ block append js
 block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
-      h1 Peer:Store
+      h1 Store Edit
       pre.mono.h4= store.name
     div.btn-group
       div.btn-group.btn-group-justified
@@ -16,10 +16,10 @@ block content
             span.badge.mono.margin-l-8= momentStandardFormat(store.updatedAt)
     +alerts()
     form.form-horizontal(action='/store/save', method='post', role='form')
-      input(type='hidden', name='id', value=store._id)
+      input(type='hidden', name='name', value=store.name)
       .form-group.margin-t-16
         label.control-label.col-sm-2 Group
-        .list-group.col-sm-9
+        .list-group.col-sm-9.margin-0
           each g,i in store.group
             span.list-group-item.list-group-item-warning.shrinkwrap.mono.col-sm-2
               input.checkbox-input(type='checkbox', name='group['+i+']', id='group['+i+']', value=g, checked=true)
@@ -38,7 +38,11 @@ block content
         .col-sm-10
           input.form-control(type='text', name='host', placeholder='Store Host', value=store.host)
       .form-group
-        label.control-label.col-sm-2 Port
+        label.control-label.col-sm-2 HTTP Port
+        .col-sm-10.mono
+          input.form-control(type='text', name='httpPort', placeholder='HTTP Port', value=store.httpPort)
+      .form-group
+        label.control-label.col-sm-2 API Port
         .col-sm-10
           input.form-control(type='text', name='port', placeholder='Store Port', value=store.port)
       .form-group

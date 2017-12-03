@@ -1,7 +1,7 @@
 'use strict';
 var P = require('bluebird')
 
-var list = require('../helpers/list')
+var listHelper = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 var purchasedb = require('../../helpers/purchase')
 var hashListAll = require('../helpers/inventory').hashListAll
@@ -22,7 +22,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var offset = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(
+  listHelper.listQuery(
     couch,
     cb,
     couch.type.stretchfs,
@@ -34,7 +34,7 @@ exports.list = function(req,res){
   )
     .then(function(result){
       res.render('purchase/list',{
-        page: list.pagination(offset,result.count,limit),
+        page: listHelper.pagination(offset,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
@@ -93,13 +93,14 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var purchaseKey = req.query.id
+  var purchaseKey = couch.schema.purchase(req.query.token)
   P.all([
     cb.getAsync(purchaseKey),
     hashListAll()
   ])
     .spread(function(result,hashes){
       result.value._id = purchaseKey
+      result.value.name = req.query.name
       res.render('purchase/edit',{
         purchase: result.value,
         hashes: hashes
@@ -117,8 +118,8 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  var data = req.body
-  var purchaseKey = req.body.id || ''
+  var form = req.body
+  var purchaseKey = couch.schema.purchase(form.token)
   var life = (+req.body.life) || (+config.purchase.life)
   var lifeMs = 1000 * life
   var timestamp = new Date()
@@ -141,9 +142,9 @@ exports.save = function(req,res){
   })
     .then(function(result){
       doc = result.value
-      if(data.hash) doc.hash = data.hash
-      if(data.ext) doc.ext = data.ext
-      if(data.referrer) doc.referrer = data.referrer
+      if(form.hash) doc.hash = form.hash
+      if(form.ext) doc.ext = form.ext
+      if(form.referrer) doc.referrer = form.referrer
       doc.expirationDate = new Date(
         +(new Date(doc.createdAt)) + lifeMs
       ).toJSON()

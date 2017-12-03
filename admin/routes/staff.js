@@ -2,7 +2,7 @@
 var bcrypt = require('bcrypt')
 var P = require('bluebird')
 
-var list = require('../helpers/list')
+var listHelper = require('../helpers/list')
 var couch = require('../../helpers/couchbase')
 
 //make some promises
@@ -21,11 +21,11 @@ exports.list = function(req,res){
   var limit = +req.query.limit || 10
   var start = +req.query.start || 0
   var search = req.query.search || ''
-  list.listQuery(couch,cb,couch.type.stretchfs,
+  listHelper.listQuery(couch,cb,couch.type.stretchfs,
     couch.schema.staff(search),'name',true,start,limit)
     .then(function(result){
       res.render('staff/list',{
-        page: list.pagination(start,result.count,limit),
+        page: listHelper.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,

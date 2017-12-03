@@ -3,6 +3,7 @@ var P = require('bluebird')
 
 var inv = require('../helpers/inventory')
 var list = require('../helpers/list')
+var formHelper = require('../helpers/form')
 var couch = require('../../helpers/couchbase')
 var isArray = Array.isArray
 
@@ -104,10 +105,8 @@ exports.listHashes = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var inventoryKey = req.query.id
-  var hash = inventoryKey.split(':')[0] || inventoryKey
   P.all([
-    inv.hashQuery(hash),
+    inv.hashQuery(req.query.hash),
     inv.ruleSet(),
     list.listQuery(couch,cb,couch.type.stretchfs,
       couch.schema.store(),'name',true)
@@ -122,7 +121,7 @@ exports.edit = function(req,res){
           pC[l.prism]=true
           pCidx=Object.keys(pC).indexOf(l.prism)
         }
-        l.id = 'loc[' + i + ']'
+        l.id = 'desiredMap[' + i + ']'
         l.class = 'prism' + ('0000' + pCidx).slice(-4)
         l.checked = (-1 !== result.summary.map.indexOf(l.name))
         result.stores[l.name] = l
@@ -161,93 +160,17 @@ exports.editIndividual = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  var form = req.body
-  var inventoryKey = form.hash || ''
-  var timestamp = new Date().toJSON()
-  P.try(function(){
-    console.log('inv/save '+inventoryKey+' form:',form)
-    if(inventoryKey){
-      return cb.getAsync(inventoryKey)
-    } else {
-      inventoryKey = couch.schema.inventory(form.hash)
-      return {value: {createdAt: timestamp}, cas: null}
-    }
-  })
-    .then(function(result){
-      var doc = result.value
-      var updated = false
-      console.log('inv/save '+inventoryKey+'  in:',doc);
-      var docTypes = {}
-      var formTypes = {}
-      var inventoryFields = [
-        'hash','prism','store',
-        'mimeType','mimeExtension','size','relativePath',
-        'copies','map','rules'
-      ]
-      inventoryFields.forEach(function(k){
-        var _isSame = function(a,b){
-          return (a === b) &&
-            (a !== 0 || 1 / a === 1 / b) || // false for +0 vs -0
-            (a !== a && b !== b) // true for NaN vs NaN
-        }
-        var docFieldType = (typeof doc[k])
-        if('string' === typeof form[k]){
-          switch(docFieldType){
-          case 'object':
-            form[k] = JSON.parse(form[k])
-            if((isArray(form[k])) && (isArray(doc[k]))){
-              if(!(
-                (doc[k].length === form[k].length) &&
-                (doc[k].every(function(u,i){
-                  return _isSame(u,form[k][i])
-                }))
-              )){
-                doc[k] = form[k]
-                updated = true
-              } else {
-                console.log('array matched',k)
-              }
-            }
-            break;
-          case 'number':
-            form[k] = parseInt(form[k],10)
-            break;
-          }
-        }
-        docTypes[k]=(typeof doc[k])
-        formTypes[k]=(typeof form[k])
-        if((form[k]) && (doc[k] !== form[k])){
-          doc[k] = form[k]
-          updated = true
-        }
-      })
-      console.error('doc',docTypes)
-      console.error('form',formTypes)
-      console.log('inv/save '+inventoryKey+' out:',updated,doc)
-      updated=false//TODO remove this when it no longer trashes records
-      if(!updated){
-        return P.try(function(){return false})
-      } else {
-        doc.updatedAt = timestamp
-        return cb.upsertAsync(inventoryKey,doc,{cas: result.cas})
-      }
-    })
-    .then(function(updated){
-      var alert = {
-        subject: 'Inventory',
-        href: '/inventory/edit?id=' + inventoryKey,
-        id: inventoryKey
-      }
-      if(false !== updated){
-        alert.action = 'saved'
-        req.flashPug('success','subject-id-action',alert)
-      } else {
-        alert.action = 'unchanged (try again?)'
-        req.flashPug('warning','subject-id-action',alert)
-      }
-      res.redirect('/inventory/list')
-    })
-    .catch(function(err){
-      res.render('error',{error: err})
-    })
+  return P.all([formHelper.diff(
+    req,res,
+    cb,'inventory',{'hash': req.body.hash},
+    [
+      'hash',
+      'mimeExtension',
+      'mimeType',
+      'relativePath',
+      'size',
+      'rules',
+      'desiredMap'
+    ]
+  )])
 }

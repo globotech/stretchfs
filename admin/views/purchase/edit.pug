@@ -2,10 +2,11 @@ extends ../layout
 block append js
   script(src='/js/table.js')
 block content
+  - purchase.token = purchase._id.split(':')[1]
   .container
     div.btn.btn-group.btn-group-justified.bg-info
-      h1 Purchase:Token
-      pre.mono.h4= purchase._id
+      h1 Purchase Edit
+      pre.mono.h4= purchase.token
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -17,6 +18,11 @@ block content
     +alerts()
     form.form-horizontal(action='/purchase/save', method='post', role='form')
       input(type='hidden', name='id', value=purchase._id)
+      input(type='hidden', name='token', value=purchase.token)
+      .form-group
+        label.control-label.col-sm-2 Token
+        .col-sm-10.mono
+          .form-control-static= purchase.token
       .form-group
         label.control-label.col-sm-2 Hash
         .col-sm-10.mono

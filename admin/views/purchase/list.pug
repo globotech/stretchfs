@@ -17,13 +17,14 @@ block content
           th Life (After Life) Seconds
           th Expiration Date #{timezone}
         each row in list
+          - row.token = row._id.split(':')[1]
           tr
             td
-              input(type='checkbox', name='remove[]', value=row._id)
+              input(type='checkbox', name='remove[]', value=row.token)
             td.mono
-              a(href='/purchase/edit?id=' + row._id)= row._id.split(':')[1]
+              a(href='/purchase/edit?token=' + row.token)= row.token
             td.mono
-              a(href='/inventory/edit?id=' + row.hash)= row.hash
+              a(href='/inventory/edit?hash=' + row.hash)= row.hash
             td.mono= row.ext
             td.mono= row.referrer
             td.mono= row.life + '(' + row.afterLife + ')'

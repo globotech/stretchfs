@@ -1,8 +1,9 @@
 'use strict';
 var P = require('bluebird')
 
-var prism = require('../helpers/prism')
-var list = require('../helpers/list')
+//var prism = require('../helpers/prism')
+var listHelper = require('../helpers/list')
+var formHelper = require('../helpers/form')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
@@ -18,7 +19,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(
+  listHelper.listQuery(
     couch,
     cb,
     couch.type.stretchfs,
@@ -30,7 +31,7 @@ exports.list = function(req,res){
   )
     .then(function(result){
       res.render('prism/list',{
-        page: list.pagination(start,result.count,limit),
+        page: listHelper.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
@@ -46,14 +47,26 @@ exports.list = function(req,res){
  * @param {object} res
  */
 exports.listAction = function(req,res){
+  var _flashPack = []
   P.try(function(){
     return req.body.remove || []
   })
     .each(function(prismKey){
+      if(-1 === prismKey.indexOf(':')){
+        prismKey = couch.schema.prism(prismKey)
+      }
+      _flashPack.push(prismKey)
       return cb.removeAsync(prismKey)
     })
     .then(function(){
-      req.flash('success','Prism(s) removed successfully')
+      _flashPack.forEach(function(prismKey){
+        req.flashPug('success','subject-id-action',{
+          subject: 'Prism',
+          href: '/prism/edit?name=' + prismKey,
+          id: prismKey,
+          action: 'removed successfully'
+        })
+      })
       res.redirect('/prism/list')
     })
 }
@@ -94,33 +107,14 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  var data = req.body
-  var prismKey = couch.schema.prism(data.name)
-  var doc
-  cb.getAsync(prismKey)
-    .then(function(result){
-      doc = result.value
-      if(!doc) doc = {createdAt: new Date().toJSON()}
-      if(data.newName) doc.name = data.newName
-      if(data.group) doc.group = data.group
-      if(data.host) doc.host = data.host
-      if(data.port) doc.port = data.port
-      doc.roles = prism.roleUpdate(doc.roles,data)
-      doc.updatedAt = new Date().toJSON()
-      return cb.upsertAsync(prismKey,doc,{cas: result.cas})
-    })
-    .then(function(){
-      req.flashPug('success','subject-id-action',
-        {
-          subject: 'Prism',
-          id: data.name,
-          action: 'saved',
-          href: '/prism/edit?name=' + data.name
-        }
-      )
-      res.redirect('/prism/list')
-    })
-    .catch(function(err){
-      res.render('error',{error: err})
-    })
+  return P.all([formHelper.diff(
+    req,res,
+    cb,'prism',{'name': req.body.name},
+    [
+    'host',
+    'port',
+    'httpPort',
+    'roles'
+    ]
+  )])
 }

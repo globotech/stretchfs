@@ -22,7 +22,7 @@ block content
               input(type='checkbox', name='remove[]', value=row.hash)
             td
               samp.text-center.mono
-                a(href='/inventory/edit?id=' + row.hash)= row.hash
+                a(href='/inventory/edit?hash=' + row.hash)= row.hash
             td.mono= row.copies
             td.mono= row.mimeType+' ('+row.mimeExtension+')'
             td.mono= row.size ? prettyBytes(row.size) : ''

@@ -4,7 +4,7 @@ block append js
 block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
-      h1 Peer:Prism
+      h1 Prism Edit
       pre.mono.h4= prism.name
     div.btn-group
       div.btn-group.btn-group-justified
@@ -16,17 +16,21 @@ block content
             span.badge.mono.margin-l-8= momentStandardFormat(prism.updatedAt)
     +alerts()
     form.form-horizontal(action='/prism/save', method='post', role='form')
-      input(type='hidden', name='name', value=prism.name)
       .form-group
         label.control-label.col-sm-2 Name
         .col-sm-10.mono
+          input(type='hidden', name='name', value=prism.name)
           .form-control-static= prism.name
       .form-group
         label.control-label.col-sm-2 Host
         .col-sm-10.mono
           input.form-control(type='text', name='host', placeholder='Prism Host', value=prism.host)
       .form-group
-        label.control-label.col-sm-2 Port
+        label.control-label.col-sm-2 HTTP Port
+        .col-sm-10.mono
+          input.form-control(type='text', name='httpPort', placeholder='HTTP Port', value=prism.httpPort)
+      .form-group
+        label.control-label.col-sm-2 API Port
         .col-sm-10.mono
           input.form-control(type='text', name='port', placeholder='Prism Port', value=prism.port)
       .form-group

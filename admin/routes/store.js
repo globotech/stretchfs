@@ -1,7 +1,8 @@
 'use strict';
 var P = require('bluebird')
 
-var list = require('../helpers/list')
+var listHelper = require('../helpers/list')
+var formHelper = require('../helpers/form')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
@@ -17,11 +18,11 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(couch,cb,couch.type.stretchfs,
+  listHelper.listQuery(couch,cb,couch.type.stretchfs,
     couch.schema.store(search),'name',true,start,limit)
     .then(function(result){
       res.render('store/list',{
-        page: list.pagination(start,result.count,limit),
+        page: listHelper.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
@@ -37,14 +38,26 @@ exports.list = function(req,res){
  * @param {object} res
  */
 exports.listAction = function(req,res){
+  var _flashPack = []
   P.try(function(){
     return req.body.remove || []
   })
     .each(function(storeKey){
+      if(-1 === storeKey.indexOf(':')){
+        storeKey = couch.schema.store(storeKey)
+      }
+      _flashPack.push(storeKey)
       return cb.removeAsync(storeKey)
     })
     .then(function(){
-      req.flash('success','Store(s) removed successfully')
+      _flashPack.forEach(function(storeKey){
+        req.flashPug('success','subject-id-action',{
+          subject: 'Store',
+          href: '/store/edit?name=' + storeKey,
+          id: storeKey,
+          action: 'removed successfully'
+        })
+      })
       res.redirect('/store/list')
     })
 }
@@ -67,7 +80,7 @@ exports.create = function(req,res){
  * @return {*}
  */
 exports.edit = function(req,res){
-  var storeKey = req.query.id
+  var storeKey = couch.schema.store(req.query.name)
   cb.getAsync(storeKey)
     .then(function(result){
       result.value._id = storeKey
@@ -105,7 +118,7 @@ exports.edit = function(req,res){
  * @return {*}
  */
 exports.remove = function(req,res){
-  var storeKey = req.body.id
+  var storeKey = couch.schema.store(req.query.name)
   cb.removeAsync(storeKey)
     .then(function(){
       req.flash('success','Store removed successfully')
@@ -121,34 +134,15 @@ exports.remove = function(req,res){
  * @return {*}
  */
 exports.save = function(req,res){
-  var data = req.body
-  var storeKey = req.body.id
-  var doc
-  cb.getAsync(storeKey)
-    .then(function(result){
-      doc = result.value
-      if(!doc) doc = {createdAt: new Date().toJSON()}
-      if(data.name) doc.name = data.name
-      if(data.port) doc.port = data.port
-      if(data.host) doc.host = data.host
-      doc.writable = !!data.writable
-      doc.available = !!data.available
-      doc.active = !!data.active
-      doc.updatedAt = new Date().toJSON()
-      return cb.upsertAsync(storeKey,doc,{cas: result.cas})
-    })
-    .then(function(){
-      req.flashPug('success','subject-id-action',
-        {
-          subject: 'Store',
-          id: storeKey,
-          action: 'saved',
-          href: '/store/edit?id=' + storeKey
-        }
-      )
-      res.redirect('/store/list')
-    })
-    .catch(function(err){
-      res.render('error',{error: err})
-    })
+  return P.all([formHelper.diff(
+    req,res,
+    cb,'store',{'name': req.body.name},
+    [
+      'host',
+      'port',
+      'httpPort',
+      'roles',
+      'group'
+    ]
+  )])
 }
