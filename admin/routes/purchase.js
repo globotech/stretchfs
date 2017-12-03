@@ -2,6 +2,7 @@
 var P = require('bluebird')
 
 var listHelper = require('../helpers/list')
+var formHelper = require('../helpers/form')
 var couch = require('../../helpers/couchbase')
 var purchasedb = require('../../helpers/purchase')
 var hashListAll = require('../helpers/inventory').hashListAll
@@ -119,14 +120,14 @@ exports.edit = function(req,res){
  */
 exports.save = function(req,res){
   var form = req.body
-  var purchaseKey = couch.schema.purchase(form.token)
+  var purchaseKey = form.token
   var life = (+req.body.life) || (+config.purchase.life)
   var lifeMs = 1000 * life
   var timestamp = new Date()
   var doc
   P.try(function(){
     if(purchaseKey){
-      return cb.getAsync(purchaseKey)
+      return cb.getAsync(couch.schema.purchase(purchaseKey))
     } else {
       purchaseKey = purchasedb.generate()
       return {
@@ -142,24 +143,35 @@ exports.save = function(req,res){
   })
     .then(function(result){
       doc = result.value
-      if(form.hash) doc.hash = form.hash
-      if(form.ext) doc.ext = form.ext
-      if(form.referrer) doc.referrer = form.referrer
-      doc.expirationDate = new Date(
-        +(new Date(doc.createdAt)) + lifeMs
-      ).toJSON()
-      doc.updatedAt = timestamp.toJSON()
-      return cb.upsertAsync(couch.schema.purchase(purchaseKey),doc,{cas: result.cas})
+      var rv = formHelper.compare(result.value,form,[
+      'hash',
+      'ext',
+      'referrer',
+      'life',
+      'afterLife'
+      ],timestamp)
+      if(rv.updated){
+        rv.doc.expirationDate = new Date(
+          +(new Date(rv.doc.createdAt)) + lifeMs
+        ).toJSON()
+        return cb.upsertAsync(couch.schema.purchase(purchaseKey),rv.doc,{cas: result.cas})
+      } else {
+        return P.try(function(){return rv.updated})
+      }
     })
-    .then(function(){
-      req.flashPug('success','subject-id-action',
-        {
-          subject: 'Purchase',
-          id: purchaseKey,
-          action: 'saved',
-          href: '/purchase/edit?id=' + couch.schema.purchase(purchaseKey)
-        }
-      )
+    .then(function(updated){
+      var alert = {
+        subject: 'Purchase',
+        href: '/purchase/edit?token=' + purchaseKey,
+        id: purchaseKey
+      }
+      if(false !== updated){
+        alert.action = 'saved'
+        req.flashPug('success','subject-id-action',alert)
+      } else {
+        alert.action = 'unchanged (try again?)'
+        req.flashPug('warning','subject-id-action',alert)
+      }
       res.redirect('/purchase/list')
     })
     .catch(function(err){

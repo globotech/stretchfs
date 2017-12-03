@@ -17,8 +17,9 @@ block content
             span.badge.mono.margin-l-8= momentStandardFormat(purchase.updatedAt)
     +alerts()
     form.form-horizontal(action='/purchase/save', method='post', role='form')
-      input(type='hidden', name='id', value=purchase._id)
       input(type='hidden', name='token', value=purchase.token)
+      input(type='hidden', name='life', value=purchase.life)
+      input(type='hidden', name='afterLife', value=purchase.afterLife)
       .form-group
         label.control-label.col-sm-2 Token
         .col-sm-10.mono
