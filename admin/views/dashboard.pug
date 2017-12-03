@@ -125,7 +125,7 @@ block content
         var rows = []
         inventoryList.forEach(function(row){
           var tr = $(document.createElement('tr'));
-          tr.append($("<td><div><a href='/inventory/edit?id=" + row.hash + "'>" + row.hash + "</a></div></td>"));
+          tr.append($("<td><div><a href='/inventory/edit?hash=" + row.hash + "'>" + row.hash + "</a></div></td>"));
           tr.append($("<td>" + parseInt(row.hitCount || 0,10) + "</td>"));
           tr.append($("<td>" + parseInt(row.byteCount || 0,10) + "</td>"));
           rows.push(tr);
@@ -138,8 +138,8 @@ block content
         purchaseList.forEach(function(row){
           row.token = row._id.replace('purchase:','')
           var tr = $(document.createElement('tr'));
-          tr.append($("<td><a href='/purchase/edit?id=" + row.token + "'>" + row.token + "</a></td>"));
-          tr.append($("<td><a href='/inventory/edit?id=" + row.hash + "'>" + row.hash + "</a></td>"));
+          tr.append($("<td><a href='/purchase/edit?token=" + row.token + "'>" + row.token + "</a></td>"));
+          tr.append($("<td><a href='/inventory/edit?hash=" + row.hash + "'>" + row.hash + "</a></td>"));
           tr.append($("<td>" + parseInt(row.hitCount || 0,10) + "</td>"));
           tr.append($("<td>" + parseInt(row.byteCount || 0,10) + "</td>"));
           rows.push(tr);
