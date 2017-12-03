@@ -134,7 +134,7 @@ exports.remove = function(req,res){
  * @return {*}
  */
 exports.save = function(req,res){
-  return P.all([formHelper.diff(
+  return P.all([formHelper.genericFullHandler(
     req,res,
     cb,'store',{'name': req.body.name},
     [

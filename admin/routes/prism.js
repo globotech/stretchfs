@@ -107,7 +107,7 @@ exports.edit = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  return P.all([formHelper.diff(
+  return P.all([formHelper.genericFullHandler(
     req,res,
     cb,'prism',{'name': req.body.name},
     [
