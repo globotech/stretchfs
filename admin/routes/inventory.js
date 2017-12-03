@@ -2,10 +2,9 @@
 var P = require('bluebird')
 
 var inv = require('../helpers/inventory')
-var list = require('../helpers/list')
+var listHelper = require('../helpers/list')
 var formHelper = require('../helpers/form')
 var couch = require('../../helpers/couchbase')
-var isArray = Array.isArray
 
 //open couch buckets
 var cb = couch.stretchfs()
@@ -64,7 +63,7 @@ exports.listAction = function(req,res){
  * @param {object} res
  */
 exports.create = function(req,res){
-  list.listQuery(couch,cb,couch.type.stretchfs,
+  listHelper.listQuery(couch,cb,couch.type.stretchfs,
     couch.schema.store(),'name',true)
     .then(function(result){
       res.render('inventory/create',{stores:result.rows})
@@ -108,7 +107,7 @@ exports.edit = function(req,res){
   P.all([
     inv.hashQuery(req.query.hash),
     inv.ruleSet(),
-    list.listQuery(couch,cb,couch.type.stretchfs,
+    listHelper.listQuery(couch,cb,couch.type.stretchfs,
       couch.schema.store(),'name',true)
   ])
     .spread(function(result,ruleSet,stores){

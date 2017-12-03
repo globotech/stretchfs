@@ -5,7 +5,7 @@ var through2 = require('through2')
 var couch = require('../../helpers/couchbase')
 
 var peerHelper = require('../helpers/peer')
-var list = require('../helpers/list')
+var listHelper = require('../helpers/list')
 
 //open some buckets
 var cb = couch.stretchfs()
@@ -95,7 +95,7 @@ exports.list = function(req,res){
   var limit = parseInt(req.query.limit,10) || 10
   var start = parseInt(req.query.start,10) || 0
   var search = req.query.search || ''
-  list.listQuery(
+  listHelper.listQuery(
     couch,
     cb,
     couch.type.stretchfs,
@@ -107,7 +107,7 @@ exports.list = function(req,res){
   )
     .then(function(result){
       res.render('peer/list',{
-        page: list.pagination(start,result.count,limit),
+        page: listHelper.pagination(start,result.count,limit),
         count: result.count,
         search: search,
         limit: limit,
@@ -184,7 +184,7 @@ exports.save = function(req,res){
 
 
 /**
- * Test peer for readyness with executioner
+ * Test peer for readiness with executioner
  * @param {object} req
  * @param {object} res
  */
@@ -199,7 +199,7 @@ exports.test = function(req,res){
 
 
 /**
- * Refersh peer stats
+ * Refresh peer stats
  * @param {object} req
  * @param {object} res
  */
