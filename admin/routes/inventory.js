@@ -115,14 +115,19 @@ exports.edit = function(req,res){
       result.stores = {}
       var pC = {}
       stores.rows.forEach(function(l,i){
+        l.group.forEach(function(g){
+          if(0 === g.indexOf(couch.schema.prism())){
+            l.prism = g.split(':')[1]
+          }
+        })
         var pCidx = Object.keys(pC).indexOf(l.prism)
         if(-1 === pCidx){
-          pC[l.prism]=true
-          pCidx=Object.keys(pC).indexOf(l.prism)
+          pC[l.prism] = true
+          pCidx = Object.keys(pC).indexOf(l.prism)
         }
         l.id = 'desiredMap[' + i + ']'
         l.class = 'prism' + ('0000' + pCidx).slice(-4)
-        l.checked = (-1 !== result.summary.map.indexOf(l.name))
+        l.checked = (-1 !== result.summary.desiredMap.indexOf(l.name))
         result.stores[l.name] = l
       })
       res.render('inventory/edit',result)
@@ -159,17 +164,38 @@ exports.editIndividual = function(req,res){
  * @param {object} res
  */
 exports.save = function(req,res){
-  return P.all([formHelper.genericFullHandler(
-    req,res,
-    cb,'inventory',{'hash': req.body.hash},
-    [
-      'hash',
-      'mimeExtension',
-      'mimeType',
-      'relativePath',
-      'size',
-      'rules',
-      'desiredMap'
-    ]
-  )])
+  var form = req.body
+  var inventoryKey = form.id || couch.schema.inventory(form.hash)
+  var timestamp = new Date()
+  cb.getAsync(inventoryKey)
+    .then(function(result){
+      var rv = formHelper.compare(result.value,form,[
+        'hash',
+        'mimeExtension',
+        'mimeType',
+        'relativePath',
+        'size',
+        'desiredMap'
+      ],timestamp)
+      if(rv.updated){
+        return cb.upsertAsync(inventoryKey,rv.doc,{cas: result.cas})
+      } else {
+        return P.try(function(){return rv.updated})
+      }
+    })
+    .then(function(updated){
+      var alert = {
+        subject: 'Inventory',
+        href: '/inventory/edit?hash=' + form.hash,
+        id: form.hash
+      }
+      if(false !== updated){
+        alert.action = 'saved'
+        req.flashPug('success','subject-id-action',alert)
+      } else {
+        alert.action = 'unchanged (try again?)'
+        req.flashPug('warning','subject-id-action',alert)
+      }
+      res.redirect('/inventory/list')
+    })
 }
