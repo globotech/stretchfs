@@ -10,14 +10,14 @@ block content
         tr
           th
             input#toggle(type='checkbox')
-          th Handle
-          th Category
-          th Priority
+          th Token
+          th Priority/Category/Handle
           th Status
           th Progress
           th Action
         each row in list
           - var percentComplete = 0
+          - row.token = row._id.split(':')[1]
           - row.status = row.status || 'unknown'
           - row.statusDescription = row.statusDescription || 'unknown'
           - row.stepTotal = parseInt(row.stepTotal || 1)
@@ -33,11 +33,10 @@ block content
           - if(['error','aborted'].indexOf(row.status) >= 0) statusClass = 'danger'
           tr
             td
-              input(type='checkbox', name='remove[]', value=row._id)
+              input(type='checkbox', name='remove[]', value=row.token)
             td.mono
-              a(href='/job/edit?id=' + row._id)= row.handle
-            td.mono= row.category
-            td.mono= row.priority
+              a(href='/job/edit?token=' + row.token)= row.token
+            td.mono= [row.priority,row.category,row.handle].join(' / ')
             td.mono= row.status
             td
               if 'processing' === row.status && metrics && metrics.frameDescription

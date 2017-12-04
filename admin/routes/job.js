@@ -70,7 +70,7 @@ exports.create = function(req,res){
  * @param {object} res
  */
 exports.edit = function(req,res){
-  var jobKey = req.query.id
+  var jobKey = couch.schema.job(req.query.token)
   cb.getAsync(jobKey)
     .then(function(result){
       result.value._id = jobKey
@@ -89,7 +89,7 @@ exports.edit = function(req,res){
  */
 exports.save = function(req,res){
   var form = req.body
-  var jobKey = form.id || ''
+  var jobKey = form.id || couch.schema.job(form.token)
   var timestamp = new Date()
   var doc = {}
   P.try(function(){
@@ -118,8 +118,8 @@ exports.save = function(req,res){
     .then(function(updated){
       var alert = {
         subject: 'Job',
-        href: '/job/edit?id=' + jobKey,
-        id: jobKey
+        href: '/job/edit?token=' + form.token,
+        id: form.token
       }
       if(false !== updated){
         alert.action = 'saved'

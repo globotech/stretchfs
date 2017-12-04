@@ -2,10 +2,11 @@ extends ../layout
 block append js
   script(src='/js/table.js')
 block content
+  - job.token = job._id.split(':')[1]
   .container
     div.btn.btn-group.btn-group-justified.bg-info
-      h1 Job:Handle
-      pre.mono.h4= job.handle
+      h1 Job Edit
+      pre.mono.h4= job.token
     div.btn-group
       div.btn-group.btn-group-justified
         div.btn-group.btn-group-xs
@@ -17,6 +18,7 @@ block content
     +alerts()
     form.form-horizontal(action='/job/save', method='post', role='form')
       input(type='hidden', name='id', value=job._id)
+      input(type='hidden', name='token', value=job.token)
       .form-group
         label.control-label.col-sm-2 Handle
         .col-sm-10
