@@ -128,6 +128,7 @@ exports.edit = function(req,res){
         l.id = 'desiredMap[' + i + ']'
         l.class = 'prism' + ('0000' + pCidx).slice(-4)
         l.checked = (-1 !== result.summary.desiredMap.indexOf(l.name))
+        l.pending = (l.checked && (-1 === result.summary.map.indexOf(l.name)))
         result.stores[l.name] = l
       })
       res.render('inventory/edit',result)
@@ -178,6 +179,8 @@ exports.save = function(req,res){
         'desiredMap'
       ],timestamp)
       if(rv.updated){
+        rv.doc.copies = rv.doc.map.length
+        rv.doc.desiredCopies = rv.doc.desiredMap.length
         return cb.upsertAsync(inventoryKey,rv.doc,{cas: result.cas})
       } else {
         return P.try(function(){return rv.updated})

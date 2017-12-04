@@ -88,6 +88,8 @@ block content
         .list-group.col-sm-9
           each l in stores
             span.list-group-item.list-group-item-prism.shrinkwrap.mono.col-sm-2.margin-r-8(class=l.class)
+              if(l.pending)
+                span.glyphicon.glyphicon-transfer
               input.checkbox-input(type='checkbox', name=l.id, id=l.id value=l.name, checked=l.checked)
               label(for=l.id) #{l.name}
       .form-group
