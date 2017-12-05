@@ -104,10 +104,9 @@
     "winston": "^2.4.0"
   },
   "scripts": {
-    "postinstall": "npm run bundle",
+    "postinstall": "browserify -t [ browserify-css --minify=true --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js && uglifyjs admin/public/bundle.js -o admin/public/bundle.js",
     "admin": "node admin",
-    "bundle": "browserify -t [ browserify-css --minify=true --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js && uglifyjs admin/public/bundle.js -o admin/public/bundle.js",
-    "bundleDev": "browserify -t [ browserify-css --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js",
+    "bundle": "browserify -t [ browserify-css --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js",
     "cluster": "node cluster",
     "prism": "node prism",
     "test": "node ./node_modules/mocha/bin/mocha ./test/*.test.js",
