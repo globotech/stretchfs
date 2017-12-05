@@ -104,6 +104,7 @@
     "winston": "^2.4.0"
   },
   "scripts": {
+    "postinstall": "bash bin/devPatchVideojs.sh",
     "admin": "node admin",
     "build": "browserify -t [ browserify-css --minify=true --output admin/public/app.css ] admin/js/main.js -o admin/public/app.js && uglifyjs admin/public/app.js -o admin/public/app.js",
     "buildDev": "browserify -t [ browserify-css --output admin/public/app.css ] admin/js/main.js -o admin/public/app.js",

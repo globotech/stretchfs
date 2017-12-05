@@ -78,7 +78,7 @@
     };
 
     // Register the plugin with video.js.
-    _videoJs2['default'].plugin('downloadButton', downloadButton);
+    (_videoJs2['default'].registerPlugin||_videoJs2['default'].plugin)('downloadButton', downloadButton);
 
     // Include the version number.
     downloadButton.VERSION = '0.1.0';
