@@ -1,73 +1,210 @@
 extends ../layout
-append css
-  link(type='text/css', rel='stylesheet', href='/css/dropzone.css')
-append js
-  script(src='/js/table.js')
-  script(src='/js/dropzone.js')
-  script(src='/node_modules/dropzone/dist/min/dropzone.min.js')
+append title
+  if parent
+    title #{parent.name} Folder, My Files at #{appTitle}
+  else
+    title My Files at #{appTitle}
 block content
+  script(type='text/javascript').
+    $(document).ready(function(){
+      fileManager()
+    })
   .container
-    div
-      .pull-right
-        form.form-inline#tableSearch(role='form', action='', method='get')
-          input#path(type='hidden', name='path', value=pathEncoded)
-          .form-group
-            input.form-control(type='text', name='search', placeholder='Filter Results', value=search)
-          .form-group
-            a.btn.btn-success(data-toggle='modal', data-target='#folderCreate')
-              span.glyphicon.glyphicon-plus
-              |  Create Folder
-      h1 Files
     +alerts()
-    +pathTree(path)
+    span.hidden#folderPath(data-value=folderPath)
+    span.hidden#ioUrl(data-value=ioUrl)
+    div#fileTree
+      if tree
+        +fileTree(tree)
     #dropzone
-      form.dropzone(action='/file/upload?path=' + pathEncoded, method='post', id='file-upload')
-    form(method='post', role='form', action='/file/list?path=' + pathEncoded)
-      table.table.table-striped
+      form.dropzone(method='post', id='fileUpload', action=ioUrl + '/file/upload?folder=' + folderPath)
+        .fallback
+          input(name='file', type='file', multiple='true')
+    #importStatusSmall.alert.alert-info
+      strong Import Status
+      span(style='margin-left: 10px;')
+      span#importStatusSmallCount 0
+      span  Jobs currently running
+      button.btn.btn-sm.btn-success#importStatusShowButton
+        span.glyphicon.glyphicon-arrow-down
+        span  Show
+    #importStatusFull(style='display: none;')
+      div
+        .pull-right
+          .btn.btn-sm.btn-success.ladda-button#importStatusButton(data-style='expand-right', data-auto='play')
+            span#importStatusButtonIcon.glyphicon.glyphicon-ok
+            span &nbsp;
+            span#importStatusButtonText Idle
+          .btn.btn-sm.btn-warning#importStatusHideButton
+            span.glyphicon.glyphicon-arrow-up
+            span  Hide
+          .btn.btn-sm.btn-primary#importStatusReloadButton
+            span.glyphicon.glyphicon-refresh
+        h3 Import Status
+        span.glyphicon.glyphicon-loading
+      table.table.table-bordered
+        thead
+          tr(style='background: #555; color: #fff;')
+            th Name
+            th Type
+            th Status
+            th Progress
+        //this part gets filled with the ajax request
+        tbody#importStatusTbody
+          tr
+            td(colspan='4') Imports will appear momentarily. Check the loading icon next to the right of "Import Status".
+    //main file list table
+    table.table.table-striped#folderList
+      thead
         tr
-          th
+          th(style='width: 20px;')
             input#toggle(type='checkbox')
-          th
+          th(style='width: 20px;')
           th Name
           th Type
-          th Created
-          th Status
-        if files.length
-          each file in files
-            tr
-              td
-                input(type='checkbox', name='remove[]', value=file.path)
-              td
-                if file.folder
-                  span.glyphicon.glyphicon-folder-close
-                else
-                  span.glyphicon.glyphicon-file
-              td
-                if file.folder
-                  a(href='/file/list?path=' + file.path)= file.name
-                else
-                  a(href='/file/detail?handle=' + file.handle)= file.name
-              td= file.mimeType
-              td.mono= momentStandardFormat(file.createdAt,'Unknown')
-              td= file.status
-        else
-          tr
-            td(colspan='4') No entries exist
-      div
-        span #{count || 0} entries
-        div
-          button.btn.btn-danger#tableDelete(type='submit') Delete Checked
-  #folderCreate.modal(tabindex='-1', role='dialog', aria-labelledby='folderCreate', aria-hidden='true')
-    .modal-dialog.modal-sm
+          th Uploaded
+          th Action
+      //this part gets filled with the ajax request
+      tbody#folderListTbody
+    div
+      select.form-control#actionType
+        option(value='export') Export File URLs
+        option(value='move') Move Files and Folders
+        option(value='remove') Delete Files and Folders
+      button.btn.btn-sm.btn-danger#actionSubmitButton(type='submit')
+        span (
+        span#checkedCount 0
+        span )&nbsp;
+        span.glyphicon.glyphicon-play
+  //modals
+  //folder create
+  #folderCreateModal.modal(tabindex='-1',role='dialog',aria-labelledby='folderCreate',aria-hidden='true')
+    .modal-dialog.modal-md
       .modal-content
-        form(method='post', action='/folderCreate?path=#{pathEncoded}#{god ? "&god=on": ""}')
-          button.close(type='button', data-dismiss='modal', aria-hidden='true')
+        button.close(type='button',data-dismiss='modal',aria-hidden='true')
+        .modal-header
+          h2 Create Folder
+        .modal-body
+          .form-group
+            .col-sm-10
+              input.form-control#folderCreateName(type='text', name='name', placeholder='Folder Name; Must contain no forward slashes(/)')
+          .clearfix
+        .modal-footer
+          button.btn.btn-info.pull-left(type='button',data-dismiss='modal') Close
+          button.btn.btn-success#folderCreateSubmit(type='submit')
+            span.glyphicon.glyphicon-plus
+            span  Create Folder
+  //folder edit
+  #folderEditModal.modal(tabindex='-1',role='dialog',aria-labelledby='editFile',aria-hidden='true')
+    .modal-dialog.modal-lg
+      .modal-content
+        input.hidden#folderEditId(type='hidden', name='folderId')
+        .modal-header
+          h2 Edit Folder
+        .modal-body
+          .form-group
+            label.control-label.col-sm-2 Name
+            .col-sm-10
+              input.form-control#folderEditName(type='text', name='name', placeholder='Folder Name')
+          .clearfix
+        .modal-footer
+          button.btn.btn-danger.pull-left(type='button',data-dismiss='modal') Close
+          button.btn.btn-success#folderEditSubmit(type='submit')
+            span.glyphicon.glyphicon-ok
+            span  Save Folder
+  //file detail
+  #fileDetailModal.modal(tabindex='-1',role='dialog',aria-labelledby='importFile',aria-hidden='true')
+    .modal-dialog.modal-lg
+      .modal-content
+        .modal-body
+          iframe#fileDetailFrame
+        .modal-footer
+          button.btn.btn-danger.pull-left(type='button',data-dismiss='modal') Close
+  //file export
+  #fileExportModal.modal(tabindex='-1',role='dialog',aria-labelledby='fileExport',aria-hidden='true')
+    .modal-dialog.modal-lg
+      .modal-content
+        .modal-header
+          h2 Export File URLs
+        .modal-body
+          table.table.table-striped#fileExportTable
+            thead
+              tr
+                th File
+                th Type
+                th URL
+            tbody#fileExportTableBody
+        .modal-footer
+          button.btn.btn-danger.pull-left(type='button',data-dismiss='modal') Close
+  //file edit
+  #fileEditModal.modal(tabindex='-1',role='dialog',aria-labelledby='editFile',aria-hidden='true')
+    .modal-dialog.modal-lg
+      .modal-content
+        input.hidden#fileEditId(type='hidden', name='fileId')
+        .modal-header
+          h2 Edit File
+        .modal-body.form-horizontal
+          .form-group
+            label.control-label.col-sm-2 Name
+            .col-sm-10
+              input.form-control#fileEditName(type='text', name='name', placeholder='File Name')
+          .form-group
+            label.control-label.col-sm-2 Description
+            .col-sm-10
+              textarea.form-control#fileEditDescription(rows='5', name='description')
+          .form-group
+            label.control-label.col-sm-2 Visibility
+            .col-sm-10
+              .checkbox
+                label
+                  input#fileEditPublic(type='checkbox', name='public')
+                  | Make Public (will override the view password)
+          .form-group
+            label.control-label.col-sm-2 View Password
+            .col-sm-10
+              input.form-control#fileEditPassword(type='text', name='password', placeholder='File View and Download Password')
+          .clearfix
+        .modal-footer
+          button.btn.btn-danger.pull-left(type='button',data-dismiss='modal') Close
+          button.btn.btn-success#fileEditSubmit(type='submit')
+            span.glyphicon.glyphicon-ok
+            span  Save File
+  //move files and folders
+  #moveModal.modal(tabindex='-1', role='dialog', aria-labelledby='move', aria-hidden='true')
+    .modal-dialog.modal-md
+      .modal-content
+        .form-horizontal
+          button.close(type='button',data-dismiss='modal',aria-hidden='true')
           .modal-header
-            h2 Create Folder in #{path}
+            h2 Move Files and Folders
           .modal-body
             .form-group
-              .col-sm-10
-                input.form-control(type='text', name='name', placeholder='Folder Name; Must contain no forward slashes(/)')
+              .col-sm-3
+                label(for='moveFolderSelect') Destination Folder
+              .col-sm-9
+                select.form-control#moveFolderSelect(name='destinationFolder')
+            .clearfix
           .modal-footer
-            button.btn.btn-info.pull-left(type='button', data-dismiss='modal') Close
-            button.btn.btn-danger(type='submit') Create Folder
+            button.btn.btn-info.pull-left(type='button',data-dismiss='modal') Close
+            button.btn.btn-success#moveSubmit(type='submit')
+              span.glyphicon.glyphicon-plus
+              span  Move File(s)
+  //import files
+  #fileImportModal.modal(tabindex='-1',role='dialog',aria-labelledby='importFile',aria-hidden='true')
+    .modal-dialog.modal-lg
+      .modal-content.importCenter
+        button.close(type='button',data-dismiss='modal',aria-hidden='true')
+        .modal-header
+          h2 Import File(s)
+          p Place direct URL(s) to file(s) one per line
+          p Maximum of #{importMaxFileCount} imports at one time
+        .modal-body
+          .form-group
+            .col-sm-12.importForm
+              textarea#fileImportUrls.form-control(rows='5', name='url', placeholder='URLs')
+          .clearfix
+        .modal-footer
+          button.btn.btn-danger.pull-left(type='button',data-dismiss='modal') Close
+          button.btn.btn-success#fileImportSubmitButton(type='submit')
+            span.glyphicon.glyphicon-plus.ladda-button(data-style='expand-left')
+            span  Import File(s)

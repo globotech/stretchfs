@@ -1,0 +1,36 @@
+{
+  "list": {
+    "id": 3,
+    "name": "Test",
+    "createdAt": "2015-02-23T19:23:24.000Z",
+    "updatedAt": "2015-02-23T19:23:24.000Z",
+    "UserId": 1,
+    "FolderId": 2,
+    "Folders": [],
+    "Files": [
+      {
+        "id": 7,
+        "name": "bryan_tong_signature.png",
+        "sha1": "9e81c99bd82d6441240bac5506e30674546a5388",
+        "size": 1362,
+        "ext": "png",
+        "encoding": "7bit",
+        "mimeType": "image/png",
+        "type": "image",
+        "tempFile": "C:\\Users\\nulli_000\\WebstormProjects\\yourupload\\tmp\\yourupload-115123-9096-1tzm9ju-bryan_tong_signature.png",
+        "jobHandle": null,
+        "status": "complete",
+        "statusDescription": "Import completed",
+        "stepTotal": 1,
+        "stepComplete": 0,
+        "frameTotal": 1,
+        "frameComplete": 0,
+        "framesDescription": "idle",
+        "createdAt": "2015-02-23T22:07:27.000Z",
+        "updatedAt": "2015-02-23T22:07:27.000Z",
+        "UserId": 1,
+        "FolderId": 3
+      }
+    ]
+  }
+}

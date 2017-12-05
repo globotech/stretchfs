@@ -1,34 +1,78 @@
 extends ../layout
+append title
+  title= file.name
+append css
+  style(type='text/css').
+    body {
+      width: 800px;
+    }
 block content
-  .container
+  div(style='padding: 20px; margin-top: -70px;')
     h1= file.name
-    +pathTree(fileHelper.parentPath(file.path),file.name)
-    br
-    if file.mimeType.match(/(video|audio)/i)
-      iframe(src='/file/embed/' + file.handle, style='border: 0; width: 1000px; height: 562px;', mozallowfullscreen='true', webkitallowfullscreen='true')
     div
-      a.btn.btn-success(href='/file/download?handle=' + file.handle)
-        span.glyphicon.glyphicon-download-alt
-        |  Download
-    br
-    table.table.table-striped
-      if file.mimeType.match(/(video|audio)/i)
+      a(href='/file/detail?handle=#{file.handle}', target='_blank') View Full Detail
+    table.table.table-striped#fileDetailTable
+      if 'video' === file.type
         tr
-          td Embed URL
-          td #{baseUrl}/file/embed?handle=#{file.handle}
+          td
+            div Share URL
+            .text-muted Share with your friends!
+          td
+            code #{baseUrl}/files/watch/#{file.handle}
         tr
-          td Watch URL
-          td #{baseUrl}/file/detail?handle=#{file.handle}
-      else
+          td
+            div Embed URL
+            .text-muted Use on your website
+          td
+            code #{baseUrl}/files/embed/#{file.handle}
+      if 'video' !== file.type
         tr
-          td CDN URL
-          td #{urlStatic}
+          td
+            div Share URL
+            .text-muted Share with your friends!
+          td
+            code #{baseUrl}/files/view/#{file.handle}
+        tr
+          td
+            div CDN URL
+            .text-muted Use on your website
+          td
+            code= urlStatic
       tr
-        td Type
+        td(style='width: 200px;') Type
         td= file.mimeType
       tr
         td Size
         td= prettyBytes(file.size)
       tr
         td Uploaded
-        td= momentStandardFormat(file.createdAt,'Unknown')
+        td= momentStandardFormat(file.createdAt)
+      tr
+        td Views
+        td
+          strong= file.hitCount
+      tr
+        td Transfer
+        td
+          strong= prettyBytes(file.byteCount)
+      tr
+        td Download
+        td
+          a.btn.btn-success(href='/file/download?handle=#{file.handle}&sendFile=true')
+            span.glyphicon.glyphicon-download-alt
+            |  Download
+    .content
+      if file.type.match(/text|code/i)
+        iframe.content-text(src='/file/download?handle=#{file.handle}&direct=true')
+      if 'image' === file.type
+        img.content-image(src='/file/download?handle=#{file.handle}&direct=true')
+      if 'video' === file.type
+        if file.status === 'complete'
+          iframe.content-video(src='/file/embed/#{file.handle}', allowfullscreen, style='border: 0;')
+        else
+          iframe.content-image(src='/images/file-being-uploaded.png', style='width: 640px; height: 360px', scrolling= 'no')
+      if 'audio' === file.type
+        audio(controls)
+          source(src='/file/download?handle=#{file.handle}&direct=true')
+
+

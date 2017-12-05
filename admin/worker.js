@@ -34,6 +34,7 @@ var cb = couch.stretchfs()
  * @type {*}
  */
 app.locals = {
+  appTitle: config.admin.title,
   pretty: true,
   S: require('string'),
   moment: require('moment'),
@@ -112,6 +113,7 @@ var setupScriptServer = function(name,scriptPath){
 }
 //DEFINE external public script packages here, then access them by using
 // /script/<name> such as /script/bootstrap/dist/bootstrap.min.js
+setupScriptServer('bootbox')
 setupScriptServer('bootstrap')
 setupScriptServer('bootstrap-select')
 setupScriptServer('chart.js')
@@ -120,6 +122,7 @@ setupScriptServer('es5-shim')
 setupScriptServer('html5-boilerplate')
 setupScriptServer('jquery')
 setupScriptServer('jquery-ui-dist')
+setupScriptServer('ladda')
 setupScriptServer('video.js')
 setupScriptServer('videojs-chromecast')
 setupScriptServer('videojs-contextmenu')
@@ -246,11 +249,16 @@ app.get('/peer/stop',routes.peer.stop)
 app.get('/peer/restart',routes.peer.restart)
 
 //file manage
+app.post('/file/moveList',routes.file.moveList)
+app.post('/file/moveTo',routes.file.moveTo)
+app.post('/file/save', routes.file.save)
+app.post('/file/importList',routes.file.importList)
+app.post('/file/import',routes.file.import)
 app.post('/file/upload',routes.file.upload)
 app.post('/file/folderCreate',routes.file.folderCreate)
 app.post('/file/remove',routes.file.remove)
 app.post('/file/list',routes.file.listAction)
-app.get('/file/detail',routes.file.detail)
+app.get('/file/detail', routes.file.detail)
 app.get('/file/embed/:handle',routes.file.embed)
 app.get('/file/download',routes.file.download)
 app.get('/file/list',routes.file.list)

@@ -1,0 +1,84 @@
+extends ../layout
+append css
+  link(type='text/css', rel='stylesheet', href='/css/dropzone.css')
+  link(type='text/css', rel='stylesheet', href='/css/index.css')
+append js
+  script(src='//bowercdn.net/c/dropzone-3.9.0/downloads/dropzone.min.js')
+block content
+  .container
+    .header
+    div
+      .pull-right
+        form.form-inline#tableSearch(role='form', action='', method='get')
+          input#path(type='hidden', name='path', value=pathEncoded)
+          .form-group
+            input.form-control(type='text', name='search', placeholder='Filter Results', value=search)
+          .form-group
+            a.btn.btn-success(data-toggle='modal',data-target='#folderCreate')
+              span.glyphicon.glyphicon-plus
+              |  Create Folder
+          .form-group
+            a.btn.btn-success(data-toggle='modal',data-target='#fileCreate')
+              span.glyphicon.glyphicon-plus
+              |  I aint fuckin wit you!
+      h1=folder.name
+    +alerts()
+    //+pathTree(path)
+    #dropzone
+      form.dropzone(action='/upload?path=#{pathEncoded}', method='post', id='file-upload')
+    form(method='post', role='form', action='/?path=#{pathEncoded}')
+      table.table.table-striped
+        tr
+          th
+            input#toggle(type='checkbox')
+          th
+          th Name
+          th Type
+          th
+          th Created
+          th Updated
+        each file in files
+          tr
+            td
+              input(type='checkbox', name='remove[]', value=folder.id)
+            td
+              span.glyphicon.glyphicon-fire
+            td
+              a(href='/fileDetails/?id=#{file.id}')= file.name
+            td=file.type
+            td
+              span.glyphicon.glyphicon-cutlery
+            td=new Date(folder.createdAt).toDateString()
+            td=new Date(folder.updatedAt).toDateString()
+      div
+        button.btn.btn-danger#tableDelete(type='submit') Delete Checked
+  #folderCreate.modal(tabindex='-1',role='dialog',aria-labelledby='folderCreate',aria-hidden='true')
+    .modal-dialog.modal-sm
+      .modal-content
+        form(method='post', action='/folder/save')
+          button.close(type='button',data-dismiss='modal',aria-hidden='true')
+          .modal-header
+            h2 Create Folder
+          .modal-body
+            .form-group
+              .col-sm-10
+                input.form-control(type='text', name='name', placeholder='Folder Name; Must contain no forward slashes(/)')
+          .modal-footer
+            button.btn.btn-info.pull-left(type='button',data-dismiss='modal') Close
+            button.btn.btn-danger(type='submit') Create Folder
+  #fileCreate.modal(tabindex='-1',role='dialog',aria-labelledby='fileCreate',aria-hidden='true')
+    .modal-dialog.modal-sm
+      .modal-content
+        form(method='post', action='/file/save')
+          button.close(type='button',data-dismiss='modal',aria-hidden='true')
+          .modal-header
+            h2 Create File
+          .modal-body
+            .form-group
+              .col-sm-10
+                input.form-control(type='hidden', name='FolderId', value=folder.id)
+                input.form-control(type='text', name='name', placeholder='File Name; Must contain no forward slashes(/)')
+                input.form-control(type='text', name='type', placeholder='File Type (video,file,mp3)')
+          .modal-footer
+            button.btn.btn-info.pull-left(type='button',data-dismiss='modal') Close
+            button.btn.btn-danger(type='submit') Create File

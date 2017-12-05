@@ -4,16 +4,28 @@ mixin active(bool)
   else
     span.glyphicon.glyphicon-remove
 
-mixin pathTree(path,file)
+mixin browseHeader()
+  #header
+    h5
+      a(href='/')
+        span= app.title
+
+
+mixin pathTree(tree)
   div
-    a(href='/file/list?path=,')
-      span.glyphicon.glyphicon-folder-open  /
-    - var currentPath = []
-    each item in path
-      - currentPath.push(item)
-      if item
-        | &nbsp;
-        a(href='/file/list?path=,' + currentPath.join(","))= item
-        span  /
-    if file
-      span= file
+    each row, i in tree
+      if 'folder' === row.type
+        a(href='/?folder=#{row.id}')
+          if i !== (tree.length - 1)
+            span.glyphicon.glyphicon-folder-close
+          else
+            span.glyphicon.glyphicon-folder-open
+          span &nbsp;&nbsp;
+          span= 'root' === row.name ? 'Home' : row.name
+        if i !== (tree.length - 1)
+          span  ->&nbsp;&nbsp;
+      if 'file' === row.type
+        a(href='/file/detail/?id=#{row.id}')
+          span.glyphicon.glyphicon-file
+          span= row.name
+

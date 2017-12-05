@@ -1,3 +1,4 @@
+'use strict';
 var clickDel = function(){
   var me = ($(this).parents('.ruleItem'));
   $(me).remove();
@@ -50,7 +51,12 @@ var mapEvents = function(){
   $('.ruleDown').click(clickDown);
   $('.ruleType').change(changeRule);
 }
-$(document).ready(function(){
+
+
+/**
+ * Inventory Edit
+ */
+var inventoryEdit = function(){
   window.ignoreClick = false;
   $.getJSON('/inventory/listRuleTypes')
     .done(function(jqXHR){
@@ -61,7 +67,9 @@ $(document).ready(function(){
           window.ignoreClick = true;
           var rule = $('.ruleGroup').last();
           var _clone = rule.clone();
-          _clone.find('div.ruleType').replaceWith($('.addNew div.ruleType').clone());
+          _clone.find('div.ruleType').replaceWith(
+            $('.addNew div.ruleType').clone()
+          );
           _clone.find('.ruleData').replaceWith($('.addNew .ruleData').clone());
           rule.after(_clone);
           mapEvents();
@@ -76,4 +84,11 @@ $(document).ready(function(){
       window.ignoreClick = false;
       window.location.reload(true);
     });
-});
+}
+
+
+/**
+ * Export inventory edit
+ * @type {inventoryEdit}
+ */
+window.inventoryEdit = inventoryEdit

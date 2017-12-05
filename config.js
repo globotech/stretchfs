@@ -148,8 +148,11 @@ config.$load({
     enabled: false,
     port: 5973,
     host: null,
+    title: 'StretchFS',
     tmpFolder: __dirname + '/admin/public/tmp',
     baseUrl: 'http://localhost:5973',
+    importMaxFileSize: 2000000000, //2gb
+    importMaxFileCount: 10,
     prism: {
       callback: {
         method: 'post',

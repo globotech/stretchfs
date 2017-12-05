@@ -25,6 +25,13 @@ mixin tableFooter(page,count)
     div
       button.btn.btn-danger#tableDelete(type='submit') Delete Checked
 
+mixin tableBrowseFooter(page,count)
+  div
+    .pull-right.btn-group
+      a.btn.btn-default(href='?start=#{page.previous}&search=#{search}') Previous
+      a.btn.btn-default(href='?start=#{page.next}&search=#{search}') Next
+    span #{page.start + 1} - #{page.end} of #{count} entries
+
 mixin tableMaintenanceFooter(page,count)
   div
     .pull-right.btn-group

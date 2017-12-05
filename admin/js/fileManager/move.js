@@ -1,0 +1,88 @@
+'use strict';
+/* global
+  folderChange: false,
+  checkedFiles: false,
+  checkedFolders: false,
+  bootbox: false
+*/
+
+
+/**
+ * File move
+ */
+module.exports = function(){
+  var moveFolderSelect = $('#moveFolderSelect');
+  var moveModal = $('#moveModal');
+  var renderFileMove = function(res){
+    var folderRows = [];
+    var folderList = res.folderList;
+    if(folderList.length){
+      folderList.forEach(function(folder){
+        var row = $(
+          '<option value="' + folder.id + '">' + folder.name +'</option>');
+        folderRows.push(row)
+      })
+    } else {
+      var row = $('<option value="0">No folders available</option>');
+      folderRows.push(row)
+    }
+    moveFolderSelect.empty();
+    folderRows.forEach(function(row){moveFolderSelect.append(row);})
+  }
+  var fileMoveAction = function(folderIdList,fileIdList,destinationFolderId){
+    $.ajax('/folder/moveTo',{
+      contentType: 'application/json',
+      type: 'POST',
+      data: JSON.stringify({
+        folderIdList: folderIdList,
+        fileIdList: fileIdList,
+        destinationFolderId: destinationFolderId
+      }),
+      success: function(res){
+        if('ok' === res.status){
+          folderChange($('#parentFolderId').attr('data-value'))
+          moveModal.modal('hide')
+          moveModal.on('hidden.bs.modal',function(){
+            moveFolderSelect.empty()
+          })
+        } else {
+          bootbox.alert('ERROR: ' + res.message);
+        }
+      }
+    });
+  }
+  var fileMove = function(folderIdList,fileIdList){
+    //ask the server for a list of folders we can use submitting the folderId
+    //list as a filter
+    $.ajax('/folder/moveList',{
+      contentType: 'application/json',
+      type: 'POST',
+      data: JSON.stringify({
+        folderIdList: folderIdList,
+        fileIdList: fileIdList
+      }),
+      success: function(res){
+        if('ok' === res.status){
+          renderFileMove(res)
+          moveModal.modal('show')
+          moveModal.on('hidden.bs.modal',function(){
+            //$('#fileExportFrame').removeAttr('src')
+          })
+          //register event to handle move submission
+          $('#moveSubmit').one('click',function(){
+            fileMoveAction(folderIdList,fileIdList,$('#moveFolderSelect').val())
+          })
+        } else {
+          bootbox.alert('ERROR: ' + res.message);
+        }
+      }
+    });
+  }
+  //register events to show export modal
+  $('#actionSubmitButton').on('click',function(){
+    var val = $('#actionType').val();
+    if('move' === val){
+      fileMove(checkedFolders,checkedFiles);
+    }
+  })
+}

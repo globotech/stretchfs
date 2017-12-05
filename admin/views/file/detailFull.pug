@@ -1,0 +1,68 @@
+extends ../layout
+include ../adBox
+append title
+  title= file.name
+block content
+  .container
+    +browseHeader()
+    +alerts()
+    h1= file.name
+    .pw-server-widget(data-id='wid-7b7peo2q')
+    .content
+      if file.type.match(/text|code/i)
+        iframe.content-text(src='/file/download?handle=#{file.handle}&direct=true')
+      if 'image' === file.type
+        img.content-image(src='/file/download?handle=#{file.handle}&direct=true')
+      if 'video' === file.type
+        if file.status === 'complete'
+          iframe.content-video(src='/file/embed/#{file.handle}', allowfullscreen, style='border: 0;')
+        else
+          iframe.content-image(src='/images/file-being-uploaded.png', style='width: 640px; height: 360px', scrolling= 'no')
+      if 'audio' === file.type
+        audio(controls)
+          source(src='/file/download?handle=#{file.handle}&direct=true')
+    //if 'video' != file.type
+    div
+      .pull-right
+        div(style='padding-right: 40px; font-size: 18px; font-weight: bold;') #{file.hitCount} Views
+      a.btn.btn-success(href='/file/download?handle=#{file.handle}')
+        span.glyphicon.glyphicon-download-alt
+        |  Download
+    br
+    table.table.table-striped#fileDetailTable
+      if 'video' === file.type
+        tr
+          td
+            div Share URL
+            .text-muted Share with your friends!
+          td
+            code #{baseUrl}/file/watch/#{file.handle}
+        tr
+          td
+            div Embed URL
+            .text-muted Use on your website
+          td
+            code #{baseUrl}/file/embed/#{file.handle}
+      if 'video' !== file.type
+        tr
+          td
+            div Share URL
+            .text-muted Share with your friends!
+          td
+            code #{baseUrl}/file/view/#{file.handle}
+        tr
+          td
+            div CDN URL
+            .text-muted Use on your website
+          td
+            code= urlStatic
+      tr
+        td(style='width: 200px;') Type
+        td= file.mimeType
+      tr
+        td Size
+        td= prettyBytes(file.size)
+      tr
+        td Uploaded
+        td= momentStandardFormat(file.createdAt)
+

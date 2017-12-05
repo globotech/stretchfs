@@ -3,6 +3,7 @@ var P = require('bluebird')
 var Busboy = require('busboy')
 var crypto = require('crypto')
 var debug = require('debug')('stretchfs:admin:file')
+var fileType = require('file-type')
 var fs = require('graceful-fs')
 var mime = require('mime')
 var mkdirp = require('mkdirp')
@@ -26,20 +27,276 @@ var cb = couch.stretchfs()
 
 
 /**
+ * Create file
+ * @param {object} file
+ * @return {P}
+ */
+var createFile = function(file){
+  var fileKey = couch.schema.file(file.path)
+  var fileParams = {
+    handle: file.handle ||
+      new Password({length: 12, special: false}).toString(),
+    name: file.name,
+    tmp: file.tmp,
+    hash: file.hash,
+    size: file.size,
+    path: file.path,
+    mimeType: file.mimetype,
+    mimeExtension: file.mimeExtension,
+    status: 'ok',
+    createdAt: new Date().toJSON(),
+    updatedAt: new Date().toJSON()
+  }
+  return cb.upsertAsync(fileKey,fileParams)
+}
+
+
+/**
+ * Save a file
+ * @param {string} handle
+ * @param {object} data
+ * @return {P}
+ */
+var saveFile = function(handle,data){
+  var fileKey
+  var file = {}
+  return fileHelper.findByHandle(handle)
+    .then(function(result){
+      fileKey = result[0]._id
+      return cb.getAsync(fileKey)
+    })
+    .then(function(result){
+      file = result
+      if(data.name) file.value.name = data.name
+      if(data.mimeType) file.value.mimeType = data.mimeType
+      if(data.mimeExtension) file.value.mimeExtension = data.mimeExtension
+      return cb.upsertAsync(fileKey,result.value,{cas: result.cas})
+    })
+}
+
+
+/**
+ * Save a job update to the file
+ * @param {string} handle
+ * @param {object} data
+ * @return {P}
+ */
+var jobUpdate = function(handle,data){
+  var file
+  var fileKey
+  return fileHelper.findByHandle(handle)
+    .then(function(result){
+      fileKey = result[0]._id
+      return cb.getAsync(fileKey)
+    })
+    .then(function(result){
+      file = result
+      if(!file.value.job) file.value.job = {}
+      file.value.job.status = data.status
+      file.value.job.statusDescription = data.statusDescription
+      file.value.job.manifest = data.manifest
+      file.value.job.workerName = data.workerName
+      file.value.job.workerKey = data.workerKey
+      file.value.job.stepsComplete = data.stepComplete
+      file.value.job.stepsTotal = data.stepTotal
+      file.value.job.framesComplete = data.frameComplete
+      file.value.job.framesTotal = data.frameTotal
+      file.value.job.framesDescription = data.framesDescription
+      file.value.job.log =data.log
+      file.value.job.lastLogUpdate = data.lastLogUpdate
+      if(data.completedAt)
+        file.value.job.completedAt = data.completedAt
+      if('complete' !== file.value.job.status) return
+      if(!prism.helperConnected){
+        throw new Error('Prism connection not established cannot' +
+          ' process job update')
+      }
+      file.value.job.status = 'finished'
+      //remove tmp file
+      if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
+      //import the files to oose
+      var resource = {}
+      return prism.jobContentExists(handle,'video.mp4')
+        .then(function(result){
+          if(!result) return
+          return prism.contentRetrieve({
+            url: prism.jobContentUrl(handle,'video.mp4'),
+            rejectUnauthorized: false
+          })
+        })
+        .then(function(result){
+          if(result) resource.video = result.hash
+          return prism.jobContentExists(handle,'preview.jpeg')
+        })
+        .then(function(result){
+          if(!result) return
+          return prism.contentRetrieve({
+            url: prism.jobContentUrl(handle,'preview.jpeg'),
+            rejectUnauthorized: false
+          })
+        })
+        .then(function(result){
+          if(result) resource.preview = result.hash
+          file.value.resource = resource
+        })
+    })
+    .then(function(){
+      if('error' !== file.value.job.status) return
+      //remove tmp file on error report
+      if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
+    })
+    .then(function(){
+      //update db
+      return cb.upsertAsync(fileKey,file.value,{cas: file.cas})
+    })
+}
+
+
+/**
+ * Generate admin panel base url
+ * @return {string}
+ */
+var adminBaseUrl = function(){
+  if(config.admin.baseUrl) return config.admin.baseUrl
+  return 'http://' + (config.admin.host || '127.0.0.1') +
+    ':' + (config.admin.port || 5973)
+}
+
+
+/**
+ * Send file to job system for processing
+ * @param {object} file
+ * @return {P}
+ */
+var sendToJob = function(file){
+  var description = {
+    callback: {
+      request: config.admin.prism.callback
+    },
+    resource: [
+      {
+        name: 'video.mp4',
+        request: {
+          method: 'get',
+          url: adminBaseUrl() + '/tmp/' + pathHelper.basename(file.tmp)
+        }
+      }
+    ],
+    augment: [
+      {
+        resource: 'preview.jpeg',
+        program: 'ffmpeg',
+        args: ['-i','video.mp4','-ss','00:00:30',
+               '-f','image2','-vframes','1','-y','preview.jpeg']
+      }
+    ]
+  }
+  debug(file.hash,'job description created',description)
+  return prism.jobCreate(description,5,'augment')
+    .then(function(result){
+      debug(file.hash,'job created',result)
+      file.handle = result.handle
+      return prism.jobStart(file.handle)
+    })
+    .then(function(){
+      debug(file.hash,'job started')
+    })
+}
+
+
+/**
+ * Send file to backend storage
+ * @param {object} file
+ * @return {P}
+ */
+var sendToStorage = function(file){
+  debug(file.hash,'starting to send to StretchFS')
+  return prism.contentRetrieve({
+    url: adminBaseUrl() + '/tmp/' + pathHelper.basename(file.tmp),
+    rejectUnauthorized: false
+  })
+    .catch(function(err){
+      console.log('Failed to send to backend',err)
+    })
+    .finally(function(){
+      debug(file.hash,'removing tmp file')
+      return fs.unlinkAsync(file.tmp)
+    })
+}
+
+
+/**
+ * Import to job
+ * @param {string} url
+ * @param {string} ext
+ * @param {string} mimeType
+ * @return {P}
+ */
+var importToJob = function(url,ext,mimeType){
+  var handle = ''
+  var description = {
+    callback: {
+      request: config.job.callback
+    },
+    resource: [
+      {
+        name: 'file.' + ext,
+        request: {
+          method: 'get',
+          url: url
+        }
+      }
+    ]
+  }
+  var jobType = 'resource'
+  if(mimeType.match(/video/i)){
+    jobType = 'augment'
+    description.resource[0].name = 'video.mp4'
+    description.augment = [
+      {
+        program: 'ffmpeg',
+        args: ['-i','video.mp4','-ss','00:00:30',
+               '-f','image2','-vframes','1','-y','preview.jpeg']
+      }
+    ]
+  }
+  return prism.jobCreate(description,10,jobType)
+    .then(function(result){
+      handle = result.handle
+      return prism.jobStart(handle)
+    })
+    .then(function(){
+      return handle
+    })
+    .catch(function(err){
+      console.log(err.stack)
+      logger.log('Failed to import file to job system ' + err.message)
+    })
+}
+
+
+/**
  * File List
  * @param {object} req
  * @param {object} res
  */
 exports.list = function(req,res){
   var path = fileHelper.decode(req.query.path)
+  var outputJSON = false
+  if(req.query.json) outputJSON = true
   fileHelper.findChildren(path,req.query.search)
     .then(function(result){
-      res.render('file/list',{
+      var params = {
         path: path,
         pathEncoded: fileHelper.encode(path),
         files: result,
         search: req.query.search
-      })
+      }
+      if(outputJSON){
+        res.json(params)
+      } else {
+        res.render('file/list',params)
+      }
     })
     .catch(function(err){
       console.log(err)
@@ -68,6 +325,116 @@ exports.listAction = function(req,res){
     .catch(function(err){
       console.log(err)
       req.flash('error','Failed to remove item ' + err.message)
+    })
+}
+
+
+/**
+ * Move folder list
+ * @param {object} req
+ * @param {object} res
+ */
+exports.moveList = function(req,res){
+  //setup base query
+  var q = {
+    where: {
+      UserId: req.session.user.id
+    },
+    order: ['name']
+  }
+  //filter out selected folders if they are there
+  if(req.body.folderIdList && req.body.folderIdList.length){
+    q.where.id = {
+      $notIn: req.body.folderIdList || []
+    }
+  }
+  //grab the folder list
+  Folder.findAll(q)
+    .then(function(result){
+      res.json({
+        status: 'ok',
+        message: 'Folder list found',
+        folderList: result
+      })
+    })
+    .catch(function(err){
+      if(err.stack){
+        logger.log('error','Failed to list folders' +
+          ' for move: ' + err.message,err)
+      }
+      if(err.stack) logger.log('error', err.stack,err)
+      res.status(500)
+      res.json({
+        status: 'error',
+        message: 'Failed to list folders for move: ' + err.message
+      })
+    })
+}
+
+
+/**
+ * Move files and folders to destination
+ * @param {object} req
+ * @param {object} res
+ */
+exports.moveTo = function(req,res){
+  var folderIdList = req.body.folderIdList || []
+  var fileIdList = req.body.fileIdList || []
+  var destinationFolderId = +req.body.destinationFolderId
+  //so basically all that needs done here is that we update all the files and
+  //folders that match the checked folders and update them to the new id
+  P.all([
+    Folder.update(
+      {
+        FolderId: destinationFolderId
+      },
+      {
+        where: {
+          id: folderIdList
+        },
+        fields: ['FolderId'],
+        validate: false,
+        hooks: false,
+        sideEffects: false
+      }
+    ),
+    File.update(
+      {
+        FolderId: destinationFolderId
+      },
+      {
+        where: {
+          id: fileIdList
+        },
+        fields: ['FolderId'],
+        validate: false,
+        hooks: false,
+        sideEffects: false
+      }
+    )
+  ])
+    .then(function(result){
+      res.json({
+        status: 'ok',
+        message: 'Files and folders moved',
+        destinationFolderId: destinationFolderId,
+        folderIdList: folderIdList,
+        fileIdList: fileIdList,
+        result: result
+      })
+    })
+    .catch(function(err){
+      if(err.stack){
+        logger.log('error','Failed to list folders for' +
+          ' move: ' + err.message,err)
+      }
+      if(err.stack) logger.log('error', err.stack,err)
+      res.status(500)
+      res.json({
+        status: 'error',
+        message: 'Could not move files or folders',
+        error: err
+      })
     })
 }
 
@@ -106,72 +473,18 @@ exports.upload = function(req,res){
   //setup temp folder
   if(!fs.existsSync(config.admin.tmpFolder))
     mkdirp.sync(config.admin.tmpFolder)
-  //url creators
-  var adminBaseUrl = function(){
-    if(config.admin.baseUrl) return config.admin.baseUrl
-    return 'http://' + (config.admin.host || '127.0.0.1') +
-      ':' + (config.admin.port || 5973)
-  }
-  //import functions
-  var sendToJob = function(file){
-    var description = {
-      callback: {
-        request: config.admin.prism.callback
-      },
-      resource: [
-        {
-          name: 'video.mp4',
-          request: {
-            method: 'get',
-            url: adminBaseUrl() + '/tmp/' + pathHelper.basename(file.tmp)
-          }
-        }
-      ],
-      augment: [
-        {
-          resource: 'preview.jpeg',
-          program: 'ffmpeg',
-          args: ['-i','video.mp4','-ss','00:00:30',
-                 '-f','image2','-vframes','1','-y','preview.jpeg']
-        }
-      ]
-    }
-    debug(file.hash,'job description created',description)
-    return prism.jobCreate(description,5,'augment')
-      .then(function(result){
-        debug(file.hash,'job created',result)
-        file.handle = result.handle
-        return prism.jobStart(file.handle)
-      })
-      .then(function(){
-        debug(file.hash,'job started')
-      })
-  }
-  var sendToStorage = function(file){
-    debug(file.hash,'starting to send to StretchFS')
-    return prism.contentRetrieve({
-      url: adminBaseUrl() + '/tmp/' + pathHelper.basename(file.tmp),
-      rejectUnauthorized: false
-    })
-      .catch(function(err){
-        console.log('Failed to send to backend',err)
-      })
-      .finally(function(){
-        debug(file.hash,'removing tmp file')
-        return fs.unlinkAsync(file.tmp)
-      })
-  }
   var processFile = function(file){
     debug(file.filename,'starting to process uploaded file')
     var writable = fs.createWriteStream(file.tmp)
     var shasum = crypto.createHash('sha1')
     var fileParams
-    var fileKey
+    var firstChunk
     var currentPath = []
     //setup a sniffer to capture the sha1 for integrity
     var sniff = through2(
       function(chunk,enc,next){
         try {
+          if(!firstChunk) firstChunk = chunk
           file.size = file.size + chunk.length
           shasum.update(chunk)
           next(null,chunk)
@@ -183,6 +496,12 @@ exports.upload = function(req,res){
     //execute the pipe and save the file or error out the promise
     promisePipe(file.readable,sniff,writable)
       .then(function(){
+        //use first chunk to detect mime
+        var mimeInfo = fileType(firstChunk)
+        if(mimeInfo && mimeInfo.mime){
+          file.mimetype = mimeInfo.mime
+          file.mimeExtension = mimeInfo.ext
+        }
         file.hash = shasum.digest('hex')
         debug(file.filename,'successfully stored tmp file with hash',file.hash)
         if(file.mimetype.match(/^video\//i)){
@@ -236,10 +555,9 @@ exports.upload = function(req,res){
         )
       })
       .then(function(){
-        fileKey = couch.schema.file(fileHelper.encode(currentPath))
         fileParams = {
           handle: file.handle ||
-          new Password({length: 12, special: false}).toString(),
+            new Password({length: 12, special: false}).toString(),
           name: file.filename,
           tmp: file.tmp,
           hash: file.hash,
@@ -251,7 +569,7 @@ exports.upload = function(req,res){
           createdAt: new Date().toJSON(),
           updatedAt: new Date().toJSON()
         }
-        return cb.upsertAsync(fileKey,fileParams)
+        return createFile(fileParams)
       })
       .then(function(){
         file.promise.resolve()
@@ -289,8 +607,8 @@ exports.upload = function(req,res){
         encoding: encoding,
         mimetype: mimetype,
         extension: mime.getExtension(mimetype),
-        sha1: '',
-        importJob: ''
+        hash: '',
+        job: {}
       }
       processFile(file)
     }))
@@ -342,10 +660,12 @@ exports.folderCreate = function(req,res){
  * @param {object} res
  */
 exports.detail = function(req,res){
+  var detailFull = false
+  if(req.query.full) detailFull = true
   fileHelper.findByHandle(req.query.handle)
     .then(function(result){
       var file = result[0]
-      res.render('file/detail',{
+      res.render('file/' + (detailFull ? 'detailFull' : 'detail'),{
         baseUrl: config.admin.baseUrl,
         file: file,
         fileHelper: fileHelper,
@@ -367,74 +687,7 @@ exports.jobUpdate = function(req,res){
     res.json({error: 'no handle sent'})
     return
   }
-  var handle = req.body.handle
-  var file
-  var fileKey
-  fileHelper.findByHandle(handle)
-    .then(function(result){
-      fileKey = result[0]._id
-      return cb.getAsync(fileKey)
-    })
-    .then(function(result){
-      file = result
-      if(!file.value.job) file.value.job = {}
-      file.value.job.status = req.body.status
-      file.value.job.statusDescription = req.body.statusDescription
-      file.value.job.manifest = req.body.manifest
-      file.value.job.workerName = req.body.workerName
-      file.value.job.workerKey = req.body.workerKey
-      file.value.job.stepsComplete = req.body.stepComplete
-      file.value.job.stepsTotal = req.body.stepTotal
-      file.value.job.framesComplete = req.body.frameComplete
-      file.value.job.framesTotal = req.body.frameTotal
-      file.value.job.framesDescription = req.body.framesDescription
-      file.value.job.log = req.body.log
-      file.value.job.lastLogUpdate = req.body.lastLogUpdate
-      if(req.body.completedAt)
-        file.value.job.completedAt = req.body.completedAt
-      if('complete' !== file.value.job.status) return
-      if(!prism.helperConnected){
-        throw new Error('Prism connection not established cannot' +
-          ' process job update')
-      }
-      file.value.job.status = 'finished'
-      //remove tmp file
-      if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
-      //import the files to oose
-      var resource = {}
-      return prism.jobContentExists(handle,'video.mp4')
-        .then(function(result){
-          if(!result) return
-          return prism.contentRetrieve({
-            url: prism.jobContentUrl(handle,'video.mp4'),
-            rejectUnauthorized: false
-          })
-        })
-        .then(function(result){
-          if(result) resource.video = result.hash
-          return prism.jobContentExists(handle,'preview.jpeg')
-        })
-        .then(function(result){
-          if(!result) return
-          return prism.contentRetrieve({
-            url: prism.jobContentUrl(handle,'preview.jpeg'),
-            rejectUnauthorized: false
-          })
-        })
-        .then(function(result){
-          if(result) resource.preview = result.hash
-          file.value.resource = resource
-        })
-    })
-    .then(function(){
-      if('error' !== file.value.job.status) return
-      //remove tmp file on error report
-      if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
-    })
-    .then(function(){
-      //update db
-      return cb.upsertAsync(fileKey,file.value,{cas: file.cas})
-    })
+  jobUpdate(req.body.handle,req.body)
     .then(function(){
       res.json({success: 'Update successful'})
     })
@@ -446,29 +699,66 @@ exports.jobUpdate = function(req,res){
 
 
 /**
+ * Save a file
+ * @param {object} req
+ * @param {object} res
+ */
+exports.save = function(req,res){
+  saveFile(req.body.handle,req.body)
+    .then(function(result){
+      res.json({
+        status: 'ok',
+        message: 'File saved successfully',
+        file: result
+      })
+    })
+    .catch(function(err){
+      console.log('File save failed',err)
+      res.json({
+        status: 'error',
+        message: 'File saved failed',
+        error: err
+      })
+    })
+}
+
+
+/**
  * Download redirect
  * @param {object} req
  * @param {object} res
  */
 exports.download = function(req,res){
-  var file, url
+  var file = {}
+  var url = ''
+  var attach = true
+  if(req.query.direct) attach = false
   fileHelper.findByHandle(req.query.handle)
     .then(function(result){
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot download')
       }
       file = result[0]
-      return prism.contentPurchase(
-        file.hash,
-        file.mimeExtension,
-        config.admin.prism.referrer
-      )
+      if(!req.query.sendFile && !req.query.direct){
+        //show a download page
+        res.render('file/download',{file: file})
+      } else {
+        return prism.contentPurchase(
+          file.hash,
+          file.mimeExtension,
+          config.admin.prism.referrer
+        )
+          .then(function(result){
+            url = req.protocol + ':' + prism.urlPurchase(result,file.name)
+            if(attach){
+              url += '?attach=' + encodeURIComponent(file.name)
+            }
+            res.redirect(302,url)
+          })
+      }
+
     })
-    .then(function(result){
-      url = req.protocol + ':' + prism.urlPurchase(result,file.name) +
-        '?attach=' + encodeURIComponent(file.name)
-      res.redirect(302,url)
-    })
+
 }
 
 
@@ -508,4 +798,218 @@ exports.embed = function(req,res){
         }
       })
   })
+}
+
+
+/**
+ * File detail full
+ * @param {object} req
+ * @param {object} res
+ */
+exports.detailFull = function(req,res){
+  //var file = {}
+  File.find({
+    where: {id: req.query.id, UserId: req.session.user.id}
+  })
+    .then(function(result){
+      if(!result) throw new UserError('File Not Found')
+      //instead of rendering something here it should redirect to the proper
+      //page
+      if('video' === result.type){
+        res.redirect(301,'/watch/' + result.jobHandle)
+      } else {
+        res.redirect(301,'/view/' + result.id)
+      }
+      /*
+      res.render('file/detailFull',{
+        file: result,
+        baseUrl: config.main.baseUrl,
+        urlStatic: prism.urlStatic(result.sha1,result.name)
+      })
+      */
+    })
+    .catch(UserError,function(err){
+      res.status(404)
+      res.render('error',{error: err.message})
+    })
+    .catch(function(err){
+      console.log(err.stack)
+      logger.log('File detail full failed ' + err.message)
+      res.status(500)
+      res.render('error',{error: err.message})
+    })
+}
+
+
+/**
+ * Import List
+ * @param {object} req
+ * @param {object} res
+ */
+exports.importList = function(req,res){
+  var list = []
+  fileHelper.findProcessing()
+    .map(function(file){
+      //update job details
+      return prism.jobDetail(file.handle)
+        .then(function(result){
+          return jobUpdate(file.handle,result)
+        })
+        .then(function(){
+          return cb.getAsync(fileKey)
+        })
+        .then(function(result){
+          list.push(result)
+        })
+    })
+    .then(function(){
+      res.json({
+        status: 'ok',
+        message: 'Import list retrieved successfully',
+        importList: list
+      })
+    })
+    .catch(function(err){
+      logger.log('error','ERROR retrieving import list: ' + err.message,err)
+      logger.log('error',err.stack,err)
+      res.status(500)
+      res.json({
+        status: 'error',
+        message: 'ERROR retrieving import list: ' + err.message,
+        err: err
+      })
+    })
+}
+
+
+/**
+ * Import Files by URL
+ * @param {object} req
+ * @param {object} res
+ */
+exports.import = function(req,res){
+  //assign input info
+  var folderPath = req.body.folderPath
+  var urlText = req.body.urlText
+  var urls = urlText.split('\n')
+  var counter = {valid: 0, invalid: 0, error: 0}
+  //filter blanks
+  urls = urls.filter(function(row){
+    //force a string
+    row = row + ''
+    if(0 < row.length && validator.isURL(row)){
+      counter.valid = counter.valid + 1
+      return true
+    } else {
+      counter.invalid = counter.invalid + 1
+      return false
+    }
+  })
+  //verify import count
+  new P(function(resolve,reject){
+    if(urls.length < 1) reject(new Error('No imports defined.'))
+    else if(urls.length > config.main.importMaxFileCount){
+      reject(new Error('Import count cannot exceed ' +
+        config.admin.importMaxFileCount))
+    } else {
+      resolve()
+    }
+  })
+    .then(function(){
+      //loop through urls and create files and then create shredder jobs
+      var promises = []
+      urls.forEach(function(url){
+        var promise = new P(function(resolve,reject){
+          var fileRequest = request.get({
+            url: url,
+            timeout: 2000
+          })
+          //collect our mimetype on the response using fileType
+          fileRequest.on('response',function(fileResponse){
+            var mimeInfo
+            if(fileResponse.statusCode !== 200){
+              reject(new Error(
+                'Got an invalid response code from the import URL: ' +
+                fileResponse.statusCode
+              ))
+            } else {
+              var fileName = path.basename(url)
+              if(fileResponse.headers['content-disposition']){
+                var dispo = contentDispostion.parse(
+                  fileResponse.headers['content-disposition'])
+                if(dispo.paramters.filename) fileName = dispo.paramters.filename
+              }
+              var fileExt = path.extname(fileName)
+              fileResponse.once('data',function(chunk){
+                fileResponse.destroy()
+                mimeInfo = fileType(chunk)
+                //so if we dont get a magic number response (which we are going
+                //to add some definitions to anyway) we will go ahead and try
+                //to get the extension of the URL this is dirty but its better
+                //than denying the upload
+                if(!mimeInfo){
+                  mimeInfo = {
+                    mime: mime.getType(fileName),
+                    ext: fileExt
+                  }
+                }
+                //check the file size here
+                if(!fileResponse.headers['content-length'] ||
+                  +fileResponse.headers['content-length'] >
+                  config.admin.importMaxFileSize)
+                {
+                  reject(new Error(
+                    'Invalid content length, or file size above ' +
+                    config.main.importMaxFileSize
+                  ))
+                } else if(!mimeInfo.mime || !mimeInfo.ext){
+                  reject(new Error('Could not determine file type'))
+                } else{
+                  //here we need to figure out the mime type and the size from
+                  //the res then we should have enough to create the file
+                  //record, which we need to setup the shredder job, then maybe
+                  //this feature will be done
+                  importToJob(url,mimeInfo.ext,mimeInfo.mime)
+                    .then(function(handle){
+                      return createFile({
+                        handle: handle,
+                        name: fileName,
+                        tmp: null,
+                        hash: null,
+                        size: (+fileResponse.headers['content-length']) || 0,
+                        mimeExtension: mimeInfo.ext,
+                        mimeType: mimeInfo.mime,
+                        path: folderPath
+                      })
+                    })
+                    .then(function(){
+                      resolve()
+                    })
+                }
+              })
+            }
+          })
+        })
+        promises.push(promise)
+      })
+      return P.all(promises)
+        .then(function(result){
+          return folderList.folderList(folderPath,userId)
+            .then(function(folder){
+              res.json({
+                status: 'ok',
+                message: 'URLs imported successfully',
+                files: result,
+                folder: folder
+              })
+            })
+        })
+    })
+    .catch(function(err){
+      res.json({
+        status: 'error',
+        message: 'URL import failed ' + err,
+        err: err
+      })
+    })
 }

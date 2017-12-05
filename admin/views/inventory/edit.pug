@@ -1,10 +1,11 @@
 extends ../layout
 block append css
   link(rel='stylesheet', type='text/css', href='/css/prismClasses.css')
-block append js
-  script(src='/js/table.js')
-  script(src='/js/inventory-edit.js')
 block content
+  script.
+    $(document).ready(function(){
+      inventoryEdit()
+    })
   .hidden
     input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_int(type='text', name='rule[]')
     input.ruleData.checkbox-inline.checkbox-24.t_bool(type='checkbox', name='rule[]')

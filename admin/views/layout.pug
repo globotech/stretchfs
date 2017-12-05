@@ -5,12 +5,11 @@ doctype html
 html
   head
     block css
-      link(rel='stylesheet', type='text/css', href='/css/layout.css')
+      link(rel='stylesheet', type='text/css', href='/app.css')
     block js
-      script(src='/node_modules/jquery/dist/jquery.min.js')
-      script(src='/node_modules/bootstrap/dist/js/bootstrap.min.js')
-      script(src='/node_modules/bootstrap-select/dist/js/bootstrap-select.min.js')
-    title StretchFS Admin
+      script(type='text/javascript', src='/app.js')
+    block title
+      title #{appTitle} Admin
   body
     if staff
       //navbar
