@@ -288,11 +288,13 @@ exports.list = function(req,res){
     .then(function(result){
       var params = {
         path: path,
-        pathEncoded: fileHelper.encode(path),
+        folderPath: fileHelper.encode(path),
         files: result,
         search: req.query.search
       }
       if(outputJSON){
+        params.status = 'ok'
+        params.message = 'List success'
         res.json(params)
       } else {
         res.render('file/list',params)
@@ -300,8 +302,16 @@ exports.list = function(req,res){
     })
     .catch(function(err){
       console.log(err)
-      req.flash('error','Failed to list files: ' + err.message)
-      res.redirect('/')
+      if(outputJSON){
+        res.json({
+          error: err,
+          status: 'error',
+          message: err.message
+        })
+      } else {
+        req.flash('error','Failed to list files: ' + err.message)
+        res.redirect('/')
+      }
     })
 }
 
@@ -660,17 +670,22 @@ exports.folderCreate = function(req,res){
  * @param {object} res
  */
 exports.detail = function(req,res){
-  var detailFull = false
-  if(req.query.full) detailFull = true
-  fileHelper.findByHandle(req.query.handle)
+  var detailShort = false
+  if(req.query.short) detailShort = true
+  var handle = req.query.handle || req.params.handle
+  fileHelper.findByHandle(handle)
     .then(function(result){
       var file = result[0]
-      res.render('file/' + (detailFull ? 'detailFull' : 'detail'),{
+      res.render('file/' + (detailShort ? 'detailShort' : 'detail'),{
         baseUrl: config.admin.baseUrl,
         file: file,
         fileHelper: fileHelper,
+        detailShort: detailShort,
         urlStatic: req.protocol + ':' + prism.urlStatic(file.hash,file.name)
       })
+    })
+    .catch(function(err){
+      res.render('error',{error: err})
     })
 }
 

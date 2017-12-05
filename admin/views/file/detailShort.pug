@@ -1,0 +1,78 @@
+extends ../layout
+append title
+  title= file.name
+append css
+  style(type='text/css').
+    body {
+      width: 800px;
+    }
+block content
+  div(style='padding: 20px; margin-top: -70px;')
+    h1= file.name
+    div
+      a(href='/file/detail?handle=' + file.handle, target='_blank') View Full Detail
+    table.table.table-striped#fileDetailTable
+      if file.mimeType.match(/^video/i)
+        tr
+          td
+            div Share URL
+            .text-muted Share with your friends!
+          td
+            code #{baseUrl}/files/watch/#{file.handle}
+        tr
+          td
+            div Embed URL
+            .text-muted Use on your website
+          td
+            code #{baseUrl}/files/embed/#{file.handle}
+      if !file.mimeType.match(/^video/i)
+        tr
+          td
+            div Share URL
+            .text-muted Share with your friends!
+          td
+            code #{baseUrl}/files/view/#{file.handle}
+        tr
+          td
+            div CDN URL
+            .text-muted Use on your website
+          td
+            code= urlStatic
+      tr
+        td(style='width: 200px;') Type
+        td= file.mimeType
+      tr
+        td Size
+        td= prettyBytes(file.size)
+      tr
+        td Uploaded
+        td= momentStandardFormat(file.createdAt)
+      tr
+        td Views
+        td
+          strong= +(file.hitCount || 0)
+      tr
+        td Transfer
+        td
+          strong= prettyBytes(+(file.byteCount || 0))
+      tr
+        td Download
+        td
+          a.btn.btn-success(href='/file/download?handle=' + file.handle + '&sendFile=true')
+            span.glyphicon.glyphicon-download-alt
+            |  Download
+    .content
+      if file.mimeType.match(/text|code/i)
+        iframe.content-text(src='/file/download?handle=' + file.handle + '&direct=true')
+      if file.mimeType.match(/^image/i)
+        img.content-image(src='/file/download?handle=' + file.handle + '&direct=true')
+      if file.mimeType.match(/^video/i)
+        if file.job && file.job.status === 'finished'
+          iframe.content-video(src='/file/embed/' + file.handle, allowfullscreen, style='border: 0;')
+        else
+          iframe.content-image(src='/images/file-being-uploaded.png', style='width: 640px; height: 360px', scrolling= 'no')
+      if file.mimeType.match(/^audio/i)
+        audio(controls)
+          source(src='/file/download?handle=' + file.handle + '&direct=true')
+
+

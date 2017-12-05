@@ -9,8 +9,8 @@ module.exports = function(){
   //file detail
   var fileDetailModal = $('#fileDetailModal');
   var fileDetailFrame = $('#fileDetailFrame');
-  var fileDetail = function(fileId){
-    fileDetailFrame.attr('src','/file/detail-short?id=' + fileId)
+  var fileDetail = function(handle){
+    fileDetailFrame.attr('src','/file/detail?short=true&handle=' + handle)
     fileDetailModal.modal('show')
     fileDetailModal.on('hidden.bs.modal',function(){
       $('#fileDetailFrame').removeAttr('src')
@@ -18,7 +18,7 @@ module.exports = function(){
   }
   //register events to show file details
   jFolderList.on('click','.fileDetail',function(){
-    var fileId = $(this).attr('data-file-id');
-    fileDetail(fileId);
+    var fileHandle = $(this).attr('data-file-handle');
+    fileDetail(fileHandle);
   })
 }

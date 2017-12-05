@@ -1,0 +1,12 @@
+extends ../layout
+append title
+  title Downloading #{file.name} from #{appTitle}
+  meta(http-equiv='refresh', content='5; url=/file/download?handle=' + file.handle + '&sendFile=true')
+block content
+  .container
+    +alerts()
+    .content
+      .row
+        .col-lg-10
+          h1 Downloading #{file.name}
+          h4 Your download will begin shortly, if not click <a href="/file/download?handle=#{file.handle}&sendFile=true">here</a>

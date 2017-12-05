@@ -191,3 +191,11 @@ module.exports = function(){
   //setup checkbox listeners
   applyCheckboxListeners();
 }
+
+
+/**
+ * Update checked items
+ */
+window.updateCheckedCount = function(){
+  updateCheckedCount()
+}

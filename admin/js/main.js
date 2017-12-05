@@ -1,12 +1,30 @@
 'use strict';
-var jQuery = require('jquery')
 
 
 /**
- * Setup jQuery Globally
- * @type {jQuery}
+ * Set var to window
+ * @param {string} name
+ * @param {*} val
  */
-window.$ = window.jQuery = jQuery
+var toWindow = function(name,val){
+  window[name] = val
+}
+
+//prereqs
+require('es5-shim')
+require('videojs-ie8/dist/videojs-ie8')
+
+//jquery
+var jQuery = require('jquery')
+toWindow('$',jQuery)
+toWindow('jQuery',jQuery)
+
+//dropzone
+var Dropzone = require('dropzone')
+Dropzone['autoDiscover'] = false
+
+//videojs
+var videojs = require('video.js')
 
 //headless dependencies
 require('bootstrap-sass')
@@ -14,40 +32,12 @@ require('bootstrap-select')
 require('chart.js')
 require('jquery-ui')
 
-
-/**
- * Setup bootbox globally
- * @type {bootbox}
- */
-var bootbox = window.bootbox = require('bootbox')
-
-
-/**
- * Setup Dropzone Globally
- * @type {Dropzone}
- */
-var Dropzone = window.Dropzone = require('dropzone')
-
-
-/**
- * Setup Ladda Globally
- * @type {Ladda}
- */
-var Ladda = window.Ladda = require('ladda')
-
-
-/**
- * Setup querystring globally
- * @type {querystring}
- */
-var querystring = window.querystring = require('qs')
-
-
-/**
- * Setup videojs globally
- * @type {videojs}
- */
-var videojs = window.videojs = require('video.js')
+//global dependencies
+toWindow('bootbox',require('bootbox'))
+toWindow('Dropzone',Dropzone)
+toWindow('Ladda',require('ladda'))
+toWindow('querystring',require('qs'))
+toWindow('videojs',videojs)
 
 //jquery plugins
 require('./jqueryAnimateNumber.min')
@@ -59,12 +49,10 @@ require('./fileManager')
 require('./inventoryEdit')
 require('./table')
 
-//player
-require('es5-shim')
-require('videojs-ie8/dist/videojs-ie8')
+//videojs plugins
 require('videojs-persistvolume')
-require('videojs-contextmenu')
-require('videojs-contextmenu-ui')
+videojs.registerPlugin('contextmenu',require('videojs-contextmenu'))
+videojs.registerPlugin('contextmenuUI',require('videojs-contextmenu-ui'))
 require('./videojsDownloadButton')
 
 //css

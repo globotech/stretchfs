@@ -1,37 +1,53 @@
 extends ../layout
 append title
   title= file.name
-append css
-  style(type='text/css').
-    body {
-      width: 800px;
-    }
 block content
-  div(style='padding: 20px; margin-top: -70px;')
+  .container
+    +alerts()
     h1= file.name
+    .pw-server-widget(data-id='wid-7b7peo2q')
+    .content
+      if file.mimeType.match(/^(text|code)/i)
+        iframe.content-text(src='/file/download?handle=' + file.handle + '&direct=true')
+      if file.mimeType.match(/^image/i)
+        img.content-image(src='/file/download?handle=' + file.handle + '&direct=true')
+      if file.mimeType.match(/^video/i)
+        if file.job && file.job.status === 'finished'
+          iframe.content-video(src='/file/embed/' + file.handle, allowfullscreen, style='border: 0;')
+        else
+          iframe.content-image(src='/images/file-being-uploaded.png', style='width: 640px; height: 360px', scrolling= 'no')
+      if file.mimeType.match(/^audio/i)
+        audio(controls)
+          source(src='/file/download?handle=' + file.handle + '&direct=true')
+    //if 'video' != file.type
     div
-      a(href='/file/detail?handle=#{file.handle}', target='_blank') View Full Detail
+      .pull-right
+        div(style='padding-right: 40px; font-size: 18px; font-weight: bold;') #{file.hitCount} Views
+      a.btn.btn-success(href='/file/download?handle=' + file.handle)
+        span.glyphicon.glyphicon-download-alt
+        |  Download
+    br
     table.table.table-striped#fileDetailTable
-      if 'video' === file.type
+      if file.mimeType.match(/^video/i)
         tr
           td
             div Share URL
             .text-muted Share with your friends!
           td
-            code #{baseUrl}/files/watch/#{file.handle}
+            code #{baseUrl}/file/watch/#{file.handle}
         tr
           td
             div Embed URL
             .text-muted Use on your website
           td
-            code #{baseUrl}/files/embed/#{file.handle}
-      if 'video' !== file.type
+            code #{baseUrl}/file/embed/#{file.handle}
+      if !file.mimeType.match(/^video/i)
         tr
           td
             div Share URL
             .text-muted Share with your friends!
           td
-            code #{baseUrl}/files/view/#{file.handle}
+            code #{baseUrl}/file/view/#{file.handle}
         tr
           td
             div CDN URL
@@ -43,36 +59,8 @@ block content
         td= file.mimeType
       tr
         td Size
-        td= prettyBytes(file.size)
+        td= prettyBytes(+(file.size || 0))
       tr
         td Uploaded
         td= momentStandardFormat(file.createdAt)
-      tr
-        td Views
-        td
-          strong= file.hitCount
-      tr
-        td Transfer
-        td
-          strong= prettyBytes(file.byteCount)
-      tr
-        td Download
-        td
-          a.btn.btn-success(href='/file/download?handle=#{file.handle}&sendFile=true')
-            span.glyphicon.glyphicon-download-alt
-            |  Download
-    .content
-      if file.type.match(/text|code/i)
-        iframe.content-text(src='/file/download?handle=#{file.handle}&direct=true')
-      if 'image' === file.type
-        img.content-image(src='/file/download?handle=#{file.handle}&direct=true')
-      if 'video' === file.type
-        if file.status === 'complete'
-          iframe.content-video(src='/file/embed/#{file.handle}', allowfullscreen, style='border: 0;')
-        else
-          iframe.content-image(src='/images/file-being-uploaded.png', style='width: 640px; height: 360px', scrolling= 'no')
-      if 'audio' === file.type
-        audio(controls)
-          source(src='/file/download?handle=#{file.handle}&direct=true')
-
 

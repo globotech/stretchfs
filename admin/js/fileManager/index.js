@@ -35,7 +35,6 @@ window.fileManager = function(){
   exports.folderEdit()
   exports.importStatus()
   exports.move()
-  Dropzone.autoDiscover = false;
   $(document).ready(function(){
     var ourDropzone = new Dropzone('#fileUpload',{
       url: function(){

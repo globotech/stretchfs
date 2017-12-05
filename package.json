@@ -106,12 +106,13 @@
   "scripts": {
     "admin": "node admin",
     "build": "browserify -t [ browserify-css --minify=true --output admin/public/app.css ] admin/js/main.js -o admin/public/app.js && uglifyjs admin/public/app.js -o admin/public/app.js",
+    "buildDev": "browserify -t [ browserify-css --output admin/public/app.css ] admin/js/main.js -o admin/public/app.js",
     "cluster": "node cluster",
     "prism": "node prism",
     "test": "node ./node_modules/mocha/bin/mocha ./test/*.test.js",
     "start": "node app",
     "store": "node store",
-    "watch": "watchify -t [ browserify-css --minify=true --output admin/public/app.css ] admin/js/main.js -o admin/public/app.js -v"
+    "watch": "watchify -t [ browserify-css --output admin/public/app.css ] admin/js/main.js -o admin/public/app.js -v"
   },
   "devDependencies": {
     "browserify": "^14.5.0",

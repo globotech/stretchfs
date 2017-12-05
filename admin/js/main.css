@@ -9,6 +9,8 @@
 @import url('../public/css/layout.css');
 @import url('../public/css/login.css');
 @import url('../public/css/prismCLasses.css');
+@import url('../../node_modules/video.js/dist/video-js.min.css');
 @import url('../public/css/videojs.css');
+@import url('../../node_modules/videojs-contextmenu-ui/dist/videojs-contextmenu-ui.css');
 @import url('../public/css/videojs-download-button.css');
 @import url('../public/css/videojs-flat.css');

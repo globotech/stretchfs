@@ -34,6 +34,7 @@ var updateUri = function(folder){
 
 /**
  * Register folder change events
+ * @param {object} elementList to register events to
  */
 var registerFolderChangeEvents = function(elementList){
   elementList.off('click','.folderChange').on('click','.folderChange',
@@ -44,36 +45,30 @@ var registerFolderChangeEvents = function(elementList){
 }
 
 //folder change, move to another folder without reloading
-var folderChange = function(folderId){
+var folderChange = function(folderPath){
   //first we need to ask the server for all the data about the new folder
   //such as the folder list, file list, and file tree so we can build the
   //breadcrumb
-  $.ajax('/file/list',{
-    contentType: 'application/json',
-    type: 'POST',
-    data: JSON.stringify({
-      folderPath: folderPath
-    }),
+  $.ajax('/file/list?json=true,path=' + folderPath,{
     success: function(res){
       if('ok' === res.status){
         //separate out our response to preserve the response
-        var folder = res.folder
-        var folderList = res.folderList
-        var fileList = res.fileList
-        var fileTree = res.fileTree
+        var folderPath = res.folderPath
+        var path = res.path
+        var fileList = res.files
         //clear checked items on folder switch
         checkedFiles = [];
         checkedFolders = [];
         updateCheckedCount();
         //update the current folder id
-        $('#parentFolderId').attr('data-value',folder.id);
+        $('#folderPath').attr('data-value',folderPath);
         //next we need to start building the new records using our stored
         //rendering functions
-        renderFolderListTable(folderList,fileList);
+        renderFolderListTable(fileList);
         //that was easy now we need to render the fileTree
-        renderFileTree(fileTree);
+        renderFileTree(path);
         //update uri
-        updateUri(folder);
+        updateUri(folderPath);
         //register events
         registerFolderChangeEvents($('#fileTree'));
       } else {
@@ -98,5 +93,5 @@ module.exports = function(){
   //register events to change folder
   registerFolderChangeEvents($('#folderList'));
   //setup the folder list with js
-  folderChange(getHashParams().folder || +$('#folderPath').attr('data-value'));
+  folderChange(getHashParams().folder || $('#folderPath').attr('data-value'));
 }

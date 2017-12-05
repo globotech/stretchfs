@@ -27,16 +27,17 @@ mixin videojs(file,handle,resources)
     player.persistvolume({
       namespace: '#{baseUrl}'
     })
+    console.log(player)
     player.contextmenu()
     player.contextmenuUI({
       content: [
-        {href: '#{baseUrl}/watch/#{handle}',label: 'Watch this Video'},
+        {href: '#{baseUrl}/file/watch/#{handle}',label: 'Watch this Video'},
         {href: '#{baseUrl}',label: 'StretchFS'},
         {href: '#{baseUrl}',label: 'Version #{version}'}
       ]
     })
     player.downloadButton({
-      href: '#{baseUrl}/watch/#{handle}'
+      href: '#{baseUrl}/file/watch/#{handle}'
     })
     var playerContainer = document.getElementById('player')
     var resizePlayer = function(){

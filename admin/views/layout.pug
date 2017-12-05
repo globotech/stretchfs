@@ -11,7 +11,7 @@ html
     block title
       title #{appTitle} Admin
   body
-    if staff
+    if staff && !detailShort
       //navbar
       .navbar.navbar-fixed-top.navbar-inverse(role='navigation')
         .container
