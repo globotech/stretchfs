@@ -104,6 +104,7 @@
     "winston": "^2.4.0"
   },
   "scripts": {
+    "postinstall": "npm run bundle",
     "admin": "node admin",
     "bundle": "browserify -t [ browserify-css --minify=true --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js && uglifyjs admin/public/bundle.js -o admin/public/bundle.js",
     "bundleDev": "browserify -t [ browserify-css --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js",
@@ -121,7 +122,6 @@
     "mocha": "3.5.0",
     "numeral": "^2.0.6",
     "promiseq": "^0.1.0",
-    "rmfr": "^1.0.3",
     "uglify-js": "^3.2.1"
   }
 }
