@@ -1,13 +1,4 @@
 mixin videojs(file,handle,resources)
-  link(href='/player.css', type='text/css', rel='stylesheet')
-  script(src='/node_modules/es5-shim/es5-shim.min.js')
-  script(src='/node_modules/videojs-ie8/dist/videojs-ie8.min.js', type='text/javascript')
-  script(src='/node_modules/video.js/dist/video.min.js', type='text/javascript')
-  script(src='/node_modules/videojs-flash/dist/videojs-flash.min.js', type='text/javascript')
-  script(src='/node_modules/videojs-persistvolume/videojs.persistvolume.js', type='text/javascript')
-  script(src='/node_modules/videojs-contextmenu/dist/videojs-contextmenu.min.js', type='text/javascript')
-  script(src='/node_modules/videojs-contextmenu-ui/dist/videojs-contextmenu-ui.min.js', type='text/javascript')
-  script(src='/js/videojs-download-button.js', type='text/javascript')
   - var mimeType = file.mimeType.replace('video/flash','video/x-flv')
   if 'video/x-flv' === mimeType
     div(id='flashwarn', style='height: 17px; background-color: #d9edf7; color: #31708f; padding: 2px; font-family: arial; font-size: 10pt')

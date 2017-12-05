@@ -50,15 +50,13 @@ var drawGraph = function(data){
     stretchHistory.update();
   }
 }
-var topItemsBody = $('#topItemsBody')
-var topPurchases = $('#topPurchasesBody')
-var progressBar = $('#progressBar')
 var progressCount = 1
 var progressPercentPrevious = 10
 var intervalSeconds = 10
 var intervalMilliseconds = intervalSeconds * 1000
 var intervalStepPercent = 100 / intervalSeconds
 var updateTopItems = function(inventoryList){
+  var topItemsBody = $('#topItemsBody')
   var rows = []
   inventoryList.forEach(function(row){
     var tr = $(document.createElement('tr'));
@@ -72,6 +70,7 @@ var updateTopItems = function(inventoryList){
   topItemsBody.append(rows)
 }
 var updateTopPurchases = function(purchaseList){
+  var topPurchases = $('#topPurchasesBody')
   var rows = []
   purchaseList.forEach(function(row){
     row.token = row._id.replace('purchase:','')
@@ -88,6 +87,7 @@ var updateTopPurchases = function(purchaseList){
   topPurchases.append(rows)
 }
 var updateProgressBar = function(progressPercent){
+  var progressBar = $('#progressBar')
   if(!progressPercent){
     progressPercent = Math.round(progressCount * intervalStepPercent)
   }
@@ -143,11 +143,15 @@ var updateDashboard = function(){
  * Export the updateDashboard primitive
  * @type {updateDashboard}
  */
-window.dashboardUpdate = updateDashboard
+window.dashboardUpdate = function(){
+  updateDashboard()
+}
 
 
 /**
  * Export the dashboard progress bar update
  * @type {updateProgressBar}
  */
-window.dashboardUpdateProgressBar = updateProgressBar
+window.dashboardUpdateProgressBar = function(){
+  updateProgressBar()
+}
