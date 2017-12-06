@@ -41,7 +41,7 @@ var createFile = function(file){
     hash: file.hash,
     size: file.size,
     path: file.path,
-    mimeType: file.mimetype,
+    mimeType: file.mimeType,
     mimeExtension: file.mimeExtension,
     status: 'ok',
     createdAt: new Date().toJSON(),
@@ -529,7 +529,7 @@ exports.upload = function(req,res){
         var mimeInfo = fileType(firstChunk)
         if(mimeInfo && mimeInfo.mime){
           file.mimetype = mimeInfo.mime
-          file.mimeExtension = mimeInfo.ext
+          file.extension = mimeInfo.ext
         }
         file.hash = shasum.digest('hex')
         debug(file.filename,'successfully stored tmp file with hash',file.hash)
