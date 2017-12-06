@@ -1,13 +1,24 @@
 'use strict';
 var P = require('bluebird')
 
-//var prism = require('../helpers/prism')
 var listHelper = require('../helpers/list')
 var formHelper = require('../helpers/form')
+var roleHelper = require('../helpers/role')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
 var cb = couch.stretchfs()
+
+
+/**
+ * AJAX feeder for roleList
+ * @param {object} req
+ * @param {object} res
+ */
+exports.listRoles = function(req,res){
+  var rv = JSON.stringify(P.try(function(){return roleHelper.roleList()}))
+  res.send(rv)
+}
 
 
 /**
@@ -89,11 +100,17 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var prismKey = couch.schema.prism(req.query.name)
-  cb.getAsync(prismKey)
-    .then(function(result){
+  P.all([
+    roleHelper.roleList(),
+    cb.getAsync(prismKey)
+  ])
+    .spread(function(roleList,result){
       result.value._id = prismKey
       result.value.roles = result.value.roles.sort()
-      res.render('prism/edit',{prism: result.value})
+      res.render('prism/edit',{
+        roleList: roleList,
+        prism: result.value
+      })
     })
     .catch(function(err){
       res.render('error',{error: err.message})

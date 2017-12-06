@@ -1,6 +1,4 @@
 extends ../layout
-block append js
-  script(src='/js/table.js')
 block content
   .container
     div.btn.btn-group.btn-group-justified.bg-info
@@ -36,9 +34,9 @@ block content
       .form-group
         label.control-label.col-sm-2 Roles
         .list-group.col-sm-9
-          each r,i in prism.roles
+          each r,i in roleList
             span.list-group-item.list-group-item-success.shrinkwrap.mono.col-sm-2
-              input.checkbox-input(type='checkbox', name='roles[' + i + ']', id='roles[' + i + ']', value=r, checked=true)
+              input.checkbox-input(type='checkbox', name='roles[' + i + ']', id='roles[' + i + ']', value=r, checked=(0<=prism.roles.indexOf(r)))
               label(for='roles[' + i + ']')= r
       .form-group
         .col-sm-offset-2.col-sm-10

@@ -188,6 +188,8 @@ app.get('/prism/list',routes.prism.list)
 app.get('/prism/create',routes.prism.create)
 app.get('/prism/edit',routes.prism.edit)
 app.get('/prism',function(req,res){ res.redirect('/prism/list') })
+//prism AJAX
+app.get('/prism/listRoles',routes.prism.listRoles)
 
 //stores
 app.post('/store/list',routes.store.listAction)
@@ -197,6 +199,8 @@ app.get('/store/list',routes.store.list)
 app.get('/store/create',routes.store.create)
 app.get('/store/edit',routes.store.edit)
 app.get('/store',function(req,res){ res.redirect('/store/list') })
+//prism AJAX
+app.get('/store/listRoles',routes.store.listRoles)
 
 //inventory
 app.post('/inventory/list',routes.inventory.listAction)

@@ -3,10 +3,22 @@ var P = require('bluebird')
 
 var listHelper = require('../helpers/list')
 var formHelper = require('../helpers/form')
+var roleHelper = require('../helpers/role')
 var couch = require('../../helpers/couchbase')
 
 //open couch buckets
 var cb = couch.stretchfs()
+
+
+/**
+ * AJAX feeder for roleList
+ * @param {object} req
+ * @param {object} res
+ */
+exports.listRoles = function(req,res){
+  var rv = JSON.stringify(P.try(function(){return roleHelper.roleList()}))
+  res.send(rv)
+}
 
 
 /**
@@ -81,8 +93,11 @@ exports.create = function(req,res){
  */
 exports.edit = function(req,res){
   var storeKey = couch.schema.store(req.query.name)
-  cb.getAsync(storeKey)
-    .then(function(result){
+  P.all([
+    roleHelper.roleList(),
+    cb.getAsync(storeKey)
+  ])
+    .spread(function(roleList,result){
       result.value._id = storeKey
       result.value.prismPrefix = couch.schema.prism()
       if(('object' !== typeof result.value.group) && !Array.isArray(result.value.group)){
@@ -103,7 +118,10 @@ exports.edit = function(req,res){
       }
       result.value.group = result.value.group.sort()
       result.value.roles = result.value.roles.sort()
-      res.render('store/edit',{store: result.value})
+      res.render('store/edit',{
+        roleList: roleList,
+        store: result.value
+      })
     })
     .catch(function(err){
       res.render('error',{error: err.message})

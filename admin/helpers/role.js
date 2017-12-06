@@ -1,11 +1,22 @@
 'use strict';
+var P = require('bluebird')
 
 //list of valid roles
 var roleList = [
   'active',
-  'writable',
-  'online'
+  'online',
+  'read',
+  'write'
 ]
+
+
+/**
+ * Provide the ruleSet to client side
+ * @return {object} ruleSet with key as ruleName and value as ruleDataType
+ */
+exports.roleList = function(){
+  return P.try(function(){return roleList.sort()})
+}
 
 
 /**
