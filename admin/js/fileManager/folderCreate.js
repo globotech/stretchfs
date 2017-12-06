@@ -13,17 +13,20 @@ module.exports = function(){
   var jFolderCreateName = $('#folderCreateName');
   var jFolderCreateModal = $('#folderCreateModal');
   var jFolderCreateSubmit = $('#folderCreateSubmit');
+  //focus the folder create input box when the modal loads
+  jFolderCreateModal.on('shown.bs.modal',function(){
+    jFolderCreateName.focus();
+  });
   //folder creation without reloading
   var folderCreate = function(){
     var folderName = jFolderCreateName.val();
-    var FolderId = +$('#parentFolderId').attr('data-value');
+    var folderPath = $('#folderPath').attr('data-value');
     if('' === folderName) return false;
-    $.ajax('/folder/create',{
+    $.ajax('/file/folderCreate?json=true',{
       contentType: 'application/json',
       type: 'POST',
       data: JSON.stringify({
-        name: folderName,
-        FolderId: FolderId
+        path: [folderPath,folderName].join(',')
       }),
       success: function(res){
         //close down the existing modal
@@ -32,11 +35,8 @@ module.exports = function(){
           //when successful clear the value on the name, errors will want to try
           //again so we can save the name for later
           jFolderCreateName.val('');
-          var folder = res.folder
           //render the new folder row
-          var folderRow = renderFolder(folder);
-          folderRow.hide().fadeIn(1000);
-          folderListTbody.append(folderRow);
+          folderChange(folderPath)
         } else {
           bootbox.alert('ERROR: ' + res.message);
         }

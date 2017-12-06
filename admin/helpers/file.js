@@ -14,6 +14,7 @@ var cb = couch.stretchfs()
  * @return {string}
  */
 var encode = function(path){
+  if('string' === typeof path && path.match(/,/)) return path
   if(!path instanceof Array) path = [path]
   path = path.filter(function(el){return (el)})
   return ',' + path.join(',') + ','
@@ -83,6 +84,32 @@ exports.decode = decode
 
 
 /**
+ * Find folders
+ * @param {string} path
+ * @param {array} skip
+ * @return {P}
+ */
+exports.findFolders = function(path,skip){
+  var tname = couch.getName(couch.type.stretchfs)
+  path = decode(path)
+  var exp
+  if(path.length){
+    exp = ',' + escapeRegexString(path.join(',')) + ',[^,]+,$'
+  } else{
+    exp = ',[^,]+,$'
+  }
+  exp = '^' + couch.schema.file(exp)
+  var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
+    ' WHERE REGEX_CONTAINS(META().id,"' + exp +'")' +
+    ' AND `path` NOT IN [$1] AND `folder` = true' +
+    ' ORDER BY `name` ASC'
+  var qvalue = [skip]
+  var query = couch.N1Query.fromString(qstring)
+  return cb.queryAsync(query,qvalue)
+}
+
+
+/**
  * Check if path exists
  * @param {string} path
  * @return {P}
@@ -127,12 +154,20 @@ exports.findByHandle = function(handle){
 
 
 /**
+ * Flag for ensureConsistency
+ * @type {boolean}
+ */
+exports.ENSURE_CONSISTENCY = true
+
+
+/**
  * Find children of a path
  * @param {string} path
  * @param {string} search
+ * @param {boolean} ensureConsistency
  * @return {P}
  */
-exports.findChildren = function(path,search){
+exports.findChildren = function(path,search,ensureConsistency){
   path = decode(path)
   var exp
   if(path.length){
@@ -150,6 +185,9 @@ exports.findChildren = function(path,search){
   else search = '%' + search + '%'
   var qvalue = [search]
   var query = couch.N1Query.fromString(qstring)
+  if(ensureConsistency){
+    query.consistency(couch.N1Query.Consistency.REQUEST_PLUS)
+  }
   return cb.queryAsync(query,qvalue)
 }
 
@@ -167,7 +205,6 @@ exports.findDescendants = function(path){
     ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(path,"' + exp + '")' +
     ' ORDER BY folder DESC, name ASC'
   var qvalue = [couch.schema.file() + '%']
-  console.log(qstring,qvalue)
   var query = couch.N1Query.fromString(qstring)
   return cb.queryAsync(query,qvalue)
 }
@@ -180,8 +217,8 @@ exports.findDescendants = function(path){
  */
 exports.mkdirp = function(path){
   path = decode(path)
-  path.pop()
   var currentPosition = []
+  var currentFolder
   return P.try(function(){
     return path
   })
@@ -190,16 +227,22 @@ exports.mkdirp = function(path){
       return exports.pathExists(currentPosition)
         .then(function(exists){
           if(exists) return
-          var fileKey = couch.schema.file(item)
-          var file = {
+          var path = encode(currentPosition)
+          var fileKey = couch.schema.file(path)
+          currentFolder = {
             folder: true,
             name: item,
-            path: currentPosition,
+            path: path,
             mimeType: 'folder',
-            status: 'ok'
+            status: 'ok',
+            createdAt: new Date(),
+            updatedAt: new Date()
           }
-          return cb.upsertAsync(fileKey,file)
+          return cb.upsertAsync(fileKey,currentFolder)
         })
+    })
+    .then(function(){
+      return currentFolder
     })
 }
 
@@ -210,16 +253,7 @@ exports.mkdirp = function(path){
  * @return {P}
  */
 exports.remove = function(path){
-  path = decode(path)
-  var exp = '^,' + escapeRegexString(path.join(','))
-  var tname = couch.getName(couch.type.stretchfs)
-  var qstring = 'SELECT META().id AS _id FROM ' + tname +
-    ' WHERE META().id LIKE $1 AND REGEX_CONTAINS(`path`,$2)' +
-    ' ORDER BY folder DESC, name ASC'
-  var qvalue = [couch.schema.file() + '%',exp]
-  var query = couch.N1Query.fromString(qstring)
-  return cb.queryAsync(query,qvalue)
-    .each(function(file){
-      return cb.removeAsync(file._id)
-    })
+  path = encode(path)
+  var fileKey = couch.schema.file(path)
+  return cb.removeAsync(fileKey)
 }

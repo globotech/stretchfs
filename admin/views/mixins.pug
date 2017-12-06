@@ -11,21 +11,23 @@ mixin browseHeader()
         span= app.title
 
 
-mixin pathTree(tree)
-  div
-    each row, i in tree
-      if 'folder' === row.type
-        a(href='/?folder=#{row.id}')
-          if i !== (tree.length - 1)
-            span.glyphicon.glyphicon-folder-close
-          else
-            span.glyphicon.glyphicon-folder-open
-          span &nbsp;&nbsp;
-          span= 'root' === row.name ? 'Home' : row.name
-        if i !== (tree.length - 1)
-          span  ->&nbsp;&nbsp;
-      if 'file' === row.type
-        a(href='/file/detail/?id=#{row.id}')
-          span.glyphicon.glyphicon-file
-          span= row.name
+mixin fileListHeader(folderList)
+  #header(style='height: 95px;')
+    .pull-right
+      .pull-left
+        form.form-inline#tableSearch(role='form', action='', method='get')
+          .form-group
+            a.btn.btn-success(data-toggle='modal',data-target='#folderCreateModal')
+              span.glyphicon.glyphicon-plus
+              span  Create Folder
+        div.text-muted(style='font-size: 11px; color: #999') or use CTL+E
+      .pull-left
+        a#fileImportButton.btn.btn-primary
+          span.glyphicon.glyphicon-download
+          span  Import File(s)
+        div.text-muted(style='font-size: 11px; color: #999') or use CTL+I
+    //.clear-both
+    h5
+      a(href='/')
+        span= appTitle
 

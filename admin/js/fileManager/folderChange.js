@@ -39,7 +39,7 @@ var updateUri = function(folder){
 var registerFolderChangeEvents = function(elementList){
   elementList.off('click','.folderChange').on('click','.folderChange',
     function(){
-      folderChange($(this).attr('data-folder-id'));
+      folderChange($(this).attr('data-folder-path'));
     }
   );
 }
@@ -49,7 +49,8 @@ var folderChange = function(folderPath){
   //first we need to ask the server for all the data about the new folder
   //such as the folder list, file list, and file tree so we can build the
   //breadcrumb
-  $.ajax('/file/list?json=true,path=' + folderPath,{
+  clearChecked()
+  $.ajax('/file/list?json=true&path=' + folderPath,{
     success: function(res){
       if('ok' === res.status){
         //separate out our response to preserve the response
@@ -59,7 +60,6 @@ var folderChange = function(folderPath){
         //clear checked items on folder switch
         checkedFiles = [];
         checkedFolders = [];
-        updateCheckedCount();
         //update the current folder id
         $('#folderPath').attr('data-value',folderPath);
         //next we need to start building the new records using our stored

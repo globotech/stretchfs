@@ -269,7 +269,7 @@ var importToJob = function(url,ext,mimeType){
       return handle
     })
     .catch(function(err){
-      console.log(err.stack)
+      console.log(err)
       logger.log('Failed to import file to job system ' + err.message)
     })
 }
@@ -282,9 +282,11 @@ var importToJob = function(url,ext,mimeType){
  */
 exports.list = function(req,res){
   var path = fileHelper.decode(req.query.path)
-  var outputJSON = false
-  if(req.query.json) outputJSON = true
-  fileHelper.findChildren(path,req.query.search)
+  var jsonOutput = false
+  if(req.query.json) jsonOutput = true
+  var ensureConsistency = false
+  if(jsonOutput) ensureConsistency = fileHelper.ENSURE_CONSISTENCY
+  fileHelper.findChildren(path,req.query.search,ensureConsistency)
     .then(function(result){
       var params = {
         path: path,
@@ -292,7 +294,7 @@ exports.list = function(req,res){
         files: result,
         search: req.query.search
       }
-      if(outputJSON){
+      if(jsonOutput){
         params.status = 'ok'
         params.message = 'List success'
         res.json(params)
@@ -302,7 +304,7 @@ exports.list = function(req,res){
     })
     .catch(function(err){
       console.log(err)
-      if(outputJSON){
+      if(jsonOutput){
         res.json({
           error: err,
           status: 'error',
@@ -345,21 +347,10 @@ exports.listAction = function(req,res){
  * @param {object} res
  */
 exports.moveList = function(req,res){
-  //setup base query
-  var q = {
-    where: {
-      UserId: req.session.user.id
-    },
-    order: ['name']
-  }
-  //filter out selected folders if they are there
-  if(req.body.folderIdList && req.body.folderIdList.length){
-    q.where.id = {
-      $notIn: req.body.folderIdList || []
-    }
-  }
+  var path = req.body.folderPath || ',,'
+  var skip = req.body.skip || []
   //grab the folder list
-  Folder.findAll(q)
+  fileHelper.findFolders(path,skip)
     .then(function(result){
       res.json({
         status: 'ok',
@@ -368,15 +359,14 @@ exports.moveList = function(req,res){
       })
     })
     .catch(function(err){
-      if(err.stack){
-        logger.log('error','Failed to list folders' +
+      console.log(err)
+      logger.log('error','Failed to list folders' +
           ' for move: ' + err.message,err)
-      }
-      if(err.stack) logger.log('error', err.stack,err)
       res.status(500)
       res.json({
         status: 'error',
-        message: 'Failed to list folders for move: ' + err.message
+        message: 'Failed to list folders for move: ' + err.message,
+        error: err
       })
     })
 }
@@ -455,14 +445,43 @@ exports.moveTo = function(req,res){
  * @param {object} res
  */
 exports.remove = function(req,res){
-  fileHelper.remove(req.body.path)
+  var removeCount = 0
+  var jsonOutput = false
+  if(req.query.json) jsonOutput = true
+  if(req.body.path) req.body.remove = [req.body.path]
+  if(!(req.body.remove instanceof Array)) req.body.remove = [req.body.remove]
+  P.try(function(){
+    return req.body.remove
+  })
+    .each(function(item){
+      return fileHelper.remove(item)
+        .then(function(){
+          removeCount++
+        })
+    })
     .then(function(){
-      req.flash('success','File removed successfully')
-      res.redirect('/file/list')
+      if(jsonOutput){
+        res.json({
+          status: 'ok',
+          message: removeCount + ' File(s) removed successfully',
+          count: removeCount
+        })
+      } else {
+        req.flash('success',removeCount + ' File(s) removed successfully')
+        res.redirect('/file/list')
+      }
     })
     .catch(function(err){
       console.log(err)
-      req.flash('error','Failed to remove file ' + err.message)
+      if(jsonOutput){
+        res.json({
+          status: 'error',
+          message: err.message,
+          error: err
+        })
+      } else {
+        req.flash('error','Failed to remove file ' + err.message)
+      }
     })
 }
 
@@ -651,15 +670,33 @@ exports.upload = function(req,res){
  * @param {object} res
  */
 exports.folderCreate = function(req,res){
-  var path = fileHelper.decode(req.query.path)
+  var jsonOutput = false
+  if(req.query.json) jsonOutput = true
+  var path = fileHelper.decode(req.query.path || req.body.path)
   fileHelper.mkdirp(path)
-    .then(function(){
-      req.flash('success','Folder created successfully')
-      res.redirect('/file/list?path=' + req.query.path)
+    .then(function(result){
+      if(jsonOutput){
+        res.json({
+          status: 'ok',
+          message: 'Folder created successfully',
+          folder: result
+        })
+      } else {
+        req.flash('success','Folder created successfully')
+        res.redirect('/file/list?path=' + req.query.path)
+      }
     })
     .catch(function(err){
       console.log(err)
-      req.flash('error','Failed to create folder ' + err.message)
+      if(jsonOutput){
+        req.json({
+          status: 'error',
+          message: err.message,
+          error: err
+        })
+      } else {
+        req.flash('error','Failed to create folder ' + err.message)
+      }
     })
 }
 
@@ -848,7 +885,7 @@ exports.detailFull = function(req,res){
       res.render('error',{error: err.message})
     })
     .catch(function(err){
-      console.log(err.stack)
+      console.log(err)
       logger.log('File detail full failed ' + err.message)
       res.status(500)
       res.render('error',{error: err.message})

@@ -10,14 +10,13 @@ block content
       fileManager()
     })
   .container
+    +fileListHeader()
     +alerts()
     span.hidden#folderPath(data-value=folderPath)
     span.hidden#ioUrl(data-value=ioUrl)
     div#fileTree
-      if tree
-        +fileTree(tree)
     #dropzone
-      form.dropzone(method='post', id='fileUpload', action=ioUrl + '/file/upload?folder=' + folderPath)
+      form.dropzone(method='post', id='fileUpload', action='/file/upload?folder=' + folderPath)
         .fallback
           input(name='file', type='file', multiple='true')
     #importStatusSmall.alert.alert-info

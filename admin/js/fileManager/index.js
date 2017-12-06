@@ -38,26 +38,22 @@ window.fileManager = function(){
   $(document).ready(function(){
     var ourDropzone = new Dropzone('#fileUpload',{
       url: function(){
-        var ioUrl = $('#ioUrl').attr('data-value')
-        var folderPath = $('#parentFolderPath').attr('data-value');
-        return ioUrl + '/file/upload?folder=' + folderPath;
+        var folderPath = $('#folderPath').attr('data-value');
+        return '/file/upload?path=' + folderPath;
       },
       timeout: 99999999,
       maxFilesize: 4096,
       withCredentials: true
     })
     ourDropzone.on('success',function(file){
-      $.ajax('/folder/listInfo',{
-        contentType: 'application/json',
-        type: 'POST',
-        data: JSON.stringify({
-          folderId: $('#parentFolderId').attr('data-value')
-        }),
+      var path = $('#folderPath').attr('data-value')
+      $.ajax('/file/list?json=true,path=' + path,{
         success: function(res){
-          renderFolderListTable(res.folderList,res.fileList);
+          var folderPath = $('#folderPath').attr('data-value');
+          folderChange(folderPath)
           if(file.type.match(/video/i)){
             importStatusShow();
-            importStatusReload();
+            setTimeout(importStatusReload,100);
           }
         }
       });

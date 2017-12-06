@@ -104,15 +104,15 @@
     "winston": "^2.4.0"
   },
   "scripts": {
-    "postinstall": "browserify -t [ browserify-css --minify=true --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js && uglifyjs admin/public/bundle.js -o admin/public/bundle.js",
+    "postinstall": "browserify -t [ browserify-css --minify=true --output admin/public/bundle/bundle.css ] admin/js/main.js -o admin/public/bundle/bundle.js && uglifyjs admin/public/bundle/bundle.js -o admin/public/bundle/bundle.js",
     "admin": "node admin",
-    "bundle": "browserify -t [ browserify-css --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js",
+    "bundle": "browserify -t [ browserify-css --output admin/public/bundle/bundle.css ] admin/js/main.js -o admin/public/bundle/bundle.js",
     "cluster": "node cluster",
     "prism": "node prism",
     "test": "node ./node_modules/mocha/bin/mocha ./test/*.test.js",
     "start": "node app",
     "store": "node store",
-    "watch": "watchify -t [ browserify-css --output admin/public/bundle.css ] admin/js/main.js -o admin/public/bundle.js -v"
+    "watch": "watchify -t [ browserify-css --output admin/public/bundle/bundle.css ] admin/js/main.js -o admin/public/bundle/bundle.js -v"
   },
   "devDependencies": {
     "browserify": "^14.5.0",

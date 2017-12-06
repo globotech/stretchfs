@@ -1,25 +1,59 @@
 /* global
- checkedFiles: true,
- checkedFolders: true,
- checkedCount: true,
+ checked: true
  bootbox: false
 */
-var checkedFiles = [];
-var checkedFolders = [];
-var checkedCount = 0;
 
-var folderListTable = $('#folderList');
+
+/**
+ * Checked files
+ * @type {object}
+ */
+var checked = window.fileChecked = {
+  files: [],
+  folders: [],
+  count: 0
+}
 
 var updateCheckedCount = function(){
-  checkedCount = checkedFiles.length + checkedFolders.length;
-  $('#checkedCount').text(checkedCount);
+  checked.count = checked.folders.length + checked.files.length;
+  $('#checkedCount').text(checked.count);
   var submitButton = $('#actionSubmitButton');
-  if(0 === checkedCount){
+  if(0 === checked.count){
     submitButton.attr('disabled','disabled');
   }
   else{
     submitButton.removeAttr('disabled');
   }
+}
+
+var applyCheckboxListeners = function(){
+  var folderListTable = $('#folderList');
+  var folderCheckboxChange = function(){
+    var id = $(this).attr('value');
+    var index = checked.folders.indexOf(id)
+    if($(this).is(':checked') && -1 === index){
+      checked.folders.push(id);
+    } else if(!$(this).is(':checked') && -1 !== index) {
+      checked.folders.splice(index,1);
+    }
+    updateCheckedCount();
+  }
+  var fileCheckboxChange = function(){
+    var id = $(this).attr('value');
+    var index = checked.files.indexOf(id)
+    if($(this).is(':checked') && -1 === index){
+      checked.files.push(id);
+    } else if(!$(this).is(':checked') && -1 !== index) {
+      checked.files.splice(index,1);
+    }
+    updateCheckedCount();
+  }
+  //remove any existing listeners
+  folderListTable.off('change','input.folderCheckbox',folderCheckboxChange);
+  folderListTable.off('change','input.fileCheckbox',fileCheckboxChange);
+  //add new listeners
+  folderListTable.on('change','input.folderCheckbox',folderCheckboxChange);
+  folderListTable.on('change','input.fileCheckbox',fileCheckboxChange);
 }
 
 
@@ -35,13 +69,13 @@ module.exports = function(){
         var el = $(this)
         var id = el.val()
         if(el.hasClass('fileCheckbox')){
-          if(checkedFiles.indexOf(id) < 0){
-            checkedFiles.push(id);
+          if(checked.files.indexOf(id) < 0){
+            checked.files.push(id);
           }
         }
         if(el.hasClass('folderCheckbox')){
-          if(checkedFolders.indexOf(id) < 0){
-            checkedFolders.push(id);
+          if(checked.folders.indexOf(id) < 0){
+            checked.folders.push(id);
           }
         }
       })
@@ -50,52 +84,16 @@ module.exports = function(){
       checkboxes.each(function(){
         var el = $(this)
         var id = el.val()
+        var index = checked.files.indexOf(id)
         if(el.hasClass('fileCheckbox')){
-          checkedFiles.splice(checkedFiles.indexOf(id),1);
-        }
-        if(el.hasClass('folderCheckbox')){
-          checkedFolders.splice(checkedFolders.indexOf(id),1);
+          checked.files.splice(index,1);
+        } else if(el.hasClass('folderCheckbox')){
+          checked.folders.splice(index,1);
         }
       })
     }
     updateCheckedCount();
   })
-  var fileCheckboxChange = function(){
-    var id = $(this).attr('value');
-    if($(this).is(':checked')){
-      if(checkedFiles.indexOf(id) < 0){
-        checkedFiles.push(id);
-      }
-    }
-    else{
-      checkedFiles.splice(checkedFiles.indexOf(id),1);
-    }
-    updateCheckedCount();
-  }
-  var folderCheckboxChange = function(){
-    var id = $(this).attr('value');
-    if($(this).is(':checked')){
-      if(checkedFolders.indexOf(id) < 0){
-        checkedFolders.push(id);
-      }
-    }
-    else{
-      checkedFolders.splice(checkedFolders.indexOf(id),1);
-    }
-    updateCheckedCount();
-  }
-  var applyCheckboxListeners = function(){
-    //remove any existing listeners
-    folderListTable.off('change','input.fileCheckbox',fileCheckboxChange);
-    folderListTable.off('change','input.folderCheckbox',folderCheckboxChange);
-    //add new listeners
-    folderListTable.on('change','input.fileCheckbox',fileCheckboxChange);
-    folderListTable.on('change','input.folderCheckbox',folderCheckboxChange);
-  }
-  //focus the folder create input box when the modal loads
-  $('#folderCreateModal').on('shown.bs.modal',function(){
-    $('#folderCreateName').focus();
-  });
   //update action type submit color
   var updateActionTypeSubmitColor = function(action){
     var el = null;
@@ -136,43 +134,15 @@ module.exports = function(){
         ' and folders? <span style="color: red;">This CANNOT BE UNDONE!</span>',
         function(result){
           if(true === result){
-            $.ajax('/folder/remove',{
+            $.ajax('/file/remove?json=true',{
               contentType: 'application/json',
               type: 'POST',
               data: JSON.stringify({
-                checkedFolders: checkedFolders,
-                checkedFiles: checkedFiles
+                remove: checked.folders.concat(checked.files)
               }),
               success: function(res){
                 if('ok' === res.status){
-                  var checkboxes = $('table.table td input');
-                  checkboxes.each(function(){
-                    var el = $(this);
-                    var val = el.val();
-                    var tableRow = el.closest('tr');
-                    //verify we want to remove the row
-                    if(
-                      (
-                        el.hasClass('fileCheckbox') &&
-                        checkedFiles.indexOf(val) >= 0
-                      ) ||
-                      (
-                        el.hasClass('folderCheckbox') &&
-                        checkedFolders.indexOf(val) >= 0
-                      )
-                    )
-                    {
-                      //need to remove the selections
-                      if(el.hasClass('fileCheckbox'))
-                        checkedFiles.splice(checkedFiles.indexOf(val),1)
-                      if(el.hasClass('folderCheckbox'))
-                        checkedFolders.splice(checkedFolders.indexOf(val),1)
-                      tableRow.find('td').fadeOut(1000,function(){
-                        tableRow.remove();
-                        updateCheckedCount();
-                      })
-                    }
-                  })
+                  folderChange($('#folderPath').attr('data-value'))
                 }
                 else{
                   bootbox.alert('ERROR: ' + res.message);
@@ -197,5 +167,25 @@ module.exports = function(){
  * Update checked items
  */
 window.updateCheckedCount = function(){
+  updateCheckedCount()
+}
+
+
+/**
+ * Apply checkbox listeners
+ */
+window.applyCheckboxListeners = function(){
+  updateCheckedCount()
+  applyCheckboxListeners()
+}
+
+
+/**
+ * Clear checked
+ */
+window.clearChecked = function(){
+  $('#folderList').children('input[type=checkbox]').prop('checked',false)
+  checked.files = []
+  checked.folders = []
   updateCheckedCount()
 }

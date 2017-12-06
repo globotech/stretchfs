@@ -29,14 +29,13 @@ module.exports = function(){
     moveFolderSelect.empty();
     folderRows.forEach(function(row){moveFolderSelect.append(row);})
   }
-  var fileMoveAction = function(folderIdList,fileIdList,destinationFolderId){
-    $.ajax('/folder/moveTo',{
+  var fileMoveAction = function(folderList,fileList,destinationFolderPath){
+    $.ajax('/file/moveTo',{
       contentType: 'application/json',
       type: 'POST',
       data: JSON.stringify({
-        folderIdList: folderIdList,
-        fileIdList: fileIdList,
-        destinationFolderId: destinationFolderId
+        folderIdList: folderList.concat(fileList),
+        destinationPath: destinationFolderPath
       }),
       success: function(res){
         if('ok' === res.status){
@@ -51,15 +50,14 @@ module.exports = function(){
       }
     });
   }
-  var fileMove = function(folderIdList,fileIdList){
+  var fileMove = function(folderList,fileList){
     //ask the server for a list of folders we can use submitting the folderId
     //list as a filter
-    $.ajax('/folder/moveList',{
+    $.ajax('/file/moveList',{
       contentType: 'application/json',
       type: 'POST',
       data: JSON.stringify({
-        folderIdList: folderIdList,
-        fileIdList: fileIdList
+        skip: folderList.concat(fileList)
       }),
       success: function(res){
         if('ok' === res.status){
@@ -70,7 +68,7 @@ module.exports = function(){
           })
           //register event to handle move submission
           $('#moveSubmit').one('click',function(){
-            fileMoveAction(folderIdList,fileIdList,$('#moveFolderSelect').val())
+            fileMoveAction(folderList,fileList,$('#moveFolderSelect').val())
           })
         } else {
           bootbox.alert('ERROR: ' + res.message);
