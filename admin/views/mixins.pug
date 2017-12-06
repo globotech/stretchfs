@@ -12,7 +12,7 @@ mixin browseHeader()
 
 
 mixin fileListHeader(folderList)
-  #header(style='height: 95px;')
+  #header(style='height: 40px;')
     .pull-right
       .pull-left
         form.form-inline#tableSearch(role='form', action='', method='get')
@@ -26,8 +26,5 @@ mixin fileListHeader(folderList)
           span.glyphicon.glyphicon-download
           span  Import File(s)
         div.text-muted(style='font-size: 11px; color: #999') or use CTL+I
-    //.clear-both
-    h5
-      a(href='/')
-        span= appTitle
+    .clearfix
 
