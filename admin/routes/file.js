@@ -14,6 +14,7 @@ var temp = require('temp')
 var through2 = require('through2')
 
 var couch = require('../../helpers/couchbase')
+var logger = require('../../helpers/logger')
 var promiseWhile = require('../../helpers/promiseWhile')
 
 var fileHelper = require('../helpers/file')
@@ -337,6 +338,40 @@ exports.listAction = function(req,res){
     .catch(function(err){
       console.log(err)
       req.flash('error','Failed to remove item ' + err.message)
+    })
+}
+
+
+/**
+ * Export files via ajax
+ * @param {object} req
+ * @param {object} res
+ */
+exports.export = function(req,res){
+  //export files
+  P.try(function(){
+    return req.body.fileList || []
+  })
+    .map(function(path){
+      var fileKey = couch.schema.file(path)
+      return cb.getAsync(fileKey)
+        .then(function(result){
+          return result.value
+        })
+    })
+    .then(function(results){
+      res.json({
+        status: 'ok',
+        message: 'Files exported',
+        baseUrl: config.admin.baseUrl,
+        fileList: results
+      })
+    })
+    .catch(function(err){
+      console.log(err.stack)
+      logger.log('File export failed ' + err.message)
+      res.status(500)
+      res.render('error',{error: err.message})
     })
 }
 

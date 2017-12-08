@@ -20,10 +20,10 @@ module.exports = function(){
         var urlColumn = null;
         if('video' === file.type){
           urlColumn = $('<td>' + res.baseUrl + '/file/embed/' +
-            file.jobHandle + '</td>')
+            file.handle + '</td>')
         } else {
-          urlColumn = $('<td>' + res.baseUrl + '/file/view/' +
-            file.id + '</td>')
+          urlColumn = $('<td>' + res.baseUrl + '/file/detail?handle=' +
+            file.handle + '</td>')
         }
         mainRow.append(fileColumn)
         mainRow.append(typeColumn)
@@ -37,7 +37,7 @@ module.exports = function(){
     fileExportTableBody.empty();
     tableRows.forEach(function(row){fileExportTableBody.append(row);})
   }
-  var fileExport = function(fileId){
+  var fileExport = function(fileList){
     //first we need to ask the server for all the data about the new folder
     //such as the folder list, file list, and file tree so we can build the
     //breadcrumb
@@ -45,7 +45,7 @@ module.exports = function(){
       contentType: 'application/json',
       type: 'POST',
       data: JSON.stringify({
-        fileId: fileId
+        fileList: fileList
       }),
       success: function(res){
         if('ok' === res.status){
@@ -64,7 +64,7 @@ module.exports = function(){
   $('#actionSubmitButton').on('click',function(){
     var val = $('#actionType').val();
     if('export' === val){
-      fileExport(checkedFiles);
+      fileExport(window.fileChecked.files);
     }
   })
 }

@@ -28,6 +28,7 @@ window.fileManager = function(){
   exports.action()
   exports.fileDetail()
   exports.fileEdit()
+  exports.fileExport()
   exports.fileImport()
   exports.fileRemove()
   exports.folderChange()

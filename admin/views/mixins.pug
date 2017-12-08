@@ -11,13 +11,13 @@ mixin browseHeader()
         span= app.title
 
 
-mixin fileListHeader(folderList)
+mixin fileListHeader()
   #header(style='height: 40px;')
     .pull-right
       .pull-left
         form.form-inline#tableSearch(role='form', action='', method='get')
           .form-group
-            a.btn.btn-success(data-toggle='modal',data-target='#folderCreateModal')
+            a.btn.btn-success(data-toggle='modal', data-target='#folderCreateModal')
               span.glyphicon.glyphicon-plus
               span  Create Folder
         div.text-muted(style='font-size: 11px; color: #999') or use CTL+E
