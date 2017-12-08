@@ -168,8 +168,11 @@ exports.save = function(req,res){
   var form = req.body
   var inventoryKey = form.id || couch.schema.inventory(form.hash)
   var timestamp = new Date()
-  cb.getAsync(inventoryKey)
-    .then(function(result){
+  P.all([
+    cb.getAsync(inventoryKey),
+    inv.ruleSet()
+  ])
+    .spread(function(result,ruleSet){
       var rv = formHelper.compare(result.value,form,[
         'hash',
         'mimeExtension',
@@ -178,6 +181,29 @@ exports.save = function(req,res){
         'size',
         'desiredMap'
       ],timestamp)
+      var rules = []
+      rv.form.rule.forEach(function(r){
+        var type = Object.keys(r)[0]
+        var val = r[type]
+        switch(ruleSet[type]){
+        case 'int':
+          val = +val
+          break;
+        case 'bool':
+          val = ('on' === val)
+          break;
+        case 'arr':
+          //TODO add support for arrays
+        default:
+          console.error('unsupported type '+ruleSet[type]+' for '+type)
+        }
+        rules.push({type:type,value:val})
+      })
+      if((0<rules.length) && (rv.doc.rules.length !== rules.length)){
+        //TODO add more checks for same length but different contents
+        rv.doc.rules = rules
+        rv.updated = true
+      }
       if(rv.updated){
         rv.doc.copies = rv.doc.map.length
         rv.doc.desiredCopies = rv.doc.desiredMap.length

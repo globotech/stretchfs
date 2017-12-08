@@ -35,7 +35,9 @@ var changeRule = function(e){
     case 'int':
     case 'bool':
     case 'arr':
-      tgtInput.replaceWith($('.'+typeClass).clone().removeClass(typeClass));
+      var src = $('.'+typeClass).clone();
+      src.removeClass(typeClass);
+      tgtInput.replaceWith(src);
       break;
     default:
       console.error('ERROR: unknown ruleSetDatatype [' + ruleSetDatatype + ']');
@@ -54,6 +56,13 @@ var mapEvents = function(){
 
 
 /**
+ * Export mapEvents
+ * @type {mapEvents}
+ */
+window.mapEvents = mapEvents;
+
+
+/**
  * Inventory Edit
  */
 var inventoryEdit = function(){
@@ -61,22 +70,30 @@ var inventoryEdit = function(){
   $.getJSON('/inventory/listRuleTypes')
     .done(function(jqXHR){
       if(jqXHR.isFulfilled) window.ruleSet = jqXHR.fulfillmentValue;
-      mapEvents();
       $('#ruleAdd').click(function(){
         if(!window.ignoreClick){
           window.ignoreClick = true;
           var rule = $('.ruleGroup').last();
           var _clone = rule.clone();
-          _clone.find('div.ruleType').replaceWith(
-            $('.addNew div.ruleType').clone()
-          );
-          _clone.find('.ruleData').replaceWith($('.addNew .ruleData').clone());
+          var cloneType = $('.addNew .ruleType').clone();
+          var cloneValue = $('.addNew .ruleData').clone();
+          //console.log(cloneType,cloneValue);
+          cloneValue[0].name = 'rule[' +
+            ($('.ruleGroup').index(rule)+1) +
+            '][' +
+            ($('.addNew .ruleType').val()) +
+            ']'
+          ;
+          _clone.find('.ruleType').replaceWith(cloneType);
+          _clone.find('.ruleData').replaceWith(cloneValue);
           rule.after(_clone);
+          $('.ruleGroup').last().find('.ruleType').get(0).selectedIndex = $('.addNew .ruleType').get(0).selectedIndex;
           mapEvents();
           //TODO: reset the addNew template fields to untouched state?
           window.ignoreClick = false;
         }
       });
+      mapEvents();
     })
     .fail(function(jqXHR,textStatus,error){
       var err = textStatus + ', ' + error;
@@ -91,4 +108,4 @@ var inventoryEdit = function(){
  * Export inventory edit
  * @type {inventoryEdit}
  */
-window.inventoryEdit = inventoryEdit
+window.inventoryEdit = inventoryEdit;

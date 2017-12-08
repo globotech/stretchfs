@@ -1,16 +1,14 @@
 extends ../layout
-block append css
-  link(rel='stylesheet', type='text/css', href='/css/prismClasses.css')
 block content
   script.
     $(document).ready(function(){
       inventoryEdit()
     })
   .hidden
-    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_int(type='text', name='rule[]')
-    input.ruleData.checkbox-inline.checkbox-24.t_bool(type='checkbox', name='rule[]')
-    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_arr(type='text', name='rule[]')
-    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_unknown(type='text', name='rule[]')
+    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_int(type='text')
+    input.ruleData.checkbox-inline.checkbox-24.t_bool(type='checkbox', value='on')
+    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_arr(type='text')
+    input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8.t_unknown(type='text')
   .container
     div.btn.btn-group.btn-group-justified.bg-info
       h1 Inventory Edit
@@ -55,10 +53,10 @@ block content
                 span.glyphicon.glyphicon-plus.margin-r-8
                 | Add New
               span.addNew.ruleItem
-                select.selectpicker.ruleType(data-width='auto')
+                select.ruleType.mono(data-width='auto')
                   each v,ruleType in ruleSet
                     option= ruleType
-                input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]')
+                input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text')
             .panel-body.shrinkwrap
               each r,i in summary.rules
                 .list-group.shrinkwrap.ruleGroup
@@ -70,18 +68,19 @@ block content
                         span.glyphicon.glyphicon-chevron-down.margin-lr-8
                     a.btn.btn-xs.btn-danger.margin-lr-8.ruleDel
                       span.glyphicon.glyphicon-trash
-                    select.selectpicker.ruleType(data-width='auto')
+                    select.ruleType.mono(data-width='auto')
                       each v,ruleType in ruleSet
                         option(selected=(ruleType===r.type))= ruleType
+                    - var ruleName = 'rule['+i+'][' + r.type+ ']'
                     case ruleSet[r.type]
                       when 'int'
-                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=r.value)
+                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name=ruleName, value=r.value)
                       when 'bool'
-                        input.ruleData.checkbox-inline.checkbox-24(type='checkbox', name='rule[]', value=ruleSet[r.type], checked=(!!r.value))
+                        input.ruleData.checkbox-inline.checkbox-24(type='checkbox', name=ruleName, value='on', checked=(!!r.value))
                       when 'arr'
-                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=r.value.join(','))
+                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name=ruleName, value=r.value.join(','))
                       default
-                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name='rule[]', value=ruleSet[r.type])
+                        input.ruleData.mono.shrinkwrap.slam-l.padding-lr-8(type='text', name=ruleName, value=ruleSet[r.type])
       .form-group
         label.control-label.col-sm-2
           span.badge.mono.margin-lr-8= summary.copies || 0
