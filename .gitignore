@@ -9,4 +9,4 @@ config.*.js
 /test/assets/data
 cluster.json
 admin/public/tmp
-bundle.*
+bundle.js

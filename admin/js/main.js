@@ -54,6 +54,3 @@ require('videojs-persistvolume')
 videojs.registerPlugin('contextmenu',require('videojs-contextmenu'))
 videojs.registerPlugin('contextmenuUI',require('videojs-contextmenu-ui'))
 require('./videojsDownloadButton')
-
-//css
-require('./main.css')
