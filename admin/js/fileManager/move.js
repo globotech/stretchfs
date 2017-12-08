@@ -14,7 +14,9 @@ module.exports = function(){
   var moveFolderSelect = $('#moveFolderSelect');
   var moveModal = $('#moveModal');
   var renderFileMove = function(res){
-    var folderRows = [];
+    var folderRows = [
+      $('<option value=",">Home</option>')
+    ];
     var folderList = res.folderList;
     if(folderList.length){
       folderList.forEach(function(folder){

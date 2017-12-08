@@ -428,9 +428,13 @@ exports.moveTo = function(req,res){
       var fileKey = couch.schema.file(path)
       var fileKeyNew = couch.schema.file(newPath)
       var file
+      //dont act on files that arent moving
+      if(newPath === path) return
       return cb.getAsync(fileKey)
         .then(function(result){
           file = result
+          //update new path
+          file.value.path = newPath
           //create the new file
           return cb.upsertAsync(fileKeyNew,file.value)
         })
