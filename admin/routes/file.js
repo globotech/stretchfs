@@ -413,49 +413,39 @@ exports.moveList = function(req,res){
  * @param {object} res
  */
 exports.moveTo = function(req,res){
-  var folderIdList = req.body.folderIdList || []
-  var fileIdList = req.body.fileIdList || []
-  var destinationFolderId = +req.body.destinationFolderId
-  //so basically all that needs done here is that we update all the files and
-  //folders that match the checked folders and update them to the new id
-  P.all([
-    Folder.update(
-      {
-        FolderId: destinationFolderId
-      },
-      {
-        where: {
-          id: folderIdList
-        },
-        fields: ['FolderId'],
-        validate: false,
-        hooks: false,
-        sideEffects: false
-      }
-    ),
-    File.update(
-      {
-        FolderId: destinationFolderId
-      },
-      {
-        where: {
-          id: fileIdList
-        },
-        fields: ['FolderId'],
-        validate: false,
-        hooks: false,
-        sideEffects: false
-      }
-    )
-  ])
-    .then(function(result){
+  var folderList = req.body.folderList || []
+  var fileList = req.body.fileList || []
+  var destinationPath = req.body.destinationPath
+  var destination = fileHelper.decode(destinationPath)
+  P.try(function(){
+    return folderList.concat(fileList)
+  })
+    .each(function(path){
+      var filePathName = fileHelper.decode(path).pop()
+      var destPath = fileHelper.recode(destination)
+      destPath.push(filePathName)
+      var newPath = fileHelper.encode(destPath)
+      var fileKey = couch.schema.file(path)
+      var fileKeyNew = couch.schema.file(newPath)
+      var file
+      return cb.getAsync(fileKey)
+        .then(function(result){
+          file = result
+          //create the new file
+          return cb.upsertAsync(fileKeyNew,file.value)
+        })
+        .then(function(){
+          //remove the old file
+          return cb.removeAsync(fileKey,{cas: file.cas})
+        })
+    })
+    .then(function(){
       res.json({
         status: 'ok',
         message: 'Files and folders moved',
-        destinationFolderId: destinationFolderId,
-        folderIdList: folderIdList,
-        fileIdList: fileIdList,
-        result: result
+        destinationPath: destinationPath,
+        folderList: folderList,
+        fileList: fileList
       })
     })
     .catch(function(err){

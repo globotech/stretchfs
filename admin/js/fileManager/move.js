@@ -19,7 +19,7 @@ module.exports = function(){
     if(folderList.length){
       folderList.forEach(function(folder){
         var row = $(
-          '<option value="' + folder.id + '">' + folder.name +'</option>');
+          '<option value="' + folder.path + '">' + folder.name +'</option>');
         folderRows.push(row)
       })
     } else {
@@ -34,12 +34,13 @@ module.exports = function(){
       contentType: 'application/json',
       type: 'POST',
       data: JSON.stringify({
-        folderIdList: folderList.concat(fileList),
+        folderList: folderList,
+        fileList: fileList,
         destinationPath: destinationFolderPath
       }),
       success: function(res){
         if('ok' === res.status){
-          folderChange($('#parentFolderId').attr('data-value'))
+          folderChange(destinationFolderPath)
           moveModal.modal('hide')
           moveModal.on('hidden.bs.modal',function(){
             moveFolderSelect.empty()
@@ -80,7 +81,7 @@ module.exports = function(){
   $('#actionSubmitButton').on('click',function(){
     var val = $('#actionType').val();
     if('move' === val){
-      fileMove(checkedFolders,checkedFiles);
+      fileMove(window.fileChecked.folders,window.fileChecked.files);
     }
   })
 }

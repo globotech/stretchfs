@@ -14,6 +14,9 @@ var cb = couch.stretchfs()
  * @return {string}
  */
 var encode = function(path){
+  if('number' === typeof path){
+    throw new Error('Path to encode cannot be a number: ' + path,path)
+  }
   if('string' === typeof path && path.match(/,/)) return path
   if(!path instanceof Array) path = [path]
   path = path.filter(function(el){return (el)})
@@ -84,6 +87,17 @@ exports.decode = decode
 
 
 /**
+ * Recode a path so its a new array
+ * @param {array} path
+ * @return {string}
+ */
+exports.recode = function(path){
+  if(!(path instanceof Array)) path = decode(path)
+  return decode(encode(path))
+}
+
+
+/**
  * Find folders
  * @param {string} path
  * @param {array} skip
@@ -94,9 +108,9 @@ exports.findFolders = function(path,skip){
   path = decode(path)
   var exp
   if(path.length){
-    exp = ',' + escapeRegexString(path.join(',')) + ',[^,]+,$'
+    exp = '^,' + escapeRegexString(path.join(','))
   } else{
-    exp = ',[^,]+,$'
+    exp = ',.*,$'
   }
   exp = '^' + couch.schema.file(exp)
   var qstring = 'SELECT META().id AS _id, ' + tname + '.* FROM ' + tname +
