@@ -795,7 +795,7 @@ exports.detail = function(req,res){
  * @return {*}
  */
 exports.jobUpdate = function(req,res){
-  var handle = req.bod.handle
+  var handle = req.body.handle
   debug('got job update',req.body)
   if(!req.body || !req.body.handle){
     res.json({error: 'no handle sent'})
