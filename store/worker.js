@@ -21,6 +21,7 @@ var sslOptions = {
 }
 var server = https.createServer(sslOptions,app)
 var httpServer = http.createServer(app)
+var httpsServer = https.createServer(sslOptions,app)
 //if the config calls for additional servers set them up now
 var listenServer = []
 if(config.store.listen && config.store.listen.length){
@@ -50,6 +51,7 @@ var routes = require('./routes')
 //make some promises
 P.promisifyAll(server)
 P.promisifyAll(httpServer)
+P.promisifyAll(httpsServer)
 
 //access logging
 if(config.store.accessLog){
@@ -115,6 +117,9 @@ exports.start = function(done){
       return httpServer.listenAsync(+config.store.httpPort,config.store.host)
     })
     .then(function(){
+      return httpsServer.listenAsync(+config.store.httpsPort,config.store.host)
+    })
+    .then(function(){
       return listenServer
     })
     .each(function(listen){
@@ -134,6 +139,7 @@ exports.stop = function(done){
   //dont wait for this since it will take to long and we are stopping now
   server.close()
   httpServer.close()
+  httpsServer.close()
   listenServer.forEach(function(listen){
     listen.server.close()
   })

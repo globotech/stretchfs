@@ -146,21 +146,21 @@ config.$load({
   //admin
   admin: {
     enabled: false,
-    port: 5973,
+    port: 5970,
     host: null,
     title: 'StretchFS',
     tmpFolder: __dirname + '/admin/public/tmp',
-    baseUrl: 'http://localhost:5973',
+    baseUrl: 'http://localhost:5970',
     importMaxFileSize: 2000000000, //2gb
     importMaxFileCount: 10,
     prism: {
       callback: {
         method: 'post',
-        url: 'http://localhost:5973/file/jobUpdate',
+        url: 'http://localhost:5970/file/jobUpdate',
         rejectUnauthorized: false
       },
       referrer: ['localhost'],
-      domain: 'localhost:5970',
+      domain: 'localhost:5973',
       token: 'changeme',
       host: 'localhost',
       port: 5971,
@@ -183,7 +183,8 @@ config.$load({
     name: 'prism1',
     accessLog: false,
     port: 5971,
-    httpPort: 5970,
+    httpPort: 5973,
+    httpsPort: 5974,
     host: null,
     /*
     listen: [
@@ -235,7 +236,8 @@ config.$load({
     defaultRoles: ['active','online','read','write'],
     accessLog: false,
     port: 5972,
-    httpPort: 5974,
+    httpPort: 5975,
+    httpsPort: 5976,
     host: null,
     /*
     listen: [
