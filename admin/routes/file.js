@@ -115,7 +115,7 @@ var jobUpdate = function(handle,data,handleCompletion){
       file.value.job.lastLogUpdate = data.lastLogUpdate
       if(data.completedAt)
         file.value.job.completedAt = data.completedAt
-      if(!handleCompletion || 'complete' !== file.value.job.status) return
+      if(!(handleCompletion && 'complete' === file.value.job.status)) return
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
