@@ -114,6 +114,7 @@ var jobUpdate = function(handle,data){
       if(data.completedAt)
         file.value.job.completedAt = data.completedAt
       if('complete' !== file.value.job.status) return
+      if('finished' === file.value.job.status) return
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
