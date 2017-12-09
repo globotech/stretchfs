@@ -795,12 +795,13 @@ exports.detail = function(req,res){
  * @return {*}
  */
 exports.jobUpdate = function(req,res){
+  var handle = req.bod.handle
   debug('got job update',req.body)
   if(!req.body || !req.body.handle){
     res.json({error: 'no handle sent'})
     return
   }
-  jobUpdate(req.body.handle,req.body,true)
+  jobUpdate(handle,req.body,true)
     .then(function(){
       res.json({success: 'Update successful'})
     })
