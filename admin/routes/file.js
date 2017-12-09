@@ -121,6 +121,9 @@ var jobUpdate = function(handle,data,handleCompletion){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
       }
+      //update status to complete
+      file.value.status = 'ok'
+      file.value.job.status = 'finished'
       //remove tmp file
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
       //import the files to oose
@@ -169,8 +172,6 @@ var jobUpdate = function(handle,data,handleCompletion){
     })
     .then(function(result){
       file.value.resource = result || {}
-      file.value.status = 'ok'
-      file.value.job.status = 'finished'
       if(!file.value.hash && result && result.file){
         file.value.hash = result.file
       }
