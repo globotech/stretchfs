@@ -45,10 +45,13 @@ var registerFolderChangeEvents = function(elementList){
 }
 
 //folder change, move to another folder without reloading
+var folderChangeInProgress = false
 var folderChange = function(folderPath){
   //first we need to ask the server for all the data about the new folder
   //such as the folder list, file list, and file tree so we can build the
   //breadcrumb
+  if(folderChangeInProgress) return
+  folderChangeInProgress = true
   clearChecked()
   $.ajax('/file/list?json=true&path=' + folderPath,{
     success: function(res){
@@ -74,6 +77,10 @@ var folderChange = function(folderPath){
       } else {
         bootbox.alert('ERROR: ' + res.message);
       }
+      folderChangeInProgress = false
+    },
+    error: function(){
+      folderChangeInProgress = false
     }
   });
 }
