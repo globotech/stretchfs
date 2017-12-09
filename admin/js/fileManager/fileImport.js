@@ -16,23 +16,25 @@ module.exports = function(){
   );
   //file import
   var fileImport = function(){
-    fileImportSubmitButtonLadda.ladda('start');
+    fileImportSubmitButtonLadda.start();
+    var folderPath = $('#folderPath').attr('data-value');
     // pretty sure the problem is here
     $.ajax('/file/import',{
       contentType: 'application/json',
       type: 'POST',
       data: JSON.stringify({
-        folderId: $('#parentFolderId').attr('data-value'),
-        urlText: $('#fileImportUrls').val(),
-        recaptchaResponse: grecaptcha.getResponse()
+        folderPath: folderPath,
+        urlText: $('#fileImportUrls').val()
       }),
       success: function(res){
-        fileImportSubmitButtonLadda.ladda('stop');
+        fileImportSubmitButtonLadda.stop();
         if('ok' === res.status){
           $('#fileImportModal').modal('hide');
           importStatusShow();
-          importStatusReload();
-          renderFolderListTable(res.folder.Folders,res.folder.Files);
+          setTimeout(function(){
+            importStatusReload();
+          },250);
+          folderChange(folderPath);
         } else {
           bootbox.alert('ERROR: ' + res.message);
         }

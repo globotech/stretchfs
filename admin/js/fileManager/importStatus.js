@@ -18,6 +18,8 @@ module.exports = function(){
   var importStatusHideButton = $('#importStatusHideButton');
   var importStatusShowButton = $('#importStatusShowButton');
   var importStatusReloadButton = $('#importStatusReloadButton');
+  var importStatusButtonIcon = $('#importStatusButtonIcon');
+  var importStatusButtonText = $('#importStatusButtonText');
 
   var importStatusButtonLadda
   $(document).ready(function(){
@@ -28,28 +30,7 @@ module.exports = function(){
 
   var importStatusReloading = false;
 
-
-  /**
-   * Show import status table
-   */
-  var importStatusShow = function(){
-    importStatusSmallBox.hide();
-    importStatusFullBox.slideDown();
-  }
-
-
-  /**
-   * Hide import status
-   */
-  var importStatusHide = function(){
-    importStatusFullBox.slideUp(300,function(){
-      importStatusSmallBox.show();
-    });
-  }
-
   var setLoadingState = function(){
-    var importStatusButtonIcon = $('#importStatusButtonIcon');
-    var importStatusButtonText = $('#importStatusButtonText');
     //change the status button to reloading and disable the reload button
     importStatusReloadButton.attr('disabled',true);
     importStatusButton.removeClass('btn-success');
@@ -57,57 +38,22 @@ module.exports = function(){
     importStatusButtonText.text('Loading');
     importStatusButtonIcon.removeClass('glyphicon-ok');
     importStatusButtonIcon.addClass('glyphicon-minus');
-    importStatusButtonLadda.ladda('start');
+    importStatusButtonLadda.start();
   }
   var setErrorState = function(message){
-    var importStatusButtonIcon = $('#importStatusButtonIcon');
-    var importStatusButtonText = $('#importStatusButtonText');
     importStatusButton.removeClass('btn-warning');
     importStatusButton.addClass('btn-danger');
     importStatusButtonIcon.removeClass('glyphicon-minus');
     importStatusButtonIcon.addClass('glyphicon-remove');
     importStatusButtonText.attr('data-message',message);
     importStatusButtonText.text('Error');
-    importStatusButtonLadda.ladda('stop');
+    importStatusButtonLadda.stop();
     importStatusReloadButton.removeAttr('disabled');
-  }
-  /**
-   * Reload the import status
-   *   this is the main table load and render function that will get called by
-   *   different parts of the system. it is going to use a singleton to stop
-   *   users from being able to stack calls by hammering the reload button, even
-   *   scripts
-   * @return {boolean}
-   */
-  var importStatusReload = function(){
-    //silently ignore stacked requests
-    if(true === importStatusReloading) return true;
-    setLoadingState();
-    //okay now we are in a loading state lets ask the server for
-    // a list of imports
-    $.ajax('/file/importList',{
-      contentType: 'application/json',
-      type: 'POST',
-      success: function(res){
-        if('ok' === res.status){
-          if(!res.importList || !res.importList.length){
-            setTableEmpty();
-            setCompleteState(false);
-          } else {
-            renderImportList(res.importList);
-            setCompleteState(true);
-          }
-        } else {
-          setErrorState(res.message)
-        }
-      }
-    });
   }
   var autoTimerInterval
   var autoTimerTimeout
   var autoPauseTimeout
   var startAutoTimer = function(timeoutSeconds,interval,autoPauseSeconds){
-    var importStatusButtonText = $('#importStatusButtonText');
     if(!timeoutSeconds) timeoutSeconds = 30;
     if(!autoPauseSeconds) autoPauseSeconds = timeoutSeconds * 10;
     if(!interval) interval = 1000;
@@ -144,20 +90,16 @@ module.exports = function(){
    */
   var setCompleteState = function(liveImports){
     if(!liveImports) liveImports = false;
-    var importStatusButtonIcon = $('#importStatusButtonIcon');
-    var importStatusButtonText = $('#importStatusButtonText');
-    importStatusButtonLadda.ladda('stop');
+    importStatusButtonLadda.stop();
     importStatusReloadButton.removeAttr('disabled');
     if('play' === importStatusButton.attr('data-auto')){
-      setPlayState(!!liveImports ? 5 : 30);
+      setPlayState(liveImports ? 5 : 30);
     } else {
       setPauseState();
     }
   }
   var setPlayState = function(timeoutSeconds){
     if(!timeoutSeconds) timeoutSeconds = 30;
-    var importStatusButtonIcon = $('#importStatusButtonIcon');
-    var importStatusButtonText = $('#importStatusButtonText');
     importStatusButton.removeClass('btn-warning');
     importStatusButton.addClass('btn-success');
     importStatusButton.attr('data-auto','play');
@@ -166,8 +108,6 @@ module.exports = function(){
     startAutoTimer(timeoutSeconds);
   }
   var setPauseState = function(){
-    var importStatusButtonIcon = $('#importStatusButtonIcon');
-    var importStatusButtonText = $('#importStatusButtonText');
     importStatusButton.removeClass('btn-success');
     importStatusButton.addClass('btn-warning');
     importStatusButton.attr('data-auto','pause');
@@ -187,14 +127,14 @@ module.exports = function(){
     var rows = [];
     var importStatusTbody = $('#importStatusTbody');
     list.forEach(function(file){
-      var statusDiv = ('<div class="importFileStatus" id="import-'+ file.id
+      var statusDiv = ('<div class="importFileStatus" id="import-'+ file._id
         +'">' + '</div>');
       if('processing' === file.status){
         var percentComplete = (
-          (file.frameComplete / file.frameTotal) * 100).toFixed(2);
-        statusDiv = ('<div class="importFileStatus" id="import-'+ file.id
+          (file.job.frameComplete / file.job.frameTotal) * 100).toFixed(2);
+        statusDiv = ('<div class="importFileStatus" id="import-'+ file._id
           +'">' + '<small class="text-muted">' +
-          (file.frameDescription || file.statusDescription || 'n/a') +
+          (file.job.frameDescription || file.job.statusDescription || 'n/a') +
           '</small>' + '</div>' +
           '<div class="progress progress-striped" style="margin-bottom: 0;">' +
           '<div class="progress-bar progress-bar-info" role="progressbar" ' +
@@ -204,26 +144,78 @@ module.exports = function(){
           '</div>' +
           '<div>' +
           '<small class="text-muted">' +
-          prettyBytes(file.frameComplete)
-          + ' / ' + prettyBytes(file.frameTotal) +
+          window.prettyBytes(+(file.job.frameComplete || 0))
+          + ' / ' + window.prettyBytes(+(file.job.frameTotal || 0)) +
           '</small>' +
           '</div>' +
           '</div>');
       } else {
-        statusDiv = ('<div class="importFileStatus" id="import-'+ file.id +
+        statusDiv = ('<div class="importFileStatus" id="import-'+ file._id +
           '">' + '<small class="text-muted">' +
-          (file.frameDescription || 'n/a') + '</small>' + '</div>');
+          (file.job.frameDescription || 'n/a') + '</small>' + '</div>');
       }
       rows.push($(
         '<tr>' +
         '<td>' + file.name + '</td>' +
         '<td>' + file.mimeType + '</td>' +
-        '<td>' + file.status + '</td>' +
+        '<td>' + file.job.status + '</td>' +
         '<td>' + statusDiv + '</td>'
       ));
     })
     importStatusTbody.empty();
     rows.forEach(function(row){importStatusTbody.append(row);});
+  }
+
+
+  /**
+   * Reload the import status
+   *   this is the main table load and render function that will get called by
+   *   different parts of the system. it is going to use a singleton to stop
+   *   users from being able to stack calls by hammering the reload button, even
+   *   scripts
+   * @return {boolean}
+   */
+  var importStatusReload = window.importStatusReload = function(){
+    //silently ignore stacked requests
+    if(true === importStatusReloading) return true;
+    setLoadingState();
+    //okay now we are in a loading state lets ask the server for
+    // a list of imports
+    $.ajax('/file/importList',{
+      contentType: 'application/json',
+      type: 'POST',
+      success: function(res){
+        if('ok' === res.status){
+          if(!res.importList || !res.importList.length){
+            setTableEmpty();
+            setCompleteState(false);
+          } else {
+            renderImportList(res.importList);
+            setCompleteState(true);
+          }
+        } else {
+          setErrorState(res.message)
+        }
+      }
+    });
+  }
+
+  /**
+   * Show import status table
+   */
+  var importStatusShow = window.importStatusShow = function(){
+    importStatusSmallBox.hide();
+    importStatusFullBox.slideDown();
+  }
+
+
+  /**
+   * Hide import status
+   */
+  var importStatusHide = window.importStatusHide = function(){
+    importStatusFullBox.slideUp(300,function(){
+      importStatusSmallBox.show();
+    });
   }
   //register hide button
   importStatusHideButton.click(function(){

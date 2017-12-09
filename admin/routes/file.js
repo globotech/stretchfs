@@ -10,8 +10,10 @@ var mkdirp = require('mkdirp')
 var Password = require('node-password').Password
 var pathHelper = require('path')
 var promisePipe = require('promisepipe')
+var request = require('request')
 var temp = require('temp')
 var through2 = require('through2')
+var validator = require('validator')
 
 var couch = require('../../helpers/couchbase')
 var logger = require('../../helpers/logger')
@@ -25,6 +27,9 @@ var duplicateNameExp = /\(\d+\)$/
 
 //open some buckets
 var cb = couch.stretchfs()
+
+//make some promises
+P.promisifyAll(request)
 
 
 /**
@@ -44,7 +49,8 @@ var createFile = function(file){
     path: file.path,
     mimeType: file.mimeType,
     mimeExtension: file.mimeExtension,
-    status: 'ok',
+    status: file.status,
+    job: file.job,
     createdAt: new Date().toJSON(),
     updatedAt: new Date().toJSON()
   }
@@ -112,34 +118,52 @@ var jobUpdate = function(handle,data){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
       }
+      file.value.status = 'ok'
       file.value.job.status = 'finished'
       //remove tmp file
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
       //import the files to oose
       var resource = {}
-      return prism.jobContentExists(handle,'video.mp4')
-        .then(function(result){
-          if(!result) return
-          return prism.contentRetrieve({
-            url: prism.jobContentUrl(handle,'video.mp4'),
-            rejectUnauthorized: false
+      if('video' === file.type){
+        return prism.jobContentExists(handle,'video.mp4')
+          .then(function(result){
+            if(!result) return
+            return prism.contentRetrieve({
+              url: prism.jobContentUrl(handle,'video.mp4'),
+              rejectUnauthorized: false
+            })
           })
-        })
-        .then(function(result){
-          if(result) resource.video = result.hash
-          return prism.jobContentExists(handle,'preview.jpeg')
-        })
-        .then(function(result){
-          if(!result) return
-          return prism.contentRetrieve({
-            url: prism.jobContentUrl(handle,'preview.jpeg'),
-            rejectUnauthorized: false
+          .then(function(result){
+            if(result) resource.video = result.hash
+            return prism.jobContentExists(handle,'preview.jpeg')
           })
-        })
-        .then(function(result){
-          if(result) resource.preview = result.hash
-          file.value.resource = resource
-        })
+          .then(function(result){
+            if(!result) return
+            return prism.contentRetrieve({
+              url: prism.jobContentUrl(handle,'preview.jpeg'),
+              rejectUnauthorized: false
+            })
+          })
+          .then(function(result){
+            if(result) resource.preview = result.hash
+            file.value.resource = resource
+          })
+      } else {
+        //this code will handle import hooks for standard files
+        return prism.jobContentExists(handle,'file.' + file.value.mimeExtension)
+          .then(function(result){
+            if(result){
+              return prism.contentRetrieve({
+                url: prism.jobContentUrl(handle,'file.' +
+                  file.value.mimeExtension),
+                rejectUnauthorized: false
+              })
+                .then(function(result){
+                  file.value.hash = result.hash
+                })
+            }
+          })
+      }
     })
     .then(function(){
       if('error' !== file.value.job.status) return
@@ -237,7 +261,7 @@ var importToJob = function(url,ext,mimeType){
   var handle = ''
   var description = {
     callback: {
-      request: config.job.callback
+      request: config.admin.prism.callback
     },
     resource: [
       {
@@ -564,10 +588,12 @@ exports.upload = function(req,res){
         debug(file.filename,'successfully stored tmp file with hash',file.hash)
         if(file.mimetype.match(/^video\//i)){
           debug(file.hash,'sending to job as its audio/video')
+          file.jobFiled = true
           return sendToJob(file)
         }
         else{
           debug(file.hash,'sending directly to oose')
+          file.jobFiled = false
           return sendToStorage(file)
         }
       })
@@ -626,6 +652,10 @@ exports.upload = function(req,res){
           status: 'ok',
           createdAt: new Date().toJSON(),
           updatedAt: new Date().toJSON()
+        }
+        if(file.jobFiled){
+          fileParams.status = 'processing'
+          fileParams.job = {status: 'staged'}
         }
         return createFile(fileParams)
       })
@@ -931,6 +961,7 @@ exports.importList = function(req,res){
   var list = []
   fileHelper.findProcessing()
     .map(function(file){
+      var fileKey = file._id
       //update job details
       return prism.jobDetail(file.handle)
         .then(function(result){
@@ -940,7 +971,7 @@ exports.importList = function(req,res){
           return cb.getAsync(fileKey)
         })
         .then(function(result){
-          list.push(result)
+          list.push(result.value)
         })
     })
     .then(function(){
@@ -989,102 +1020,102 @@ exports.import = function(req,res){
   //verify import count
   new P(function(resolve,reject){
     if(urls.length < 1) reject(new Error('No imports defined.'))
-    else if(urls.length > config.main.importMaxFileCount){
+    else if(urls.length > config.admin.importMaxFileCount){
       reject(new Error('Import count cannot exceed ' +
         config.admin.importMaxFileCount))
     } else {
-      resolve()
+      resolve(urls)
     }
   })
-    .then(function(){
-      //loop through urls and create files and then create shredder jobs
-      var promises = []
-      urls.forEach(function(url){
-        var promise = new P(function(resolve,reject){
-          var fileRequest = request.get({
-            url: url,
-            timeout: 2000
-          })
-          //collect our mimetype on the response using fileType
-          fileRequest.on('response',function(fileResponse){
-            var mimeInfo
-            if(fileResponse.statusCode !== 200){
-              reject(new Error(
-                'Got an invalid response code from the import URL: ' +
-                fileResponse.statusCode
-              ))
-            } else {
-              var fileName = path.basename(url)
-              if(fileResponse.headers['content-disposition']){
-                var dispo = contentDispostion.parse(
-                  fileResponse.headers['content-disposition'])
-                if(dispo.paramters.filename) fileName = dispo.paramters.filename
-              }
-              var fileExt = path.extname(fileName)
-              fileResponse.once('data',function(chunk){
-                fileResponse.destroy()
-                mimeInfo = fileType(chunk)
-                //so if we dont get a magic number response (which we are going
-                //to add some definitions to anyway) we will go ahead and try
-                //to get the extension of the URL this is dirty but its better
-                //than denying the upload
-                if(!mimeInfo){
-                  mimeInfo = {
-                    mime: mime.getType(fileName),
-                    ext: fileExt
-                  }
-                }
-                //check the file size here
-                if(!fileResponse.headers['content-length'] ||
-                  +fileResponse.headers['content-length'] >
-                  config.admin.importMaxFileSize)
-                {
-                  reject(new Error(
-                    'Invalid content length, or file size above ' +
-                    config.main.importMaxFileSize
-                  ))
-                } else if(!mimeInfo.mime || !mimeInfo.ext){
-                  reject(new Error('Could not determine file type'))
-                } else{
-                  //here we need to figure out the mime type and the size from
-                  //the res then we should have enough to create the file
-                  //record, which we need to setup the shredder job, then maybe
-                  //this feature will be done
-                  importToJob(url,mimeInfo.ext,mimeInfo.mime)
-                    .then(function(handle){
-                      return createFile({
-                        handle: handle,
-                        name: fileName,
-                        tmp: null,
-                        hash: null,
-                        size: (+fileResponse.headers['content-length']) || 0,
-                        mimeExtension: mimeInfo.ext,
-                        mimeType: mimeInfo.mime,
-                        path: folderPath
-                      })
-                    })
-                    .then(function(){
-                      resolve()
-                    })
-                }
-              })
+    .each(function(url){
+      return new P(function(resolve,reject){
+        var fileRequest = request.get({
+          url: url,
+          timeout: 2000
+        })
+        //collect our mimetype on the response using fileType
+        fileRequest.on('response',function(fileResponse){
+          var mimeInfo
+          if(fileResponse.statusCode !== 200){
+            reject(new Error(
+              'Got an invalid response code from the import URL: ' +
+              fileResponse.statusCode
+            ))
+          }
+          else{
+            var fileName = pathHelper.basename(url)
+            if(fileResponse.headers['content-disposition']){
+              var dispo = contentDispostion.parse(
+                fileResponse.headers['content-disposition'])
+              if(dispo.paramters.filename) fileName = dispo.paramters.filename
             }
-          })
-        })
-        promises.push(promise)
-      })
-      return P.all(promises)
-        .then(function(result){
-          return folderList.folderList(folderPath,userId)
-            .then(function(folder){
-              res.json({
-                status: 'ok',
-                message: 'URLs imported successfully',
-                files: result,
-                folder: folder
-              })
+            var fileExt = pathHelper.extname(fileName)
+            fileResponse.once('data',function(chunk){
+              fileResponse.destroy()
+              mimeInfo = fileType(chunk)
+              //so if we dont get a magic number response (which we are going
+              //to add some definitions to anyway) we will go ahead and try
+              //to get the extension of the URL this is dirty but its better
+              //than denying the upload
+              if(!mimeInfo){
+                mimeInfo = {
+                  mime: mime.getType(fileName),
+                  ext: fileExt
+                }
+              }
+              //check the file size here
+              if(!fileResponse.headers['content-length'] ||
+                +fileResponse.headers['content-length'] >
+                config.admin.importMaxFileSize)
+              {
+                reject(new Error(
+                  'Invalid content length, or file size above ' +
+                  config.main.importMaxFileSize
+                ))
+              }
+              else if(!mimeInfo.mime || !mimeInfo.ext){
+                reject(new Error('Could not determine file type'))
+              } else {
+                //here we need to figure out the mime type and the size from
+                //the res then we should have enough to create the file
+                //record, which we need to setup the shredder job, then maybe
+                //this feature will be done
+                var currentPath = fileHelper.decode(folderPath)
+                currentPath.push(fileName)
+                importToJob(url,mimeInfo.ext,mimeInfo.mime)
+                  .then(function(handle){
+                    var fileParams = {
+                      handle: handle,
+                      name: fileName,
+                      tmp: null,
+                      hash: null,
+                      size: (+fileResponse.headers['content-length']) || 0,
+                      path: fileHelper.encode(currentPath),
+                      mimeType: mimeInfo.mime,
+                      mimeExtension: mimeInfo.ext,
+                      status: 'processing',
+                      job: {
+                        status: 'staged'
+                      },
+                      createdAt: new Date().toJSON(),
+                      updatedAt: new Date().toJSON()
+                    }
+                    return createFile(fileParams)
+                  })
+                  .then(function(){
+                    resolve()
+                  })
+              }
             })
+          }
         })
+      })
+    })
+    .then(function(){
+      res.json({
+        status: 'ok',
+        message: 'URLs imported successfully'
+      })
     })
     .catch(function(err){
       res.json({

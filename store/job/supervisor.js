@@ -4,7 +4,7 @@ var debug = require('debug')('stretchfs:job:supervisor')
 var fs = require('graceful-fs')
 var infant = require('infant')
 var mkdirp = require('mkdirp-then')
-var request = require('request-promise')
+var request = require('request')
 var rimraf = require('rmfr')
 
 var config = require('../../config')
@@ -24,6 +24,7 @@ var cb = couch.stretchfs()
 //make some promises
 P.promisifyAll(fs)
 P.promisifyAll(infant)
+P.promisifyAll(request)
 
 
 /**
@@ -57,10 +58,15 @@ var jobNotification = function(handle,status,statusDescription,silent){
         var req = description.callback.request
         req.json = jobResult.value
         //we want to send a notification back to our consumer
-        return request(req)
-          .catch(function(err){
-            debug('failed to issue callback request',err)
+        return new P(function(resolve){
+          var r = request(req)
+          r.on('on','response',function(result){
+            resolve(result)
           })
+          r.on('error',function(err){
+            debug('Job callback error: ' + err.message,err)
+          })
+        })
       }
     })
 }

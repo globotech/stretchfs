@@ -36,6 +36,7 @@ require('jquery-ui')
 toWindow('bootbox',require('bootbox'))
 toWindow('Dropzone',Dropzone)
 toWindow('Ladda',require('ladda'))
+toWindow('prettyBytes',require('pretty-bytes'))
 toWindow('querystring',require('qs'))
 toWindow('videojs',videojs)
 

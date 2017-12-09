@@ -225,6 +225,21 @@ exports.findDescendants = function(path){
 
 
 /**
+ * Find processing files
+ * @return {P}
+ */
+exports.findProcessing = function(){
+  var fileKey = couch.schema.file() + '%'
+  var tname = couch.getName(couch.type.stretchfs)
+  var qstring = 'SELECT META().id AS _id, ' + tname + ' .* FROM ' + tname +
+    ' WHERE META().id LIKE $1 AND `status` = $2 ORDER BY name ASC'
+  var qvalue = [fileKey,'processing']
+  var query = couch.N1Query.fromString(qstring)
+  return cb.queryAsync(query,qvalue)
+}
+
+
+/**
  * Create folder path including parents
  * @param {string} path
  * @return {P}
