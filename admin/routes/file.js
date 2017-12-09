@@ -1069,6 +1069,8 @@ exports.import = function(req,res){
                   ext: fileExt
                 }
               }
+              //make sure there are not dots in the extension
+              mimeInfo.ext = mimeInfo.ext.replace('.','')
               //check the file size here
               if(!fileResponse.headers['content-length'] ||
                 +fileResponse.headers['content-length'] >
