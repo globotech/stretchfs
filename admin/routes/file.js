@@ -267,7 +267,7 @@ var importToJob = function(url,ext,mimeType){
     },
     resource: [
       {
-        name: 'file.' + ext,
+        name: 'file.' + ext.replace('.',''),
         request: {
           method: 'get',
           url: url
