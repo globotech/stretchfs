@@ -131,7 +131,8 @@ module.exports = function(){
         +'">' + '</div>');
       if('processing' === file.status){
         var percentComplete = (
-          (file.job.frameComplete / file.job.frameTotal) * 100).toFixed(2);
+          ((file.job.framesComplete || 0) /
+            (file.job.framesTotal || 1)) * 100).toFixed(2);
         statusDiv = ('<div class="importFileStatus" id="import-'+ file._id
           +'">' + '<small class="text-muted">' +
           (file.job.frameDescription || file.job.statusDescription || 'n/a') +
@@ -144,8 +145,8 @@ module.exports = function(){
           '</div>' +
           '<div>' +
           '<small class="text-muted">' +
-          window.prettyBytes(+(file.job.frameComplete || 0))
-          + ' / ' + window.prettyBytes(+(file.job.frameTotal || 0)) +
+          window.prettyBytes(+(file.job.framesComplete || 0))
+          + ' / ' + window.prettyBytes(+(file.job.framesTotal || 0)) +
           '</small>' +
           '</div>' +
           '</div>');
