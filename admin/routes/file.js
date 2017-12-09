@@ -160,7 +160,7 @@ var jobUpdate = function(handle,data,handleCompletion){
                 rejectUnauthorized: false
               })
                 .then(function(result){
-                  resource.file = result.hash
+                  if(result) resource.file = result.hash
                   return resource
                 })
             }
@@ -171,7 +171,9 @@ var jobUpdate = function(handle,data,handleCompletion){
       file.value.resource = result || {}
       file.value.status = 'ok'
       file.value.job.status = 'finished'
-      if(!file.value.hash && result.file) file.value.hash = result.file
+      if(!file.value.hash && result && result.file){
+        file.value.hash = result.file
+      }
       var updateFile = function(){
         return cb.getAsync(fileKey)
           .then(function(result){
