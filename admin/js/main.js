@@ -27,7 +27,7 @@ Dropzone['autoDiscover'] = false
 var videojs = require('video.js')
 
 //headless dependencies
-require('bootstrap-sass')
+require('bootstrap')
 require('bootstrap-select')
 require('chart.js')
 require('jquery-ui')

@@ -2,7 +2,7 @@
 var bcrypt = require('bcrypt')
 var P = require('bluebird')
 var Password = require('node-password').Password
-var request = require('request-promise')
+var request = require('request')
 
 var couch = require('../../helpers/couchbase')
 

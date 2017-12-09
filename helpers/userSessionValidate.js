@@ -2,7 +2,7 @@
 var P = require('bluebird')
 var basicAuth = require('basic-auth-connect')
 var debug = require('debug')('stretchfs:userSessionValidate')
-var request = require('request-promise')
+var request = require('request')
 
 var couch = require('../helpers/couchbase')
 
