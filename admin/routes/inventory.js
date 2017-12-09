@@ -126,7 +126,7 @@ exports.edit = function(req,res){
           pCidx = Object.keys(pC).indexOf(l.prism)
         }
         l.id = 'desiredMap[' + i + ']'
-        l.class = 'prism' + ('0000' + pCidx).slice(-4)
+        l.class = 'cobyno' + ('0000' + pCidx).slice(-4)
         l.checked = (-1 !== result.summary.desiredMap.indexOf(l.name))
         l.pending = (l.checked && (-1 === result.summary.map.indexOf(l.name)))
         result.stores[l.name] = l

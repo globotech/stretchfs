@@ -6,11 +6,5 @@
 @import url('/node_modules/ladda/dist/ladda-themeless.min.css');
 @import url('/node_modules/video.js/dist/video-js.min.css');
 @import url('/node_modules/videojs-contextmenu-ui/dist/videojs-contextmenu-ui.css');
-@import url('/css/layout.css');
-@import url('/css/login.css');
-@import url('/css/prismClasses.css');
-@import url('/css/videojs-download-button.css');
-@import url('/css/videojs-flat.css');
-@import url('/css/videojs.css');
 @import url('/css/dropzone.css');
-@import url('/css/folderList.css');
+@import url('/css/layout.css');
