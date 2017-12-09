@@ -104,7 +104,7 @@
     "winston": "^2.4.0"
   },
   "scripts": {
-    "postinstall": "browserify -t [ uglifyify ] admin/js/main.js -o admin/public/bundle/bundle.js",
+    "postinstall": "browserify admin/js/main.js -o admin/public/bundle/bundle.js && uglifyjs admin/public/bundle/bundle.js -o admin/public/bundle/bundle.js",
     "admin": "node admin",
     "bundle": "browserify admin/js/main.js -o admin/public/bundle/bundle.js",
     "cluster": "node cluster",
@@ -121,6 +121,6 @@
     "mocha": "3.5.0",
     "numeral": "^2.0.6",
     "promiseq": "^0.1.0",
-    "uglifyify": "^4.0.5"
+    "uglify-js": "^3.2.1"
   }
 }
