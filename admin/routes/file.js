@@ -967,15 +967,15 @@ exports.importList = function(req,res){
       return prism.jobDetail(file.handle)
         .then(function(result){
           return jobUpdate(file.handle,result)
-            .catch(function(err){
-              console.log('Error updating job ' + handle + ' :' + err.message)
-            })
         })
-        .then(function(){
+        .catch(function(err){
+          console.log('Error updating job ' + handle + ' :' + err.message)
+        })
+        .finally(function(){
           return cb.getAsync(fileKey)
-        })
-        .then(function(result){
-          list.push(result.value)
+            .then(function(result){
+              list.push(result.value)
+            })
         })
     })
     .then(function(){
