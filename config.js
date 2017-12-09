@@ -151,7 +151,7 @@ config.$load({
     title: 'StretchFS',
     tmpFolder: __dirname + '/admin/public/tmp',
     baseUrl: 'http://localhost:5970',
-    importMaxFileSize: 2000000000, //2gb
+    importMaxFileSize: 20000000000, //20gb
     importMaxFileCount: 10,
     prism: {
       callback: {

@@ -1070,7 +1070,7 @@ exports.import = function(req,res){
               {
                 reject(new Error(
                   'Invalid content length, or file size above ' +
-                  config.main.importMaxFileSize
+                  config.admin.importMaxFileSize
                 ))
               }
               else if(!mimeInfo.mime || !mimeInfo.ext){
