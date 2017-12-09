@@ -7,6 +7,7 @@ var fileType = require('file-type')
 var fs = require('graceful-fs')
 var mime = require('mime')
 var mkdirp = require('mkdirp')
+var ObjectManage = require('object-manage')
 var Password = require('node-password').Password
 var pathHelper = require('path')
 var promisePipe = require('promisepipe')
@@ -111,7 +112,7 @@ var jobUpdate = function(handle,data,handleCompletion){
       file.value.job.framesComplete = data.frameComplete
       file.value.job.framesTotal = data.frameTotal
       file.value.job.framesDescription = data.framesDescription
-      file.value.job.log =data.log
+      file.value.job.log = data.log
       file.value.job.lastLogUpdate = data.lastLogUpdate
       if(data.completedAt)
         file.value.job.completedAt = data.completedAt
@@ -120,8 +121,6 @@ var jobUpdate = function(handle,data,handleCompletion){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
       }
-      file.value.status = 'ok'
-      file.value.job.status = 'finished'
       //remove tmp file
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
       //import the files to oose
@@ -148,7 +147,7 @@ var jobUpdate = function(handle,data,handleCompletion){
           })
           .then(function(result){
             if(result) resource.preview = result.hash
-            file.value.resource = resource
+            return resource
           })
       } else {
         //this code will handle import hooks for standard files
@@ -161,11 +160,32 @@ var jobUpdate = function(handle,data,handleCompletion){
                 rejectUnauthorized: false
               })
                 .then(function(result){
-                  file.value.hash = result.hash
+                  resource.file = result.hash
+                  return resource
                 })
             }
           })
       }
+    })
+    .then(function(result){
+      file.value.resource = result || {}
+      file.value.status = 'ok'
+      file.value.job.status = 'finished'
+      if(!file.value.hash && result.file) file.value.hash = result.file
+      var updateFile = function(){
+        return cb.getAsync(fileKey)
+          .then(function(result){
+            var up = new ObjectManage(result.value)
+            up.$load(file.value)
+            up = up.$strip()
+            return cb.upsertAsync(fileKey,up,{cas: result.cas})
+          })
+          .catch(function(err){
+            if(12 !== err.code) throw err
+            return updateFile()
+          })
+      }
+      return updateFile()
     })
     .then(function(){
       if('error' !== file.value.job.status) return
