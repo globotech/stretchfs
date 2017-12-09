@@ -969,7 +969,7 @@ exports.importList = function(req,res){
           return jobUpdate(file.handle,result)
         })
         .catch(function(err){
-          console.log('Error updating job ' + handle + ' :' + err.message)
+          console.log('Error updating job ' + file.handle + ' :' + err.message)
         })
         .finally(function(){
           return cb.getAsync(fileKey)
