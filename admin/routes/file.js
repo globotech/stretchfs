@@ -194,10 +194,6 @@ var jobUpdate = function(handle,data,handleCompletion){
       //remove tmp file on error report
       if(fs.existsSync(file.value.tmp)) fs.unlinkSync(file.value.tmp)
     })
-    .then(function(){
-      //update db
-      return cb.upsertAsync(fileKey,file.value,{cas: file.cas})
-    })
 }
 
 
