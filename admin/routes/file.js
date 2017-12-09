@@ -86,9 +86,11 @@ var saveFile = function(handle,data){
  * Save a job update to the file
  * @param {string} handle
  * @param {object} data
+ * @param {boolean} handleCompletion
  * @return {P}
  */
-var jobUpdate = function(handle,data){
+var jobUpdate = function(handle,data,handleCompletion){
+  if(!handleCompletion) handleCompletion = false
   var file
   var fileKey
   return fileHelper.findByHandle(handle)
@@ -113,8 +115,7 @@ var jobUpdate = function(handle,data){
       file.value.job.lastLogUpdate = data.lastLogUpdate
       if(data.completedAt)
         file.value.job.completedAt = data.completedAt
-      if('complete' !== file.value.job.status) return
-      if('finished' === file.value.job.status) return
+      if(!handleCompletion || 'complete' !== file.value.job.status) return
       if(!prism.helperConnected){
         throw new Error('Prism connection not established cannot' +
           ' process job update')
@@ -799,7 +800,7 @@ exports.jobUpdate = function(req,res){
     res.json({error: 'no handle sent'})
     return
   }
-  jobUpdate(req.body.handle,req.body)
+  jobUpdate(req.body.handle,req.body,true)
     .then(function(){
       res.json({success: 'Update successful'})
     })
