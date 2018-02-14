@@ -1,73 +1,114 @@
-## Getting started with StretchFS
+# Getting started with StretchFS
 
 There are a couple of programs required to get a fully functional StretchFS
-up and running. However the installation of these programs is simple and
-you will be up and running in no time.
+up and running. The installation of these programs is simple and it will be running in no time.
 
 The first program that is needed is Couchbase Server Community edition which
 can be found from this URL: https://www.couchbase.com/downloads
 
-This guide is going to focus on installation via Windows.
+This guide is going to focus stretchFS installation on Microsoft Windows.
 
-### Install Couchbase
+# Install Couchbase
 
-Run through the Couchbase Server installation package. Once that is completed
-open your web browser and navigate to http://localhost:8091. On the following
-pages complete the setup of your cluster.
+Run through the Couchbase Server installation package. Once that is completed,
+open a web browser and navigate to http://localhost:8091. 
+
+Couchbase will present a preliminary screen that looks similar to this:
+
+          Couchbase Server
+     Community Edition 5.0.1 build 5003
+
+The installation will ask if there is to be a new cluster to be set up or to join an existing cluster.
+
+Since this is the first time it will be set up, create a new cluster.  Create the new Couchbase cluster according to the information supplied below:
 
 Cluster Name: 127.0.0.1
-Leave admin user as Administrator
-Create a password for the Administrator
-Leave the defaults on the next page and then save and finish
+Leave admin user as the Administrator username.
+Set a password for the Administrator.
 
-### Install FFMPEG
+On the next page, leave the default settings, click save and then click finish.
 
-Next your need FFMPEG on your system in able to process videos. To download
-this for windows visit the following URL: http://ffmpeg.zeranoe.com/builds/
+# Next, install FFMPEG
 
-Extract the downloaded ZIP file obtained by clicking the blue "Download Build"
-button. Once extracted open the folder, there will be an ffmpeg-<version> folder
-open that. Once inside there, a bin folder will appear copy the bin folder Then 
-go to C:\ in your windows explorer. (This usually has your Windows and Program
-Files folder). Once there paste the bin folder directly to C:\bin.
+FFmpeg is a free software project that produces libraries and programs for handling multimedia data.
+For more information:
+     https://www.ffmpeg.org/
+     https://en.wikipedia.org/wiki/FFmpeg
+     
+# IMPORTANT: Close any open MS Windows command prompts (cmd.exe) and continue the installation.
 
-Finally, we have to add the new path to your windows path to do this. 
+Next, FFMPEG will need to be installed in order to process videos. Download FFMPEG for your system and architecture.  To download this, navigate a Web browser to the following URL:
+                    http://ffmpeg.zeranoe.com/builds/
 
-Open command prompt and run this.
+  1.  Select the correct build and download FFMPEG by clicking the blue "Download Build" button.
+  2.  Open the archive.
+  3.  Open the 'ffmpeg-<version>' folder.
+  4.  Inside the 'ffmpeg-<version>' folder, copy the 'bin' folder to 'C:\bin'.
+  5.  Add the new path to your Windows system path. Open command prompt and type the command:
+      
+      setx path "%path%;c:\bin
 
-```dos
-setx path "%path%;c:\bin"
-```
+      Your screen will look similar to this:
+-------------------------------------------------------------  
+ Microsoft Windows [Version 10.0.15063]
+ (c) 2017 Microsoft Corporation. All rights reserved.
+ 
+ C:\Users\user> setx path "%path%;c:\bin
+ 
+ SUCCESS: Specified value was saved.
+ 
+ C:\Users\user>
+------------------------------------------------------------- 
+ 
+To test the installation of FFMPEG, close any and all open command prompt windows. Once all command prompt windows are closed, open a new command prompt.
 
-To test this works close your command prompt. Then open it again. Once it is
-open. Type the following
+Type the following:
 
-```dos
 ffmpeg -version
-```
 
-You should see a long display of output starting with `ffmpeg version`
+If you see a long bit of output starting with `ffmpeg version` and looks like below, FFMPEG has been installed successfully:
 
-Cool! So that means your are ready to go from the external prerequisite 
-perspective.
+configuration: --enable-gpl --enable-version3 . . . .  etc.
+libavutil 
+libavcodec
+libavformat
 
-### Obtaining StretchFS and a runtime Environment
+* Output may vary
 
+If FFMPEG has been installed and all other work has been performed properly, external prerequisites have been satisfied.
 
+# StretchFS
 
-To clone StretchFS do the following after git is installed.
+Use GIT to clone StretchFS.  At this time, 'git' must be installed. If the instructions were followed correctly, this should not be a problem.
 
-```
-C:
-cd \
-mkdir opt
-cd \opt
-git clone https://github.com/nullivex/stretchfs.git
-cd stretchfs
-npm install
-```
+# Test GIT
 
-Once these steps have been completed your stretchfs instance is cloned and the
+You can test git by typing in a command prompt window:  'git --version'.
+Output will look similar to this:
+
+  ---------------------------------------------------------
+   Microsoft Windows [Version 10.0.15063]
+   (c) 2017 Microsoft Corporation. All rights reserved.
+   
+   C:\Users\user>git --version
+   git version 2.16.1.windows.3
+   
+   C:\Users\user>
+  ---------------------------------------------------------
+
+# Now it is time to obtain StretchFS and a runtime Environment.
+
+In a command prompt window, execute the folllowing commands:
+
+  1.  C:
+  2.  cd \
+  3.  mkdir opt
+  4.  cd \opt
+  5.  git clone https://github.com/nullivex/stretchfs.git
+  6.  cd stretchfs
+  7.  npm install
+
+Once these steps have been completed a stretchfs instance has been cloned and the
 dependencies have been installed.
 
 Before setting up the database you will need to create a local configuration
